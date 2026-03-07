@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="BHDM">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="BHDM - Votre portefeuille digital sécurisé. Gérez vos finances en toute simplicité.">
 
     <title>@yield('title', 'Espace Client - BHDM')</title>
 
@@ -548,36 +549,179 @@
             height: 50px;
         }
 
-        /* PWA Prompts */
+        /* PWA Install Prompt - NOUVEAU DESIGN */
+        .pwa-install-prompt {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1001;
+            display: none;
+            padding: 20px;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .pwa-install-content {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            max-width: 400px;
+            margin: 0 auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+            position: relative;
+            border: 1px solid var(--gray-200);
+        }
+
+        .pwa-install-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .pwa-install-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            font-weight: 800;
+            flex-shrink: 0;
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .pwa-install-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+
+        .pwa-install-subtitle {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+        }
+
+        .pwa-install-benefits {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .pwa-benefit {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9375rem;
+            color: var(--gray-700);
+        }
+
+        .pwa-benefit-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-50);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-600);
+            flex-shrink: 0;
+        }
+
+        .pwa-install-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-install {
+            flex: 1;
+            background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+            color: white;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-install:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn-install:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-later {
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            border: none;
+            cursor: pointer;
+            background: var(--gray-100);
+            color: var(--gray-600);
+            transition: all 0.2s;
+        }
+
+        .btn-later:active {
+            background: var(--gray-200);
+        }
+
+        .pwa-install-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--gray-400);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .pwa-install-close:active {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        /* iOS Specific Prompt */
         .pwa-prompt-ios {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            z-index: 1000;
+            z-index: 1001;
             display: none;
             padding: 20px;
-            animation: slideUp 0.4s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(100%);
-            }
-
-            to {
-                transform: translateY(0);
-            }
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .pwa-prompt-content-ios {
             background: white;
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 24px;
             max-width: 360px;
             margin: 0 auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
             position: relative;
+            border: 1px solid var(--gray-200);
         }
 
         .pwa-prompt-close {
@@ -661,6 +805,80 @@
         .alert-close:active {
             opacity: 1;
         }
+
+        /* Mini install banner */
+        .install-mini-banner {
+            position: fixed;
+            bottom: 90px;
+            left: 16px;
+            right: 16px;
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 999;
+            border: 1px solid var(--gray-200);
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .install-mini-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .install-mini-text {
+            flex: 1;
+        }
+
+        .install-mini-title {
+            font-weight: 600;
+            color: var(--gray-900);
+            font-size: 0.9375rem;
+            margin-bottom: 2px;
+        }
+
+        .install-mini-subtitle {
+            font-size: 0.8125rem;
+            color: var(--gray-500);
+        }
+
+        .install-mini-btn {
+            background: var(--primary-600);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .install-mini-btn:active {
+            transform: scale(0.95);
+            background: var(--primary-500);
+        }
+
+        .install-mini-close {
+            background: none;
+            border: none;
+            color: var(--gray-400);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+        }
     </style>
 </head>
 
@@ -736,7 +954,6 @@
             </div>
             @endif
 
-            <!-- Vue du Portefeuille - Intégration données réelles -->
             <!-- Vue du Portefeuille - Intégration données réelles -->
             @if(request()->routeIs('client.dashboard') && isset($financialSummary))
             <div class="wallet-card">
@@ -924,7 +1141,67 @@
         </div>
     </div>
 
-    <!-- PWA Prompt iOS -->
+    <!-- NOUVEAU: Prompt d'installation PWA Modernisé -->
+    <div id="pwa-install-prompt" class="pwa-install-prompt">
+        <div class="pwa-install-content">
+            <button class="pwa-install-close" id="pwa-install-close">&times;</button>
+
+            <div class="pwa-install-header">
+                <div class="pwa-install-icon">B</div>
+                <div>
+                    <div class="pwa-install-title">Installer BHDM</div>
+                    <div class="pwa-install-subtitle">Application mobile gratuite</div>
+                </div>
+            </div>
+
+            <div class="pwa-install-benefits">
+                <div class="pwa-benefit">
+                    <div class="pwa-benefit-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span>Accès rapide depuis l'écran d'accueil</span>
+                </div>
+                <div class="pwa-benefit">
+                    <div class="pwa-benefit-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <span>Expérience optimisée mobile</span>
+                </div>
+                <div class="pwa-benefit">
+                    <div class="pwa-benefit-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                        </svg>
+                    </div>
+                    <span>Fonctionne hors ligne</span>
+                </div>
+            </div>
+
+            <div class="pwa-install-actions">
+                <button type="button" class="btn-later" id="btn-install-later">Plus tard</button>
+                <button type="button" class="btn-install" id="btn-install-now">
+                    <span>Installer maintenant</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mini banner discret (alternative) -->
+    <div id="install-mini-banner" class="install-mini-banner">
+        <div class="install-mini-icon">B</div>
+        <div class="install-mini-text">
+            <div class="install-mini-title">Installer l'app BHDM</div>
+            <div class="install-mini-subtitle">Accès rapide & hors ligne</div>
+        </div>
+        <button class="install-mini-btn" id="mini-install-btn">Installer</button>
+        <button class="install-mini-close" id="mini-close-btn">&times;</button>
+    </div>
+
+    <!-- iOS Specific Prompt -->
     <div id="ios-prompt" class="pwa-prompt-ios">
         <div class="pwa-prompt-content-ios">
             <button class="pwa-prompt-close" id="ios-prompt-close">&times;</button>
@@ -934,7 +1211,7 @@
                     B</div>
                 <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--gray-900); margin-bottom: 8px;">Installer
                     BHDM</h3>
-                <p style="font-size: 0.875rem; color: var(--gray-500);">Accédez rapidement à votre portefeuille</p>
+                <p style="font-size: 0.875rem; color: var(--gray-500);">Ajoutez à l'écran d'accueil pour un accès instantané</p>
             </div>
             <div style="background: var(--gray-100); border-radius: 12px; padding: 16px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
@@ -960,10 +1237,11 @@
 
     <!-- Scripts -->
     <script>
-        // Variables globales
+        // Variables globales PWA
         let deferredPrompt = null;
         let isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         let isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        let installPromptShown = false;
 
         // Modal Déconnexion
         function openLogoutModal() {
@@ -980,12 +1258,116 @@
             document.body.style.overflow = '';
         }
 
-        // PWA Prompts
-        function showIosPrompt() {
-            const prompt = document.getElementById('ios-prompt');
-            if (prompt && !isStandalone && !localStorage.getItem('iosPromptDismissed')) {
-                setTimeout(() => prompt.style.display = 'flex', 2000);
+        // PWA Installation Logic - AMÉLIORÉ
+        function initPWAInstall() {
+            // Ne rien faire si déjà installé
+            if (isStandalone) return;
+
+            const installPrompt = document.getElementById('pwa-install-prompt');
+            const miniBanner = document.getElementById('install-mini-banner');
+            const iosPrompt = document.getElementById('ios-prompt');
+
+            // Vérifier si l'utilisateur a déjà refusé récemment
+            const lastDismissed = localStorage.getItem('pwaPromptDismissed');
+            const dismissCount = parseInt(localStorage.getItem('pwaPromptDismissCount') || '0');
+
+            if (lastDismissed) {
+                const daysSince = (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60 * 24);
+                // Réafficher après 7 jours si déjà refusé, ou immédiatement si jamais montré
+                if (daysSince < 7) return;
             }
+
+            // iOS Detection
+            if (isIos) {
+                setTimeout(() => {
+                    if (!localStorage.getItem('iosPromptDismissed')) {
+                        iosPrompt.style.display = 'flex';
+                        installPromptShown = true;
+                    }
+                }, 3000);
+                return;
+            }
+
+            // Android/Chrome - Attendre l'événement beforeinstallprompt
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+
+                // Montrer le prompt après 5 secondes ou au scroll
+                setTimeout(() => {
+                    if (!installPromptShown && !localStorage.getItem('pwaInstalled')) {
+                        showInstallPrompt();
+                    }
+                }, 5000);
+            });
+
+            // Alternative: montrer mini banner si pas d'événement after 10s
+            setTimeout(() => {
+                if (!deferredPrompt && !installPromptShown && !localStorage.getItem('pwaInstalled')) {
+                    showMiniBanner();
+                }
+            }, 10000);
+        }
+
+        function showInstallPrompt() {
+            const prompt = document.getElementById('pwa-install-prompt');
+            prompt.style.display = 'flex';
+            installPromptShown = true;
+
+            // Analytics
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'pwa_prompt_shown');
+            }
+        }
+
+        function showMiniBanner() {
+            const banner = document.getElementById('install-mini-banner');
+            banner.style.display = 'flex';
+        }
+
+        async function installPWA() {
+            if (!deferredPrompt) {
+                // Fallback: ouvrir les instructions
+                showIOSInstructions();
+                return;
+            }
+
+            const btn = document.getElementById('btn-install-now');
+            btn.disabled = true;
+            btn.innerHTML = '<span>Installation...</span>';
+
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+
+            if (outcome === 'accepted') {
+                localStorage.setItem('pwaInstalled', 'true');
+                hideInstallPrompt();
+
+                // Analytics
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'pwa_installed');
+                }
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Réessayer</span>';
+                dismissInstallPrompt();
+            }
+
+            deferredPrompt = null;
+        }
+
+        function dismissInstallPrompt() {
+            localStorage.setItem('pwaPromptDismissed', Date.now().toString());
+            const count = parseInt(localStorage.getItem('pwaPromptDismissCount') || '0');
+            localStorage.setItem('pwaPromptDismissCount', (count + 1).toString());
+            hideInstallPrompt();
+        }
+
+        function hideInstallPrompt() {
+            const prompt = document.getElementById('pwa-install-prompt');
+            const miniBanner = document.getElementById('install-mini-banner');
+            if (prompt) prompt.style.display = 'none';
+            if (miniBanner) miniBanner.style.display = 'none';
         }
 
         function hideIosPrompt() {
@@ -994,30 +1376,6 @@
                 prompt.style.display = 'none';
                 localStorage.setItem('iosPromptDismissed', 'true');
             }
-        }
-
-        function showAndroidPrompt() {
-            const prompt = document.getElementById('android-prompt');
-            if (prompt && deferredPrompt && !localStorage.getItem('androidPromptDismissed')) {
-                setTimeout(() => prompt.style.display = 'block', 3000);
-            }
-        }
-
-        function hideAndroidPrompt() {
-            const prompt = document.getElementById('android-prompt');
-            if (prompt) {
-                prompt.style.display = 'none';
-                localStorage.setItem('androidPromptDismissed', 'true');
-            }
-        }
-
-        async function installPWA() {
-            if (!deferredPrompt) return;
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') console.log('PWA installée');
-            deferredPrompt = null;
-            hideAndroidPrompt();
         }
 
         // Transitions
@@ -1067,7 +1425,7 @@
                 if (e.key === 'Escape') closeLogoutModal();
             });
 
-            // Soumission formulaire
+            // Soumission formulaire logout
             const logoutForm = document.getElementById('logout-form');
             const confirmBtn = document.getElementById('btn-confirm-logout');
             if (logoutForm && confirmBtn) {
@@ -1093,15 +1451,30 @@
                 });
             });
 
-            // PWA Events
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                showAndroidPrompt();
+            // PWA Install Events
+            initPWAInstall();
+
+            // Boutons d'installation
+            const installBtn = document.getElementById('btn-install-now');
+            if (installBtn) installBtn.addEventListener('click', installPWA);
+
+            const installLater = document.getElementById('btn-install-later');
+            if (installLater) installLater.addEventListener('click', dismissInstallPrompt);
+
+            const installClose = document.getElementById('pwa-install-close');
+            if (installClose) installClose.addEventListener('click', dismissInstallPrompt);
+
+            // Mini banner events
+            const miniInstall = document.getElementById('mini-install-btn');
+            if (miniInstall) miniInstall.addEventListener('click', installPWA);
+
+            const miniClose = document.getElementById('mini-close-btn');
+            if (miniClose) miniClose.addEventListener('click', () => {
+                document.getElementById('install-mini-banner').style.display = 'none';
+                dismissInstallPrompt();
             });
 
-            if (isIos && !isStandalone) showIosPrompt();
-
+            // iOS prompt events
             const iosClose = document.getElementById('ios-prompt-close');
             if (iosClose) iosClose.addEventListener('click', hideIosPrompt);
 
@@ -1115,13 +1488,33 @@
             window.addEventListener('online', updateOnlineStatus);
             window.addEventListener('offline', updateOnlineStatus);
             updateOnlineStatus();
+
+            // Détection installation réussie
+            window.addEventListener('appinstalled', () => {
+                deferredPrompt = null;
+                localStorage.setItem('pwaInstalled', 'true');
+                hideInstallPrompt();
+                hideIosPrompt();
+
+                // Message de confirmation
+                if (typeof showToast === 'function') {
+                    showToast('BHDM installé avec succès !', 'success');
+                }
+            });
         });
 
-        window.addEventListener('appinstalled', () => {
-            deferredPrompt = null;
-            hideIosPrompt();
-            hideAndroidPrompt();
-        });
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('SW registered:', registration);
+                    })
+                    .catch(error => {
+                        console.log('SW registration failed:', error);
+                    });
+            });
+        }
     </script>
 
     <script src="{{ asset('js/app.js') }}"></script>
