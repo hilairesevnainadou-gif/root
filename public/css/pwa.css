@@ -1,0 +1,577 @@
+/* ============================================
+   PWA Specific Styles & Install Prompts
+   ============================================ */
+
+/* ============================================
+   iOS Install Prompt
+   ============================================ */
+.ios-prompt {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: none; /* Hidden by default */
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.ios-prompt.active {
+  display: flex;
+}
+
+.ios-prompt-content {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  max-width: 340px;
+  width: 100%;
+  position: relative;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.ios-prompt-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #f3f4f6;
+  border: none;
+  font-size: 1.25rem;
+  color: #6b7280;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.ios-prompt-close:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.ios-prompt-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.25rem;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ios-prompt-icon svg {
+  width: 32px;
+  height: 32px;
+  color: white;
+}
+
+.ios-prompt-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.75rem 0;
+}
+
+.ios-prompt-text {
+  font-size: 1rem;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.ios-icon-share {
+  display: inline-flex;
+  vertical-align: middle;
+  margin: 0 0.25rem;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 0.25rem;
+  border-radius: 6px;
+}
+
+.ios-icon-share svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ios-instructions {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px dashed #d1d5db;
+}
+
+.ios-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.ios-step:last-child {
+  margin-bottom: 0;
+}
+
+.ios-step-number {
+  width: 24px;
+  height: 24px;
+  background: #2563eb;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Android/Chrome Install Prompt
+   ============================================ */
+.pwa-prompt {
+  position: fixed;
+  bottom: calc(80px + var(--safe-bottom) + 1rem);
+  left: 1rem;
+  right: 1rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  z-index: 9999;
+  display: none; /* Hidden by default */
+  animation: slideUp 0.3s ease;
+  border: 1px solid #e5e7eb;
+}
+
+.pwa-prompt.active {
+  display: block;
+}
+
+.pwa-prompt-content {
+  padding: 1.25rem;
+}
+
+.pwa-prompt-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.pwa-prompt-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.pwa-prompt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pwa-prompt-text strong {
+  font-size: 1.125rem;
+  color: #111827;
+  font-weight: 600;
+}
+
+.pwa-prompt-text span {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.pwa-prompt-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.pwa-btn-dismiss {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  background: #f3f4f6;
+  color: #4b5563;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pwa-btn-dismiss:hover {
+  background: #e5e7eb;
+}
+
+.pwa-btn-install {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  background: #2563eb;
+  color: white;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
+.pwa-btn-install:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3);
+}
+
+/* ============================================
+   Install Banner (Alternative)
+   ============================================ */
+.install-banner {
+  position: fixed;
+  bottom: calc(80px + var(--safe-bottom));
+  left: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, #2563eb, #3730a3);
+  color: white;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+  z-index: 1000;
+  animation: slideUp 0.3s ease;
+}
+
+.install-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.install-banner-text strong {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.install-banner-text span {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.install-banner-btn {
+  background: white;
+  color: #2563eb;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.install-banner-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* ============================================
+   Offline Banner
+   ============================================ */
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--warning);
+  color: #92400e;
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  z-index: 10001;
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.offline-banner.hidden {
+  transform: translateY(-100%);
+}
+
+.offline-banner svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ============================================
+   Standalone Mode (Installed PWA)
+   ============================================ */
+@media all and (display-mode: standalone) {
+  .mobile-header {
+    padding-top: calc(1.5rem + var(--safe-top));
+  }
+
+  .mobile-nav {
+    padding-bottom: max(1rem, var(--safe-bottom));
+  }
+
+  /* Hide browser-specific UI */
+  .browser-only {
+    display: none !important;
+  }
+
+  /* Hide install prompts when installed */
+  .ios-prompt,
+  .pwa-prompt,
+  .install-banner {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   iOS Specific
+   ============================================ */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific fixes */
+  .mobile-nav {
+    padding-bottom: max(20px, var(--safe-bottom));
+  }
+
+  /* Prevent callout menu */
+  -webkit-touch-callout: none;
+}
+
+/* ============================================
+   Toast Notifications
+   ============================================ */
+.toast {
+  position: fixed;
+  bottom: calc(100px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  padding: 1rem 1.5rem;
+  border-radius: 50px;
+  color: white;
+  font-weight: 500;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  z-index: 10000;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 90vw;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.toast-success { background: var(--success); }
+.toast-error { background: var(--danger); }
+.toast-warning { background: var(--warning); color: #92400e; }
+.toast-info { background: var(--info); }
+
+.toast-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Network Status Indicator
+   ============================================ */
+.network-status {
+  position: fixed;
+  top: calc(70px + var(--safe-top));
+  right: 1rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  z-index: 100;
+  transition: all 0.3s;
+}
+
+.network-status.online {
+  background: var(--success);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+}
+
+.network-status.offline {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+  animation: pulse 2s infinite;
+}
+
+/* ============================================
+   Sync Indicator
+   ============================================ */
+.sync-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.85);
+  color: white;
+  padding: 2rem;
+  border-radius: var(--radius);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  z-index: 10002;
+  backdrop-filter: blur(10px);
+}
+
+.sync-indicator.active {
+  display: flex;
+}
+
+.sync-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255,255,255,0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.sync-text {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* ============================================
+   Background Sync Badge
+   ============================================ */
+.sync-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  background: var(--danger);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  padding: 0 4px;
+  border: 2px solid white;
+}
+
+/* ============================================
+   Add to Home Screen (Alternative)
+   ============================================ */
+.ath-prompt {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+  z-index: 1000;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ath-prompt.show {
+  transform: translateY(0);
+}
+
+.ath-prompt-arrow {
+  position: absolute;
+  bottom: 100%;
+  right: 2rem;
+  width: 0;
+  height: 0;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-bottom: 15px solid white;
+}
+
+/* ============================================
+   Responsive PWA Prompts
+   ============================================ */
+@media (min-width: 640px) {
+  .pwa-prompt {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .install-banner {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .ios-prompt-content {
+    max-width: 380px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pwa-prompt,
+  .install-banner {
+    bottom: 2rem;
+  }
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

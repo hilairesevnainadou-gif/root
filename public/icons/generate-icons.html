@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Générer icônes</title>
+</head>
+<body>
+    <canvas id="canvas" width="512" height="512"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Fond bleu
+        ctx.fillStyle = '#2563eb';
+        ctx.fillRect(0, 0, 512, 512);
+
+        // Cercle blanc
+        ctx.beginPath();
+        ctx.arc(256, 256, 180, 0, Math.PI * 2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+
+        // Texte "BHDM"
+        ctx.fillStyle = '#2563eb';
+        ctx.font = 'bold 120px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('BHDM', 256, 256);
+
+        // Télécharger
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+
+        sizes.forEach(size => {
+            const c = document.createElement('canvas');
+            c.width = size;
+            c.height = size;
+            const cx = c.getContext('2d');
+            cx.drawImage(canvas, 0, 0, size, size);
+
+            const link = document.createElement('a');
+            link.download = `icon-${size}x${size}.png`;
+            link.href = c.toDataURL();
+            link.click();
+        });
+
+        alert('Icônes générées ! Vérifiez vos téléchargements.');
+    </script>
+</body>
+</html>
