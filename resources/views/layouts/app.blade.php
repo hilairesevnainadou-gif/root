@@ -9,23 +9,25 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="BHDM">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="description" content="BHDM - Votre portefeuille digital sécurisé. Gérez vos finances en toute simplicité.">
+    <meta name="description" content="BHDM - Votre portefeuille digital sécurisé">
 
     <title>@yield('title', 'Espace Client - BHDM')</title>
 
+    <!-- PWA Manifest -->
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <link rel="apple-touch-icon" href="{{ asset('icons/icon-192x192.png') }}">
     <link rel="icon" type="image/png" href="{{ asset('icons/icon-72x72.png') }}">
 
+    <!-- Styles -->
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/mobile.css') }}">
     <link rel="stylesheet" href="{{ asset('css/pwa.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/transitions.css') }}">
-
     @yield('styles')
 
     <style>
-        /* Design System Professionnel */
+        /* ============================================
+           DESIGN SYSTEM - VARIABLES
+           ============================================ */
         :root {
             --primary-600: #1e40af;
             --primary-500: #3b82f6;
@@ -34,23 +36,18 @@
             --warning-500: #f59e0b;
             --danger-500: #ef4444;
             --gray-900: #0f172a;
-            --gray-800: #1e293b;
             --gray-700: #334155;
-            --gray-600: #475569;
             --gray-500: #64748b;
             --gray-400: #94a3b8;
-            --gray-300: #cbd5e1;
             --gray-200: #e2e8f0;
             --gray-100: #f1f5f9;
-            --gray-50: #f8fafc;
             --radius: 16px;
-            --radius-sm: 12px;
-            --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
-            --shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
             --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1);
         }
 
-        /* Header Premium - Simplifié */
+        /* ============================================
+           HEADER PREMIUM
+           ============================================ */
         .mobile-header {
             background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-500) 100%);
             backdrop-filter: blur(10px);
@@ -101,12 +98,7 @@
             letter-spacing: -0.025em;
         }
 
-        /* Bouton Déconnexion Unique - Style Premium */
-        .header-actions {
-            display: flex;
-            align-items: center;
-        }
-
+        /* Bouton Déconnexion */
         .btn-logout-header {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -121,23 +113,11 @@
             backdrop-filter: blur(10px);
             transition: all 0.2s ease;
             cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .btn-logout-header:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
         }
 
         .btn-logout-header:active {
             background: rgba(255, 255, 255, 0.25);
             transform: scale(0.98);
-        }
-
-        .btn-logout-header svg {
-            width: 18px;
-            height: 18px;
-            stroke-width: 2;
         }
 
         .logout-label {
@@ -150,7 +130,9 @@
             }
         }
 
-        /* Carte Portefeuille Premium */
+        /* ============================================
+           CARTE PORTEFEUILLE
+           ============================================ */
         .wallet-card {
             background: linear-gradient(145deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
             border-radius: 20px;
@@ -196,14 +178,6 @@
             font-weight: 800;
             letter-spacing: -0.02em;
             line-height: 1;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .wallet-currency {
-            font-size: 1.125rem;
-            font-weight: 600;
-            opacity: 0.9;
-            margin-left: 4px;
         }
 
         .wallet-icon {
@@ -224,10 +198,6 @@
             border-top: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .wallet-stat {
-            text-align: left;
-        }
-
         .wallet-stat-value {
             font-size: 1.125rem;
             font-weight: 700;
@@ -242,85 +212,9 @@
             letter-spacing: 0.05em;
         }
 
-        /* Alertes Professionnelles */
-        .alert-premium {
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin: 12px 16px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            border-left: 4px solid;
-            animation: slideUp 0.4s ease-out;
-        }
-
-        .alert-premium.error {
-            background: #fef2f2;
-            border-color: var(--danger-500);
-            color: #991b1b;
-        }
-
-        .alert-premium.warning {
-            background: #fffbeb;
-            border-color: var(--warning-500);
-            color: #92400e;
-        }
-
-        .alert-premium.info {
-            background: #eff6ff;
-            border-color: var(--primary-500);
-            color: #1e40af;
-        }
-
-        .alert-icon {
-            flex-shrink: 0;
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .alert-premium.error .alert-icon {
-            background: #fee2e2;
-            color: var(--danger-500);
-        }
-
-        .alert-premium.warning .alert-icon {
-            background: #fef3c7;
-            color: var(--warning-500);
-        }
-
-        .alert-premium.info .alert-icon {
-            background: #dbeafe;
-            color: var(--primary-500);
-        }
-
-        .alert-content h4 {
-            font-weight: 600;
-            font-size: 0.9375rem;
-            margin-bottom: 4px;
-        }
-
-        .alert-content p {
-            font-size: 0.875rem;
-            opacity: 0.9;
-            line-height: 1.4;
-            margin: 0;
-        }
-
-        .alert-action {
-            margin-top: 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            text-decoration: none;
-        }
-
-        /* Navigation Optimisée */
+        /* ============================================
+           NAVIGATION MOBILE
+           ============================================ */
         .mobile-nav {
             background: white;
             border-top: 1px solid var(--gray-200);
@@ -348,7 +242,6 @@
             font-weight: 600;
             text-decoration: none;
             transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
         }
 
         .mobile-nav-item.active {
@@ -359,14 +252,9 @@
             width: 24px;
             height: 24px;
             stroke-width: 2;
-            transition: transform 0.2s;
         }
 
-        .mobile-nav-item:active svg {
-            transform: scale(0.9);
-        }
-
-        .mobile-nav-item.nav-item-primary {
+        .nav-item-primary {
             position: relative;
             top: -16px;
             color: var(--primary-600);
@@ -383,15 +271,11 @@
             box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
             color: white;
             margin-bottom: 4px;
-            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .mobile-nav-item.nav-item-primary:active .nav-icon-bg {
-            transform: scale(0.95);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        }
-
-        /* Modal Premium */
+        /* ============================================
+           MODALS
+           ============================================ */
         .modal {
             position: fixed;
             top: 0;
@@ -429,15 +313,8 @@
         }
 
         @keyframes modalSlideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.95);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .modal-icon-danger {
@@ -480,16 +357,11 @@
             border: none;
             cursor: pointer;
             transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
         }
 
         .btn-secondary {
             background: var(--gray-100);
             color: var(--gray-700);
-        }
-
-        .btn-secondary:active {
-            background: var(--gray-200);
         }
 
         .btn-danger {
@@ -498,12 +370,9 @@
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         }
 
-        .btn-danger:active {
-            transform: scale(0.98);
-            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
-        }
-
-        /* Offline Banner */
+        /* ============================================
+           OFFLINE BANNER
+           ============================================ */
         .offline-banner {
             background: var(--gray-900);
             color: white;
@@ -522,248 +391,9 @@
             display: none;
         }
 
-        /* Page Transition */
-        .page-transition {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: white;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-
-        .page-transition.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .transition-spinner {
-            width: 50px;
-            height: 50px;
-        }
-
-        /* PWA Install Prompt - NOUVEAU DESIGN */
-        .pwa-install-prompt {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 1001;
-            display: none;
-            padding: 20px;
-            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .pwa-install-content {
-            background: white;
-            border-radius: 24px;
-            padding: 24px;
-            max-width: 400px;
-            margin: 0 auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
-            position: relative;
-            border: 1px solid var(--gray-200);
-        }
-
-        .pwa-install-header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-
-        .pwa-install-icon {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 28px;
-            font-weight: 800;
-            flex-shrink: 0;
-            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
-        }
-
-        .pwa-install-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: 4px;
-        }
-
-        .pwa-install-subtitle {
-            font-size: 0.875rem;
-            color: var(--gray-500);
-        }
-
-        .pwa-install-benefits {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .pwa-benefit {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.9375rem;
-            color: var(--gray-700);
-        }
-
-        .pwa-benefit-icon {
-            width: 32px;
-            height: 32px;
-            background: var(--primary-50);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary-600);
-            flex-shrink: 0;
-        }
-
-        .pwa-install-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn-install {
-            flex: 1;
-            background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
-            color: white;
-            padding: 14px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.9375rem;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        }
-
-        .btn-install:active {
-            transform: scale(0.98);
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
-        }
-
-        .btn-install:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .btn-later {
-            padding: 14px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.9375rem;
-            border: none;
-            cursor: pointer;
-            background: var(--gray-100);
-            color: var(--gray-600);
-            transition: all 0.2s;
-        }
-
-        .btn-later:active {
-            background: var(--gray-200);
-        }
-
-        .pwa-install-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: var(--gray-400);
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: all 0.2s;
-        }
-
-        .pwa-install-close:active {
-            background: var(--gray-100);
-            color: var(--gray-600);
-        }
-
-        /* iOS Specific Prompt */
-        .pwa-prompt-ios {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 1001;
-            display: none;
-            padding: 20px;
-            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .pwa-prompt-content-ios {
-            background: white;
-            border-radius: 24px;
-            padding: 24px;
-            max-width: 360px;
-            margin: 0 auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
-            position: relative;
-            border: 1px solid var(--gray-200);
-        }
-
-        .pwa-prompt-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: var(--gray-400);
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: all 0.2s;
-        }
-
-        .pwa-prompt-close:active {
-            background: var(--gray-100);
-        }
-
-        /* Main Content */
-        .main-content {
-            min-height: calc(100vh - 56px);
-            padding-bottom: 80px;
-        }
-
-        .page-content {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.4s ease;
-        }
-
-        .page-content.loaded {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Alertes système */
+        /* ============================================
+           ALERTES
+           ============================================ */
         .alert {
             margin: 16px;
             padding: 16px;
@@ -794,109 +424,101 @@
             font-size: 20px;
             cursor: pointer;
             opacity: 0.6;
-            padding: 0;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        .alert-close:active {
-            opacity: 1;
-        }
-
-        /* Mini install banner */
-        .install-mini-banner {
+        /* ============================================
+           iOS INSTALL PROMPT
+           ============================================ */
+        .ios-prompt {
             position: fixed;
-            bottom: 90px;
-            left: 16px;
-            right: 16px;
-            background: white;
-            border-radius: 16px;
-            padding: 16px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1001;
             display: none;
-            align-items: center;
-            gap: 12px;
-            z-index: 999;
-            border: 1px solid var(--gray-200);
-            animation: slideUp 0.4s ease-out;
+            padding: 20px;
+            animation: slideUp 0.5s ease-out;
         }
 
-        .install-mini-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
-            border-radius: 12px;
+        .ios-prompt-content {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            max-width: 360px;
+            margin: 0 auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+            position: relative;
+        }
+
+        .ios-prompt-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--gray-400);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-weight: 800;
-            font-size: 20px;
-            flex-shrink: 0;
+            border-radius: 50%;
         }
 
-        .install-mini-text {
-            flex: 1;
+        /* ============================================
+           UTILITAIRES
+           ============================================ */
+        .main-content {
+            min-height: calc(100vh - 56px);
+            padding-bottom: 100px;
         }
 
-        .install-mini-title {
-            font-weight: 600;
-            color: var(--gray-900);
-            font-size: 0.9375rem;
-            margin-bottom: 2px;
+        .page-content {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
         }
 
-        .install-mini-subtitle {
-            font-size: 0.8125rem;
-            color: var(--gray-500);
+        .page-content.loaded {
+            opacity: 1;
+            transform: translateY(0);
         }
 
-        .install-mini-btn {
-            background: var(--primary-600);
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        /* Bouton flottant installation PWA */
+        #pwa-install-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 16px;
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
             color: white;
             border: none;
-            padding: 10px 16px;
-            border-radius: 10px;
+            padding: 12px 20px;
+            border-radius: 50px;
             font-weight: 600;
             font-size: 0.875rem;
             cursor: pointer;
-            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
         }
 
-        .install-mini-btn:active {
+        #pwa-install-btn:active {
             transform: scale(0.95);
-            background: var(--primary-500);
-        }
-
-        .install-mini-close {
-            background: none;
-            border: none;
-            color: var(--gray-400);
-            font-size: 20px;
-            cursor: pointer;
-            padding: 4px;
         }
     </style>
 </head>
 
 <body>
-    <!-- Page Transition -->
-    <div id="page-transition" class="page-transition">
-        <div class="transition-spinner">
-            <svg viewBox="0 0 50 50">
-                <circle cx="25" cy="25" r="20" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round">
-                    <animate attributeName="stroke-dasharray" values="1,150;90,150;90,150" dur="1.5s"
-                        repeatCount="indefinite" />
-                    <animate attributeName="stroke-dashoffset" values="0;-35;-124" dur="1.5s"
-                        repeatCount="indefinite" />
-                </circle>
-            </svg>
-        </div>
-    </div>
-
     <!-- Offline Banner -->
     <div id="offline-banner" class="offline-banner hidden">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
@@ -906,25 +528,24 @@
         <span>Connexion interrompue - Mode hors ligne</span>
     </div>
 
-    <!-- Header Professionnel - Simplifié -->
+    <!-- Header -->
     <header class="mobile-header">
         <div class="mobile-header-content">
             <div class="mobile-header-brand">
                 <img src="{{ asset('images/logo.png') }}" alt="BHDM" class="brand-logo"
-                    onerror="this.style.display='none'; document.querySelector('.header-logo-fallback').style.display='flex'">
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                 <div class="header-logo-fallback">B</div>
                 <span class="mobile-header-title">@yield('header-title', 'Mon Espace')</span>
             </div>
 
             <div class="header-actions">
                 @auth
-                <!-- Bouton Déconnexion Unique -->
                 <button type="button" class="btn-logout-header" id="btn-logout-trigger" title="Se déconnecter">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    <span class="logout-label">Sortir</span>
+                    <span class="logout-label">Deconnecte</span>
                 </button>
                 @endauth
             </div>
@@ -954,7 +575,7 @@
             </div>
             @endif
 
-            <!-- Vue du Portefeuille - Intégration données réelles -->
+            <!-- Wallet Card -->
             @if(request()->routeIs('client.dashboard') && isset($financialSummary))
             <div class="wallet-card">
                 <div class="wallet-header">
@@ -987,70 +608,14 @@
                         <span class="wallet-stat-label">Taux de succès</span>
                     </div>
                 </div>
-
-                @if($financialSummary['has_wallet'] && $financialSummary['last_transaction'])
-                <div
-                    style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; opacity: 0.9;">
-                    <span>Dernière activité: {{ $financialSummary['last_transaction']['date'] }}</span>
-                    <span style="font-weight: 600;">
-                        {{ $financialSummary['last_transaction']['type'] === 'credit' ? '+' : '-' }}
-                        {{ $financialSummary['last_transaction']['formatted_amount'] }}
-                    </span>
-                </div>
-                @endif
             </div>
-
-            <!-- Alertes dynamiques -->
-            @if(isset($alerts) && count($alerts) > 0)
-            @foreach($alerts as $alert)
-            <div class="alert-premium {{ $alert['type'] }}">
-                <div class="alert-icon">
-                    @switch($alert['icon'])
-                    @case('document')
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    @break
-                    @case('draft')
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    @break
-                    @case('notification')
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                    @break
-                    @default
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    @endswitch
-                </div>
-                <div class="alert-content">
-                    <h4>{{ $alert['title'] }}</h4>
-                    <p>{{ $alert['message'] }}</p>
-                    <a href="{{ $alert['action_url'] }}" class="alert-action">
-                        {{ $alert['action_text'] }}
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </a>
-                </div>
-            </div>
-            @endforeach
-            @endif
             @endif
 
             @yield('content')
         </div>
     </main>
 
-    <!-- Navigation Mobile Professionnelle -->
+    <!-- Navigation Mobile -->
     @auth
     @if(!auth()->user()->is_admin && !auth()->user()->is_moderator)
     <nav class="mobile-nav">
@@ -1141,77 +706,17 @@
         </div>
     </div>
 
-    <!-- NOUVEAU: Prompt d'installation PWA Modernisé -->
-    <div id="pwa-install-prompt" class="pwa-install-prompt">
-        <div class="pwa-install-content">
-            <button class="pwa-install-close" id="pwa-install-close">&times;</button>
-
-            <div class="pwa-install-header">
-                <div class="pwa-install-icon">B</div>
-                <div>
-                    <div class="pwa-install-title">Installer BHDM</div>
-                    <div class="pwa-install-subtitle">Application mobile gratuite</div>
-                </div>
-            </div>
-
-            <div class="pwa-install-benefits">
-                <div class="pwa-benefit">
-                    <div class="pwa-benefit-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                    </div>
-                    <span>Accès rapide depuis l'écran d'accueil</span>
-                </div>
-                <div class="pwa-benefit">
-                    <div class="pwa-benefit-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                        </svg>
-                    </div>
-                    <span>Expérience optimisée mobile</span>
-                </div>
-                <div class="pwa-benefit">
-                    <div class="pwa-benefit-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
-                        </svg>
-                    </div>
-                    <span>Fonctionne hors ligne</span>
-                </div>
-            </div>
-
-            <div class="pwa-install-actions">
-                <button type="button" class="btn-later" id="btn-install-later">Plus tard</button>
-                <button type="button" class="btn-install" id="btn-install-now">
-                    <span>Installer maintenant</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Mini banner discret (alternative) -->
-    <div id="install-mini-banner" class="install-mini-banner">
-        <div class="install-mini-icon">B</div>
-        <div class="install-mini-text">
-            <div class="install-mini-title">Installer l'app BHDM</div>
-            <div class="install-mini-subtitle">Accès rapide & hors ligne</div>
-        </div>
-        <button class="install-mini-btn" id="mini-install-btn">Installer</button>
-        <button class="install-mini-close" id="mini-close-btn">&times;</button>
-    </div>
-
-    <!-- iOS Specific Prompt -->
-    <div id="ios-prompt" class="pwa-prompt-ios">
-        <div class="pwa-prompt-content-ios">
-            <button class="pwa-prompt-close" id="ios-prompt-close">&times;</button>
+    <!-- iOS Install Prompt -->
+    <div id="ios-prompt" class="ios-prompt">
+        <div class="ios-prompt-content">
+            <button class="ios-prompt-close" id="ios-prompt-close">&times;</button>
             <div style="text-align: center; margin-bottom: 20px;">
                 <div
                     style="width: 64px; height: 64px; background: linear-gradient(135deg, var(--primary-600), var(--primary-500)); border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 28px; font-weight: 800; margin-bottom: 16px;">
                     B</div>
-                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--gray-900); margin-bottom: 8px;">Installer
-                    BHDM</h3>
-                <p style="font-size: 0.875rem; color: var(--gray-500);">Ajoutez à l'écran d'accueil pour un accès instantané</p>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--gray-900); margin-bottom: 8px;">
+                    Installer BHDM</h3>
+                <p style="font-size: 0.875rem; color: var(--gray-500);">Ajoutez à l'écran d'accueil</p>
             </div>
             <div style="background: var(--gray-100); border-radius: 12px; padding: 16px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
@@ -1236,288 +741,8 @@
     </div>
 
     <!-- Scripts -->
-    <script>
-        // Variables globales PWA
-        let deferredPrompt = null;
-        let isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        let isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        let installPromptShown = false;
-
-        // Modal Déconnexion
-        function openLogoutModal() {
-            const modal = document.getElementById('logout-modal');
-            if (!modal) return;
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeLogoutModal() {
-            const modal = document.getElementById('logout-modal');
-            if (!modal) return;
-            modal.style.display = 'none';
-            document.body.style.overflow = '';
-        }
-
-        // PWA Installation Logic - AMÉLIORÉ
-        function initPWAInstall() {
-            // Ne rien faire si déjà installé
-            if (isStandalone) return;
-
-            const installPrompt = document.getElementById('pwa-install-prompt');
-            const miniBanner = document.getElementById('install-mini-banner');
-            const iosPrompt = document.getElementById('ios-prompt');
-
-            // Vérifier si l'utilisateur a déjà refusé récemment
-            const lastDismissed = localStorage.getItem('pwaPromptDismissed');
-            const dismissCount = parseInt(localStorage.getItem('pwaPromptDismissCount') || '0');
-
-            if (lastDismissed) {
-                const daysSince = (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60 * 24);
-                // Réafficher après 7 jours si déjà refusé, ou immédiatement si jamais montré
-                if (daysSince < 7) return;
-            }
-
-            // iOS Detection
-            if (isIos) {
-                setTimeout(() => {
-                    if (!localStorage.getItem('iosPromptDismissed')) {
-                        iosPrompt.style.display = 'flex';
-                        installPromptShown = true;
-                    }
-                }, 3000);
-                return;
-            }
-
-            // Android/Chrome - Attendre l'événement beforeinstallprompt
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-
-                // Montrer le prompt après 5 secondes ou au scroll
-                setTimeout(() => {
-                    if (!installPromptShown && !localStorage.getItem('pwaInstalled')) {
-                        showInstallPrompt();
-                    }
-                }, 5000);
-            });
-
-            // Alternative: montrer mini banner si pas d'événement after 10s
-            setTimeout(() => {
-                if (!deferredPrompt && !installPromptShown && !localStorage.getItem('pwaInstalled')) {
-                    showMiniBanner();
-                }
-            }, 10000);
-        }
-
-        function showInstallPrompt() {
-            const prompt = document.getElementById('pwa-install-prompt');
-            prompt.style.display = 'flex';
-            installPromptShown = true;
-
-            // Analytics
-            if (typeof gtag !== 'undefined') {
-                gtag('event', 'pwa_prompt_shown');
-            }
-        }
-
-        function showMiniBanner() {
-            const banner = document.getElementById('install-mini-banner');
-            banner.style.display = 'flex';
-        }
-
-        async function installPWA() {
-            if (!deferredPrompt) {
-                // Fallback: ouvrir les instructions
-                showIOSInstructions();
-                return;
-            }
-
-            const btn = document.getElementById('btn-install-now');
-            btn.disabled = true;
-            btn.innerHTML = '<span>Installation...</span>';
-
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-
-            if (outcome === 'accepted') {
-                localStorage.setItem('pwaInstalled', 'true');
-                hideInstallPrompt();
-
-                // Analytics
-                if (typeof gtag !== 'undefined') {
-                    gtag('event', 'pwa_installed');
-                }
-            } else {
-                btn.disabled = false;
-                btn.innerHTML = '<span>Réessayer</span>';
-                dismissInstallPrompt();
-            }
-
-            deferredPrompt = null;
-        }
-
-        function dismissInstallPrompt() {
-            localStorage.setItem('pwaPromptDismissed', Date.now().toString());
-            const count = parseInt(localStorage.getItem('pwaPromptDismissCount') || '0');
-            localStorage.setItem('pwaPromptDismissCount', (count + 1).toString());
-            hideInstallPrompt();
-        }
-
-        function hideInstallPrompt() {
-            const prompt = document.getElementById('pwa-install-prompt');
-            const miniBanner = document.getElementById('install-mini-banner');
-            if (prompt) prompt.style.display = 'none';
-            if (miniBanner) miniBanner.style.display = 'none';
-        }
-
-        function hideIosPrompt() {
-            const prompt = document.getElementById('ios-prompt');
-            if (prompt) {
-                prompt.style.display = 'none';
-                localStorage.setItem('iosPromptDismissed', 'true');
-            }
-        }
-
-        // Transitions
-        function navigateWithTransition(url) {
-            const transition = document.getElementById('page-transition');
-            const pageContent = document.getElementById('page-content');
-            if (transition) transition.classList.add('active');
-            if (pageContent) {
-                pageContent.classList.remove('loaded');
-                pageContent.style.opacity = '0';
-                pageContent.style.transform = 'translateX(-20px)';
-            }
-            setTimeout(() => window.location.href = url, 300);
-        }
-
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            // Masquer loader
-            setTimeout(() => {
-                const transition = document.getElementById('page-transition');
-                if (transition) transition.classList.remove('active');
-            }, 300);
-
-            // Animer contenu
-            const pageContent = document.getElementById('page-content');
-            if (pageContent) {
-                setTimeout(() => pageContent.classList.add('loaded'), 100);
-            }
-
-            // Bouton déconnexion
-            const logoutTrigger = document.getElementById('btn-logout-trigger');
-            if (logoutTrigger) {
-                logoutTrigger.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openLogoutModal();
-                });
-            }
-
-            // Fermeture modal
-            const cancelBtn = document.getElementById('btn-cancel-logout');
-            const modalOverlay = document.querySelector('.modal-overlay');
-            if (cancelBtn) cancelBtn.addEventListener('click', closeLogoutModal);
-            if (modalOverlay) modalOverlay.addEventListener('click', closeLogoutModal);
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') closeLogoutModal();
-            });
-
-            // Soumission formulaire logout
-            const logoutForm = document.getElementById('logout-form');
-            const confirmBtn = document.getElementById('btn-confirm-logout');
-            if (logoutForm && confirmBtn) {
-                logoutForm.addEventListener('submit', function() {
-                    confirmBtn.disabled = true;
-                    const btnText = confirmBtn.querySelector('.btn-text');
-                    const btnLoader = confirmBtn.querySelector('.btn-loader');
-                    if (btnText) btnText.style.display = 'none';
-                    if (btnLoader) btnLoader.style.display = 'inline-flex';
-                    const transition = document.getElementById('page-transition');
-                    if (transition) transition.classList.add('active');
-                });
-            }
-
-            // Navigation transitions
-            document.querySelectorAll('.mobile-nav-item').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    const href = this.getAttribute('href');
-                    if (href && !this.classList.contains('active')) {
-                        e.preventDefault();
-                        navigateWithTransition(href);
-                    }
-                });
-            });
-
-            // PWA Install Events
-            initPWAInstall();
-
-            // Boutons d'installation
-            const installBtn = document.getElementById('btn-install-now');
-            if (installBtn) installBtn.addEventListener('click', installPWA);
-
-            const installLater = document.getElementById('btn-install-later');
-            if (installLater) installLater.addEventListener('click', dismissInstallPrompt);
-
-            const installClose = document.getElementById('pwa-install-close');
-            if (installClose) installClose.addEventListener('click', dismissInstallPrompt);
-
-            // Mini banner events
-            const miniInstall = document.getElementById('mini-install-btn');
-            if (miniInstall) miniInstall.addEventListener('click', installPWA);
-
-            const miniClose = document.getElementById('mini-close-btn');
-            if (miniClose) miniClose.addEventListener('click', () => {
-                document.getElementById('install-mini-banner').style.display = 'none';
-                dismissInstallPrompt();
-            });
-
-            // iOS prompt events
-            const iosClose = document.getElementById('ios-prompt-close');
-            if (iosClose) iosClose.addEventListener('click', hideIosPrompt);
-
-            // Offline detection
-            const offlineBanner = document.getElementById('offline-banner');
-            function updateOnlineStatus() {
-                if (offlineBanner) {
-                    navigator.onLine ? offlineBanner.classList.add('hidden') : offlineBanner.classList.remove('hidden');
-                }
-            }
-            window.addEventListener('online', updateOnlineStatus);
-            window.addEventListener('offline', updateOnlineStatus);
-            updateOnlineStatus();
-
-            // Détection installation réussie
-            window.addEventListener('appinstalled', () => {
-                deferredPrompt = null;
-                localStorage.setItem('pwaInstalled', 'true');
-                hideInstallPrompt();
-                hideIosPrompt();
-
-                // Message de confirmation
-                if (typeof showToast === 'function') {
-                    showToast('BHDM installé avec succès !', 'success');
-                }
-            });
-        });
-
-        // Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => {
-                        console.log('SW registered:', registration);
-                    })
-                    .catch(error => {
-                        console.log('SW registration failed:', error);
-                    });
-            });
-        }
-    </script>
-
     <script src="{{ asset('js/app.js') }}"></script>
+
     @yield('scripts')
 </body>
 

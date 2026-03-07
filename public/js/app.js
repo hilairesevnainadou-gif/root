@@ -2,67 +2,208 @@
 // BHDM App - JavaScript Principal
 // ============================================
 
+// Variables globales PWA (déclarées UNE SEULE FOIS ici)
+let deferredPrompt = null;
+let isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+let isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('[BHDM] App initializing...');
 
-  // Initialiser la PWA
-  initPWA();
+    // Initialiser la PWA
+    initPWA();
 
-  // Navigation mobile
-  initMobileNav();
+    // Navigation mobile
+    initMobileNav();
 
-  // Gestion hors ligne
-  initOfflineDetection();
+    // Gestion hors ligne
+    initOfflineDetection();
 
-  // Flash messages auto-hide
-  initFlashMessages();
+    // Flash messages auto-hide
+    initFlashMessages();
 
-  // Confirmations
-  initConfirmations();
+    // Confirmations
+    initConfirmations();
 
-  // Loading states
-  initLoadingStates();
+    // Loading states
+    initLoadingStates();
 
-  // Déconnexion
-  initLogout();
+    // Déconnexion
+    initLogout();
+
+    // Installation PWA
+    initInstallPrompts();
+
+    console.log('[BHDM] App initialized');
 });
 
 // ============================================
 // PWA - Service Worker & Install Prompts
 // ============================================
 
-let deferredPrompt = null;
-
 function initPWA() {
-  // Enregistrer le Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('SW registered:', registration);
-      })
-      .catch((error) => {
-        console.log('SW registration failed:', error);
-      });
-  }
+    // Enregistrer le Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+                console.log('[BHDM] SW registered:', registration.scope);
 
-  // Capturer l'événement beforeinstallprompt
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    console.log('beforeinstallprompt captured');
-  });
+                // Mise à jour du SW
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showUpdateNotification();
+                        }
+                    });
+                });
+            })
+            .catch((error) => {
+                console.error('[BHDM] SW registration failed:', error);
+            });
+    }
 
-  // Masquer les prompts si déjà installé
-  window.addEventListener('appinstalled', () => {
+    // Capturer l'événement beforeinstallprompt (Chrome/Android)
+    window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('[BHDM] beforeinstallprompt captured');
+        e.preventDefault();
+        deferredPrompt = e;
+
+        // Afficher le bouton d'installation si disponible
+        showInstallButton();
+    });
+
+    // Détecter si déjà installé
+    window.addEventListener('appinstalled', () => {
+        console.log('[BHDM] App installed');
+        deferredPrompt = null;
+        hideAllInstallPrompts();
+        showToast('Application installée avec succès !', 'success');
+        localStorage.setItem('pwaInstalled', 'true');
+    });
+}
+
+function initInstallPrompts() {
+    // Ne rien faire si déjà installé
+    if (isStandalone || localStorage.getItem('pwaInstalled') === 'true') {
+        hideAllInstallPrompts();
+        return;
+    }
+
+    // iOS: Afficher instructions après 3 secondes
+    if (isIos) {
+        const iosPromptDismissed = localStorage.getItem('iosPromptDismissed');
+        if (!iosPromptDismissed) {
+            setTimeout(() => {
+                showIosPrompt();
+            }, 3000);
+        }
+        return;
+    }
+
+    // Android/Chrome: Afficher si deferredPrompt disponible
+    if (deferredPrompt) {
+        showInstallButton();
+    }
+}
+
+function showInstallButton() {
+    // Créer un bouton flottant d'installation si non existant
+    if (document.getElementById('pwa-install-btn')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'pwa-install-btn';
+    btn.innerHTML = `
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        <span>Installer l'app</span>
+    `;
+    btn.style.cssText = `
+        position: fixed;
+        bottom: 100px;
+        right: 16px;
+        background: linear-gradient(135deg, #1e40af, #3b82f6);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    `;
+
+    btn.addEventListener('click', installPWA);
+    document.body.appendChild(btn);
+}
+
+async function installPWA() {
+    if (!deferredPrompt) {
+        showToast('Installation non disponible sur cet appareil', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('pwa-install-btn');
+    if (btn) {
+        btn.innerHTML = '<span>Installation...</span>';
+        btn.disabled = true;
+    }
+
+    deferredPrompt.prompt();
+
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('[BHDM] Install outcome:', outcome);
+
+    if (outcome === 'accepted') {
+        showToast('Installation en cours...', 'success');
+        hideAllInstallPrompts();
+    } else {
+        showToast('Installation annulée', 'info');
+        if (btn) {
+            btn.innerHTML = `
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                <span>Installer l'app</span>
+            `;
+            btn.disabled = false;
+        }
+    }
+
     deferredPrompt = null;
-    hideAllInstallPrompts();
-    showToast('Application installée avec succès !', 'success');
-  });
+}
 
-  // Détecter si déjà en mode standalone
-  if (window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator.standalone === true)) {
-    hideAllInstallPrompts();
-  }
+function showIosPrompt() {
+    const modal = document.getElementById('ios-prompt');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function hideIosPrompt() {
+    const modal = document.getElementById('ios-prompt');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    localStorage.setItem('iosPromptDismissed', 'true');
+}
+
+function hideAllInstallPrompts() {
+    const btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.remove();
+
+    const iosModal = document.getElementById('ios-prompt');
+    if (iosModal) iosModal.style.display = 'none';
+}
+
+function showUpdateNotification() {
+    showToast('Nouvelle version disponible ! Rafraîchissez la page.', 'info', 0);
 }
 
 // ============================================
@@ -70,31 +211,29 @@ function initPWA() {
 // ============================================
 
 function initMobileNav() {
-  // Gestion du menu hamburger si présent (admin)
-  const menuToggle = document.querySelector('.menu-toggle');
-  const sidebar = document.querySelector('.admin-sidebar');
+    const menuToggle = document.querySelector('.menu-toggle');
+    const sidebar = document.querySelector('.admin-sidebar');
 
-  if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-    });
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
 
-    // Fermer en cliquant à l'extérieur
-    document.addEventListener('click', (e) => {
-      if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-        sidebar.classList.remove('open');
-      }
-    });
-  }
-
-  // Active state sur la nav mobile
-  const currentPath = window.location.pathname;
-  document.querySelectorAll('.mobile-nav-item, .admin-nav-item').forEach(item => {
-    const href = item.getAttribute('href');
-    if (href && currentPath.includes(href)) {
-      item.classList.add('active');
+        document.addEventListener('click', (e) => {
+            if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
     }
-  });
+
+    // Active state
+    const currentPath = window.location.pathname;
+    document.querySelectorAll('.mobile-nav-item, .admin-nav-item').forEach(item => {
+        const href = item.getAttribute('href');
+        if (href && currentPath.includes(href)) {
+            item.classList.add('active');
+        }
+    });
 }
 
 // ============================================
@@ -102,29 +241,53 @@ function initMobileNav() {
 // ============================================
 
 function initLogout() {
-  const logoutBtn = document.querySelector('.btn-logout');
-  const logoutForm = document.querySelector('.logout-form');
+    const logoutBtn = document.getElementById('btn-logout-trigger');
+    const logoutForm = document.getElementById('logout-form');
+    const cancelBtn = document.getElementById('btn-cancel-logout');
+    const modalOverlay = document.querySelector('.modal-overlay');
 
-  if (logoutBtn && logoutForm) {
-    logoutBtn.addEventListener('click', function(e) {
-      e.preventDefault();
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openLogoutModal();
+        });
+    }
 
-      if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
-        // Animation de déconnexion
-        logoutBtn.innerHTML = `
-          <svg class="animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        `;
+    if (cancelBtn) cancelBtn.addEventListener('click', closeLogoutModal);
+    if (modalOverlay) modalOverlay.addEventListener('click', closeLogoutModal);
 
-        // Soumettre le formulaire après un court délai
-        setTimeout(() => {
-          logoutForm.submit();
-        }, 300);
-      }
+    if (logoutForm) {
+        logoutForm.addEventListener('submit', () => {
+            const confirmBtn = document.getElementById('btn-confirm-logout');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                const btnText = confirmBtn.querySelector('.btn-text');
+                const btnLoader = confirmBtn.querySelector('.btn-loader');
+                if (btnText) btnText.style.display = 'none';
+                if (btnLoader) btnLoader.style.display = 'inline-flex';
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeLogoutModal();
     });
-  }
+}
+
+function openLogoutModal() {
+    const modal = document.getElementById('logout-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeLogoutModal() {
+    const modal = document.getElementById('logout-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
 }
 
 // ============================================
@@ -132,34 +295,30 @@ function initLogout() {
 // ============================================
 
 function initOfflineDetection() {
-  // Le banner est maintenant dans le HTML, juste le gérer ici
-  const offlineBanner = document.getElementById('offline-banner');
+    const offlineBanner = document.getElementById('offline-banner');
+    if (!offlineBanner) return;
 
-  if (!offlineBanner) return;
-
-  function updateOnlineStatus() {
-    if (navigator.onLine) {
-      offlineBanner.classList.add('hidden');
-      document.body.classList.remove('offline');
-    } else {
-      offlineBanner.classList.remove('hidden');
-      document.body.classList.add('offline');
+    function updateStatus() {
+        if (navigator.onLine) {
+            offlineBanner.classList.add('hidden');
+            document.body.classList.remove('offline');
+        } else {
+            offlineBanner.classList.remove('hidden');
+            document.body.classList.add('offline');
+        }
     }
-  }
 
-  // État initial
-  updateOnlineStatus();
+    updateStatus();
 
-  window.addEventListener('online', () => {
-    updateOnlineStatus();
-    showToast('Connexion rétablie', 'success');
-    syncOfflineData();
-  });
+    window.addEventListener('online', () => {
+        updateStatus();
+        showToast('Connexion rétablie', 'success');
+    });
 
-  window.addEventListener('offline', () => {
-    updateOnlineStatus();
-    showToast('Vous êtes hors ligne', 'warning');
-  });
+    window.addEventListener('offline', () => {
+        updateStatus();
+        showToast('Vous êtes hors ligne', 'warning');
+    });
 }
 
 // ============================================
@@ -167,27 +326,21 @@ function initOfflineDetection() {
 // ============================================
 
 function initFlashMessages() {
-  const alerts = document.querySelectorAll('.alert');
+    document.querySelectorAll('.alert').forEach(alert => {
+        setTimeout(() => hideAlert(alert), 5000);
 
-  alerts.forEach(alert => {
-    // Auto-hide après 5 secondes
-    setTimeout(() => {
-      hideAlert(alert);
-    }, 5000);
-
-    // Bouton fermeture manuelle
-    const closeBtn = alert.querySelector('.alert-close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => hideAlert(alert));
-    }
-  });
+        const closeBtn = alert.querySelector('.alert-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => hideAlert(alert));
+        }
+    });
 }
 
 function hideAlert(alert) {
-  alert.style.opacity = '0';
-  alert.style.transform = 'translateY(-10px)';
-  alert.style.transition = 'all 0.3s ease';
-  setTimeout(() => alert.remove(), 300);
+    alert.style.opacity = '0';
+    alert.style.transform = 'translateY(-10px)';
+    alert.style.transition = 'all 0.3s ease';
+    setTimeout(() => alert.remove(), 300);
 }
 
 // ============================================
@@ -195,15 +348,15 @@ function hideAlert(alert) {
 // ============================================
 
 function initConfirmations() {
-  document.querySelectorAll('[data-confirm]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const message = btn.dataset.confirm || 'Êtes-vous sûr ?';
-      if (!confirm(message)) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+    document.querySelectorAll('[data-confirm]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const message = btn.dataset.confirm || 'Êtes-vous sûr ?';
+            if (!confirm(message)) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        });
     });
-  });
 }
 
 // ============================================
@@ -211,317 +364,121 @@ function initConfirmations() {
 // ============================================
 
 function initLoadingStates() {
-  document.querySelectorAll('form').forEach(form => {
-    form.addEventListener('submit', (e) => {
-      const submitBtn = form.querySelector('[type="submit"]');
-      if (submitBtn && !submitBtn.disabled) {
-        submitBtn.disabled = true;
-        submitBtn.dataset.originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = `
-          <svg class="animate-spin" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 8px;" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          Chargement...
-        `;
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', (e) => {
+            const submitBtn = form.querySelector('[type="submit"]');
+            if (submitBtn && !submitBtn.disabled) {
+                submitBtn.disabled = true;
+                submitBtn.dataset.originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = `
+                    <svg class="animate-spin" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 8px;" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Chargement...
+                `;
 
-        // Réactiver après 10s en cas d'erreur
-        setTimeout(() => {
-          if (submitBtn.disabled) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = submitBtn.dataset.originalText;
-          }
-        }, 10000);
-      }
+                setTimeout(() => {
+                    if (submitBtn.disabled) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = submitBtn.dataset.originalText;
+                    }
+                }, 10000);
+            }
+        });
     });
-  });
 }
 
 // ============================================
-// Gestion des Prompts PWA
-// ============================================
-
-function showIosPrompt() {
-  const prompt = document.getElementById('ios-install-prompt');
-  if (prompt) {
-    prompt.classList.add('active');
-  }
-}
-
-function hideIosPrompt() {
-  const prompt = document.getElementById('ios-install-prompt');
-  if (prompt) {
-    prompt.classList.remove('active');
-  }
-  localStorage.setItem('iosPromptDismissed', 'true');
-}
-
-function showAndroidPrompt() {
-  const prompt = document.getElementById('pwa-install-prompt');
-  if (prompt && deferredPrompt) {
-    prompt.classList.add('active');
-  }
-}
-
-function hideAndroidPrompt() {
-  const prompt = document.getElementById('pwa-install-prompt');
-  if (prompt) {
-    prompt.classList.remove('active');
-  }
-  localStorage.setItem('pwaPromptDismissed', 'true');
-}
-
-function hideAllInstallPrompts() {
-  hideIosPrompt();
-  hideAndroidPrompt();
-}
-
-async function installPWA() {
-  if (!deferredPrompt) {
-    showToast('Installation non disponible', 'error');
-    return;
-  }
-
-  deferredPrompt.prompt();
-
-  const { outcome } = await deferredPrompt.userChoice;
-
-  if (outcome === 'accepted') {
-    showToast('Installation en cours...', 'success');
-  } else {
-    showToast('Installation annulée', 'info');
-  }
-
-  deferredPrompt = null;
-  hideAndroidPrompt();
-}
-
-// ============================================
-// Synchronisation Offline
-// ============================================
-
-async function syncOfflineData() {
-  const queue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
-  if (queue.length === 0) return;
-
-  showToast('Synchronisation en cours...', 'info');
-
-  const newQueue = [];
-
-  for (const item of queue) {
-    try {
-      const response = await fetch(item.url, {
-        ...item.options,
-        headers: {
-          ...item.options.headers,
-          'X-Sync-Request': 'true'
-        }
-      });
-
-      if (!response.ok) throw new Error('Sync failed');
-    } catch (e) {
-      // Garder dans la queue si échec
-      newQueue.push(item);
-    }
-  }
-
-  if (newQueue.length === 0) {
-    localStorage.removeItem('syncQueue');
-    showToast('Données synchronisées !', 'success');
-  } else {
-    localStorage.setItem('syncQueue', JSON.stringify(newQueue));
-    showToast(`${newQueue.length} éléments en attente`, 'warning');
-  }
-}
-
-function queueForSync(url, options) {
-  const queue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
-  queue.push({
-    url,
-    options,
-    timestamp: Date.now(),
-    retries: 0
-  });
-  localStorage.setItem('syncQueue', JSON.stringify(queue));
-  showToast('Action enregistrée pour synchronisation', 'info');
-}
-
-// ============================================
-// Utilitaires
+// Toast Notifications
 // ============================================
 
 function showToast(message, type = 'info', duration = 3000) {
-  // Supprimer les toasts existants
-  const existingToasts = document.querySelectorAll('.toast');
-  existingToasts.forEach(t => t.remove());
+    document.querySelectorAll('.toast').forEach(t => t.remove());
 
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
 
-  const icons = {
-    success: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>',
-    error: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>',
-    warning: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>',
-    info: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'
-  };
-
-  toast.innerHTML = `
-    <svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      ${icons[type] || icons.info}
-    </svg>
-    <span>${message}</span>
-  `;
-
-  document.body.appendChild(toast);
-
-  // Animation d'entrée
-  requestAnimationFrame(() => {
-    toast.classList.add('show');
-  });
-
-  // Auto-hide
-  if (duration > 0) {
-    setTimeout(() => {
-      toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 300);
-    }, duration);
-  }
-
-  return toast;
-}
-
-// Formatage montant
-function formatCurrency(amount, currency = 'XOF') {
-  if (typeof amount !== 'number') amount = parseFloat(amount) || 0;
-
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount);
-}
-
-// Formatage date
-function formatDate(dateString, options = {}) {
-  if (!dateString) return '-';
-
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
-
-  const defaultOptions = {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    ...options
-  };
-
-  return new Intl.DateTimeFormat('fr-FR', defaultOptions).format(date);
-}
-
-// Formatage relatif (il y a X minutes)
-function formatRelativeTime(dateString) {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now - date) / 1000);
-
-  if (diffInSeconds < 60) return 'À l\'instant';
-  if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)} min`;
-  if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)} h`;
-  if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)} j`;
-
-  return formatDate(dateString);
-}
-
-// Debounce
-function debounce(func, wait = 300) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
+    const icons = {
+        success: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>',
+        error: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>',
+        warning: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>',
+        info: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'
     };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
 
-// Throttle
-function throttle(func, limit = 300) {
-  let inThrottle;
-  return function(...args) {
-    if (!inThrottle) {
-      func.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
-    }
-  };
-}
+    toast.innerHTML = `
+        <svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            ${icons[type] || icons.info}
+        </svg>
+        <span>${message}</span>
+    `;
 
-// Requête API avec gestion offline
-async function apiRequest(url, options = {}) {
-  const defaultOptions = {
-    headers: {
-      'X-Requested-With': 'XMLHttpRequest',
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      ...options.headers
-    }
-  };
+    // Styles CSS inline pour le toast
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-100px);
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        z-index: 10000;
+        transition: transform 0.3s ease;
+    `;
 
-  try {
-    const response = await fetch(url, { ...defaultOptions, ...options });
+    document.body.appendChild(toast);
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
-    }
+    requestAnimationFrame(() => {
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+    });
 
-    return await response.json();
-  } catch (error) {
-    if (!navigator.onLine) {
-      // Stocker pour sync ultérieure si c'est une mutation
-      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
-        queueForSync(url, { ...defaultOptions, ...options });
-        return { offline: true, queued: true, message: 'Enregistré pour synchronisation' };
-      }
+    if (duration > 0) {
+        setTimeout(() => {
+            toast.style.transform = 'translateX(-50%) translateY(-100px)';
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
     }
 
-    showToast(error.message || 'Erreur de connexion', 'error');
-    throw error;
-  }
+    return toast;
 }
 
-// Copier dans le presse-papiers
-async function copyToClipboard(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    showToast('Copié !', 'success');
-  } catch (err) {
-    // Fallback
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-    showToast('Copié !', 'success');
-  }
-}
+// ============================================
+// Utilitaires Globaux
+// ============================================
 
-// Export pour utilisation globale
 window.BHDM = {
-  showToast,
-  formatCurrency,
-  formatDate,
-  formatRelativeTime,
-  apiRequest,
-  copyToClipboard,
-  debounce,
-  throttle,
-  installPWA,
-  showIosPrompt,
-  hideIosPrompt,
-  showAndroidPrompt,
-  hideAndroidPrompt
+    showToast,
+    formatCurrency: (amount, currency = 'XOF') => {
+        return new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 0
+        }).format(amount || 0);
+    },
+    formatDate: (dateString) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return isNaN(date.getTime()) ? dateString :
+            new Intl.DateTimeFormat('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            }).format(date);
+    },
+    debounce: (func, wait = 300) => {
+        let timeout;
+        return (...args) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func(...args), wait);
+        };
+    },
+    installPWA,
+    showIosPrompt,
+    hideIosPrompt
 };

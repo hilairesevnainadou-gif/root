@@ -1,24 +1,23 @@
-const CACHE_NAME = 'bhdm-v1';
+const CACHE_NAME = 'bhdm-v2';
 const STATIC_ASSETS = [
     '/',
     '/login',
-    '/register',
     '/css/app.css',
     '/css/mobile.css',
     '/css/pwa.css',
+    '/css/transitions.css',
     '/js/app.js',
-    '/js/mobile-nav.js',
-    '/js/offline.js',
-    '/js/pwa-utils.js',
     '/icons/icon-192x192.png',
-    '/icons/icon-512x512.png'
+    '/icons/icon-512x512.png',
+    '/images/logo.png'
 ];
 
 // Installation avec gestion d'erreurs
 self.addEventListener('install', (event) => {
+    console.log('[SW] Installing...');
+
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            // Cache chaque fichier individuellement pour éviter que tout échoue
             return Promise.all(
                 STATIC_ASSETS.map(url => {
                     return fetch(url, { mode: 'no-cors' })
@@ -26,68 +25,110 @@ self.addEventListener('install', (event) => {
                             if (response.ok || response.type === 'opaque') {
                                 return cache.put(url, response);
                             }
-                            console.warn('Failed to cache:', url);
-                            return Promise.resolve(); // Continue même si échec
+                            console.warn('[SW] Failed to cache:', url);
+                            return Promise.resolve();
                         })
                         .catch(err => {
-                            console.warn('Error caching', url, ':', err);
-                            return Promise.resolve(); // Continue
+                            console.warn('[SW] Error caching', url, ':', err);
+                            return Promise.resolve();
                         });
                 })
             );
+        }).then(() => {
+            console.log('[SW] Install completed');
+            self.skipWaiting();
         })
     );
-    self.skipWaiting();
 });
 
-// Activation
+// Activation - Nettoyage des anciens caches
 self.addEventListener('activate', (event) => {
+    console.log('[SW] Activating...');
+
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames
                     .filter((name) => name !== CACHE_NAME)
-                    .map((name) => caches.delete(name))
+                    .map((name) => {
+                        console.log('[SW] Deleting old cache:', name);
+                        return caches.delete(name);
+                    })
             );
+        }).then(() => {
+            console.log('[SW] Activation completed');
+            return self.clients.claim();
         })
     );
-    self.clients.claim();
 });
 
-// Fetch avec fallback
+// Fetch avec stratégie Network First
 self.addEventListener('fetch', (event) => {
     const { request } = event;
 
-    // Ne pas intercepter les requêtes non-GET
-    if (request.method !== 'GET') {
+    // Ignorer les requêtes non-GET et les chrome-extensions
+    if (request.method !== 'GET' || request.url.startsWith('chrome-extension://')) {
         return;
     }
 
-    // Stratégie: Network first, puis cache
-    event.respondWith(
-        fetch(request)
-            .then(response => {
-                // Mettre en cache les réponses réussies
-                if (response.ok) {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(request, clone);
-                    });
-                }
-                return response;
-            })
-            .catch(() => {
-                // Fallback sur le cache
-                return caches.match(request).then(cached => {
-                    if (cached) {
-                        return cached;
-                    }
-                    // Fallback pour les pages HTML
-                    if (request.mode === 'navigate') {
-                        return caches.match('/login');
-                    }
-                    return new Response('Offline', { status: 503 });
-                });
-            })
-    );
+    // Stratégie différente selon le type de requête
+    if (request.destination === 'image' || request.destination === 'style' || request.destination === 'script') {
+        // Cache First pour les assets statiques
+        event.respondWith(cacheFirst(request));
+    } else {
+        // Network First pour les pages et API
+        event.respondWith(networkFirst(request));
+    }
+});
+
+async function cacheFirst(request) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+
+    try {
+        const response = await fetch(request);
+        if (response.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(request, response.clone());
+        }
+        return response;
+    } catch (error) {
+        console.error('[SW] Cache first failed:', error);
+        return new Response('Offline', { status: 503 });
+    }
+}
+
+async function networkFirst(request) {
+    try {
+        const networkResponse = await fetch(request);
+        if (networkResponse.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(request, networkResponse.clone());
+        }
+        return networkResponse;
+    } catch (error) {
+        console.log('[SW] Network failed, trying cache:', request.url);
+        const cached = await caches.match(request);
+
+        if (cached) {
+            return cached;
+        }
+
+        // Fallback pour navigation
+        if (request.mode === 'navigate') {
+            return caches.match('/login');
+        }
+
+        return new Response('Vous êtes hors ligne', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain' }
+        });
+    }
+}
+
+// Gestion des messages depuis la page
+self.addEventListener('message', (event) => {
+    if (event.data === 'skipWaiting') {
+        self.skipWaiting();
+    }
 });
