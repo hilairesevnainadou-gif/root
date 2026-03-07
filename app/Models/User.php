@@ -57,11 +57,19 @@ class User extends Authenticatable
     ];
 
     /**
-     * Entreprise de l'utilisateur
+     * Toutes les entreprises de l'utilisateur (peut en avoir plusieurs)
+     */
+    public function companies(): HasMany
+    {
+        return $this->hasMany(Company::class);
+    }
+
+    /**
+     * Première entreprise (compatibilité legacy)
      */
     public function company(): HasOne
     {
-        return $this->hasOne(Company::class);
+        return $this->hasOne(Company::class)->latest();
     }
 
     /**

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateFundingRequestRequest;
+use App\Models\Company;
 use App\Models\FundingRequest;
 use App\Models\TypeFinancement;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +20,7 @@ class FundingRequestController extends Controller
     public function index(Request $request): View
     {
         $userId = auth()->id();
-        
+
         $query = FundingRequest::with(['typeFinancement', 'transactions'])
             ->where('user_id', $userId);
 
@@ -51,56 +52,56 @@ class FundingRequestController extends Controller
     }
 
     /**
- * Affiche la page de paiement pour une demande existante
- */
-public function payment(FundingRequest $fundingRequest): View|RedirectResponse
-{
-    // Vérification propriétaire
-    if ($fundingRequest->user_id !== auth()->id()) {
-        abort(403, 'Accès non autorisé.');
+     * Affiche la page de paiement pour une demande existante
+     */
+    public function payment(FundingRequest $fundingRequest): View|RedirectResponse
+    {
+        // Vérification propriétaire
+        if ($fundingRequest->user_id !== auth()->id()) {
+            abort(403, 'Accès non autorisé.');
+        }
+
+        // Vérifier que la demande est en brouillon avec paiement en attente
+        if ($fundingRequest->status !== 'draft' || $fundingRequest->payment_status !== 'pending') {
+            return redirect()
+                ->route('client.requests.show', $fundingRequest)
+                ->with('info', 'Cette demande ne nécessite pas de paiement.');
+        }
+
+        $fundingRequest->load('typeFinancement');
+
+        // UNIQUEMENT les frais d'inscription initiaux à payer maintenant
+        $fees = [
+            'registration' => $fundingRequest->typeFinancement->registration_fee,  // À payer maintenant
+            'final' => $fundingRequest->typeFinancement->registration_final_fee,      // À payer plus tard
+            'current' => $fundingRequest->typeFinancement->registration_fee,        // Montant du paiement actuel
+        ];
+
+        return view('client.requests.payment', compact('fundingRequest', 'fees'));
     }
 
-    // Vérifier que la demande est en brouillon avec paiement en attente
-    if ($fundingRequest->status !== 'draft' || $fundingRequest->payment_status !== 'pending') {
+    /**
+     * Annule une demande en brouillon (suppression)
+     */
+    public function destroy(FundingRequest $fundingRequest): RedirectResponse
+    {
+        // Vérifier que l'utilisateur est propriétaire
+        if ($fundingRequest->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Vérifier que la demande est bien en draft
+        if ($fundingRequest->status !== 'draft') {
+            return back()->with('error', 'Seules les demandes en brouillon peuvent être annulées.');
+        }
+
+        // Supprimer la demande
+        $fundingRequest->delete();
+
         return redirect()
-            ->route('client.requests.show', $fundingRequest)
-            ->with('info', 'Cette demande ne nécessite pas de paiement.');
+            ->route('client.requests.index')
+            ->with('success', 'Demande annulée avec succès.');
     }
-
-    $fundingRequest->load('typeFinancement');
-
-    // UNIQUEMENT les frais d'inscription initiaux à payer maintenant
-    $fees = [
-        'registration' => $fundingRequest->typeFinancement->registration_fee,  // À payer maintenant
-        'final' => $fundingRequest->typeFinancement->registration_final_fee,      // À payer plus tard
-        'current' => $fundingRequest->typeFinancement->registration_fee,        // Montant du paiement actuel
-    ];
-
-    return view('client.requests.payment', compact('fundingRequest', 'fees'));
-}
-
-/**
- * Annule une demande en brouillon (suppression)
- */
-public function destroy(FundingRequest $fundingRequest): RedirectResponse
-{
-    // Vérifier que l'utilisateur est propriétaire
-    if ($fundingRequest->user_id !== auth()->id()) {
-        abort(403);
-    }
-
-    // Vérifier que la demande est bien en draft
-    if ($fundingRequest->status !== 'draft') {
-        return back()->with('error', 'Seules les demandes en brouillon peuvent être annulées.');
-    }
-
-    // Supprimer la demande
-    $fundingRequest->delete();
-
-    return redirect()
-        ->route('client.requests.index')
-        ->with('success', 'Demande annulée avec succès.');
-}
 
     public function create(Request $request): View
     {
@@ -117,19 +118,31 @@ public function destroy(FundingRequest $fundingRequest): RedirectResponse
             }
         }
 
+        // Récupérer tous les types de financement actifs
         $availableTypes = TypeFinancement::where('is_active', true)
+            ->orderBy('typeusers')
             ->orderBy('name')
+            ->get();
+
+        // Récupérer les entreprises de l'utilisateur (vide si aucune)
+        $userCompanies = auth()->user()->companies()
+            ->select('id', 'company_name', 'company_type', 'sector', 'job_title', 'employees_count')
             ->get();
 
         return view('client.requests.create', compact(
             'availableTypes',
             'preselectedType',
-            'isPreselected'
+            'isPreselected',
+            'userCompanies'
         ));
     }
 
     /**
      * Store - Création AJAX pour le paiement
+     */
+    /**
+     * Store - Création AJAX pour le paiement
+     * Permet plusieurs demandes du même type de financement
      */
     public function store(Request $request): JsonResponse
     {
@@ -139,23 +152,95 @@ public function destroy(FundingRequest $fundingRequest): RedirectResponse
             'amount_requested' => 'required|numeric|min:1000',
             'duration' => 'required|integer|min:1',
             'description' => 'nullable|string|max:500',
+            'financement_type' => 'required|in:particulier,entreprise',
+            'company_id' => 'nullable|exists:companies,id',
+            // Champs pour nouvelle entreprise
+            'new_company.name' => 'required_if:company_id,null|nullable|string|max:255',
+            'new_company.company_type' => 'required_with:new_company.name|nullable|string|max:50',
+            'new_company.sector' => 'required_with:new_company.name|nullable|string|max:100',
+            'new_company.job_title' => 'required_with:new_company.name|nullable|string|max:100',
+            'new_company.employees_count' => 'nullable|string|max:20',
+            'new_company.annual_turnover' => 'nullable|numeric|min:0',
         ]);
 
         $user = auth()->user();
         $typeFinancement = TypeFinancement::findOrFail($validated['typefinancement_id']);
 
-        // Vérifier si une demande similaire existe déjà
+        // Vérifier cohérence type financement
+        if ($typeFinancement->typeusers !== $validated['financement_type']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Type de financement invalide.',
+            ], 400);
+        }
+
+        // Vérifier uniquement les demandes en brouillon (pas encore payées) du même type
+        // Permet plusieurs demandes mais évite les doublons de brouillons
         $existingDraft = FundingRequest::where('user_id', $user->id)
             ->where('typefinancement_id', $typeFinancement->id)
-            ->whereIn('status', ['draft', 'submitted', 'under_review', 'pending_committee', 'approved'])
+            ->where('status', 'draft') // Seulement les brouillons non payés
+            ->when($validated['financement_type'] === 'entreprise' && ! empty($validated['company_id']),
+                fn ($q) => $q->where('company_id', $validated['company_id'])
+            )
             ->first();
 
         if ($existingDraft) {
             return response()->json([
                 'success' => false,
-                'message' => 'Vous avez déjà une demande en cours pour ce type de financement.',
-                'existing_request' => $existingDraft,
+                'message' => 'Vous avez déjà une demande en brouillon pour ce financement. Veuillez la finaliser ou l\'annuler.',
+                'existing_request' => [
+                    'id' => $existingDraft->id,
+                    'request_number' => $existingDraft->request_number,
+                    'title' => $existingDraft->title,
+                    'created_at' => $existingDraft->created_at,
+                ],
             ], 400);
+        }
+
+        // Gestion de l'entreprise
+        $companyId = null;
+        $isNewCompany = false;
+
+        if ($validated['financement_type'] === 'entreprise') {
+            if (! empty($validated['company_id'])) {
+                // Vérifier que l'entreprise appartient bien à l'utilisateur
+                $company = Company::where('id', $validated['company_id'])
+                    ->where('user_id', $user->id)
+                    ->first();
+
+                if (! $company) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Entreprise non trouvée ou non autorisée.',
+                    ], 403);
+                }
+                $companyId = $company->id;
+            } elseif (! empty($validated['new_company']['name'])) {
+                // Créer nouvelle entreprise
+                try {
+                    $newCompany = Company::create([
+                        'user_id' => $user->id,
+                        'company_name' => $validated['new_company']['name'],
+                        'company_type' => $validated['new_company']['company_type'],
+                        'sector' => $validated['new_company']['sector'],
+                        'job_title' => $validated['new_company']['job_title'],
+                        'employees_count' => $validated['new_company']['employees_count'] ?? null,
+                        'annual_turnover' => $validated['new_company']['annual_turnover'] ?? null,
+                    ]);
+                    $companyId = $newCompany->id;
+                    $isNewCompany = true;
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Erreur lors de la création de l\'entreprise: '.$e->getMessage(),
+                    ], 500);
+                }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Veuillez sélectionner ou créer une entreprise.',
+                ], 422);
+            }
         }
 
         // Gestion explicite de description null
@@ -163,14 +248,16 @@ public function destroy(FundingRequest $fundingRequest): RedirectResponse
             ? $validated['description']
             : null;
 
+        // Créer la demande
         $fundingRequest = FundingRequest::create([
-            'user_id' => auth()->id(),
+            'user_id' => $user->id,
             'typefinancement_id' => $validated['typefinancement_id'],
+            'company_id' => $companyId,
             'request_number' => $this->generateRequestNumber(),
             'title' => $validated['title'],
             'amount_requested' => $validated['amount_requested'],
             'duration' => $validated['duration'],
-            'description' => $description, // Sera null si vide ou non fourni
+            'description' => $description,
             'status' => 'draft',
             'payment_status' => 'pending',
         ]);
@@ -179,13 +266,20 @@ public function destroy(FundingRequest $fundingRequest): RedirectResponse
             'success' => true,
             'funding_request_id' => $fundingRequest->id,
             'request_number' => $fundingRequest->request_number,
+            'company_id' => $companyId,
+            'is_new_company' => $isNewCompany,
             'message' => 'Demande créée. Procédez au paiement.',
         ]);
     }
 
-    public function show(FundingRequest $fundingRequest): View
+    public function show(FundingRequest $fundingRequest): View|RedirectResponse
     {
-        $this->authorize('view', $fundingRequest);
+        // Vérifier que l'utilisateur est propriétaire
+        if ($fundingRequest->user_id !== auth()->id()) {
+            return redirect()
+                ->route('client.requests.index')
+                ->with('error', 'Vous n\'êtes pas autorisé à voir cette demande.');
+        }
 
         $fundingRequest->load(['typeFinancement', 'documentUsers.typeDoc']);
 
@@ -236,8 +330,6 @@ public function destroy(FundingRequest $fundingRequest): RedirectResponse
             ->route('client.requests.show', $fundingRequest)
             ->with('success', 'Demande mise à jour.');
     }
-
-   
 
     public function track(string $requestNumber): View
     {

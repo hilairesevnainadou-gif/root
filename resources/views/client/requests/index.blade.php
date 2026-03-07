@@ -153,53 +153,66 @@
                     </div>
                 </div>
 
-                {{-- Actions --}}
+                {{-- Actions selon l'étape --}}
                 <div class="request-actions">
 
-                    {{-- Si paiement en attente --}}
+                    {{-- ÉTAPE 1: DRAFT + PAIEMENT EN ATTENTE --}}
                     @if($request->payment_status === 'pending' && $request->status === 'draft')
-                    <a href="{{ route('client.requests.payment', $request) }}" class="btn btn-primary btn-sm">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z" />
-                        </svg>
-                        Compléter le paiement
-                    </a>
+                        <a href="{{ route('client.requests.payment', $request) }}" class="btn btn-primary btn-sm action-btn">
+                            <span class="btn-icon">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z" />
+                                </svg>
+                            </span>
+                            <span class="btn-text">Compléter le paiement</span>
+                        </a>
 
-                    <form action="{{ route('client.requests.destroy', $request) }}" method="POST" class="inline-form">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger btn-sm"
-                            onclick="return confirm('Annuler cette demande ?')">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Annuler
-                        </button>
-                    </form>
+                        <form action="{{ route('client.requests.destroy', $request) }}" method="POST" class="inline-form">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger btn-sm action-btn"
+                                onclick="return confirm('Annuler cette demande ?')">
+                                <span class="btn-icon">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </span>
+                                <span class="btn-text">Annuler</span>
+                            </button>
+                        </form>
 
-                    {{-- Si payé mais documents manquants --}}
+                    {{-- ÉTAPE 2: PAYÉ + DOCUMENTS MANQUANTS --}}
                     @elseif($request->isPaid() && $request->pendingDocumentsCount() > 0)
-                    <a href="{{ route('client.documents.required', $request) }}" class="btn btn-warning btn-sm">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        {{ $request->pendingDocumentsCount() }} document(s) manquant(s)
-                    </a>
+                        <a href="{{ route('client.documents.required', $request) }}" class="btn btn-warning btn-sm action-btn">
+                            <span class="btn-icon">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </span>
+                            <span class="btn-text">{{ $request->pendingDocumentsCount() }} document(s) manquant(s)</span>
+                        </a>
 
-                    {{-- Voir détails --}}
+                    {{-- ÉTAPE 3+: AUTRES STATUTS - Voir détails amélioré --}}
                     @else
-                    <a href="{{ route('client.requests.show', $request) }}" class="btn btn-secondary btn-sm">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        Voir détails
-                    </a>
+                        <a href="{{ route('client.requests.show', $request) }}" class="btn btn-view-details btn-sm action-btn">
+                            <span class="btn-icon">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </span>
+                            <span class="btn-text">Voir détails</span>
+                            <span class="btn-arrow">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </span>
+                        </a>
                     @endif
 
                 </div>
@@ -539,6 +552,51 @@
         gap: 0.75rem;
         flex-wrap: wrap;
         align-items: center;
+    }
+
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+
+    .btn-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-text {
+        font-weight: 500;
+    }
+
+    .btn-arrow {
+        display: flex;
+        align-items: center;
+        margin-left: 0.25rem;
+        transition: transform 0.2s ease;
+    }
+
+    /* Bouton Voir détails amélioré */
+    .btn-view-details {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 1px solid #cbd5e1;
+        color: #475569;
+    }
+
+    .btn-view-details:hover {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        border-color: #94a3b8;
+        color: #334155;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-view-details:hover .btn-arrow {
+        transform: translateX(4px);
     }
 
     .inline-form {

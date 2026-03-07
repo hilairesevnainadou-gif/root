@@ -14,6 +14,7 @@ class FundingRequest extends Model
 
     protected $fillable = [
         'user_id',
+        'company_id',
         'typefinancement_id',
         'request_number',
         'title',
@@ -33,6 +34,9 @@ class FundingRequest extends Model
         'committee_decision_at',
         'approved_at',
         'funded_at',
+        'completed_at',
+        'cancelled_at',
+        'rejection_reason',
     ];
 
     protected $casts = [
@@ -47,6 +51,8 @@ class FundingRequest extends Model
         'committee_decision_at' => 'datetime',
         'approved_at' => 'datetime',
         'funded_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     // ========== RELATIONS ==========
@@ -54,6 +60,11 @@ class FundingRequest extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function typeFinancement(): BelongsTo
@@ -73,11 +84,6 @@ class FundingRequest extends Model
 
     // ========== STATUTS ==========
 
-    public function isPaid(): bool
-    {
-        return $this->payment_status === 'paid';
-    }
-
     public function isDraft(): bool
     {
         return $this->status === 'draft';
@@ -88,11 +94,62 @@ class FundingRequest extends Model
         return $this->status === 'submitted';
     }
 
-    // ========== DOCUMENTS (Basés uniquement sur TypeFinancement) ==========
+    public function isUnderReview(): bool
+    {
+        return $this->status === 'under_review';
+    }
+
+    public function isPendingCommittee(): bool
+    {
+        return $this->status === 'pending_committee';
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === 'rejected';
+    }
+
+    public function isFunded(): bool
+    {
+        return $this->status === 'funded';
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->status === 'completed';
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
+    }
+
+    // ========== PAIEMENT ==========
+
+    public function isPaid(): bool
+    {
+        return $this->payment_status === 'paid';
+    }
+
+    public function isPaymentPending(): bool
+    {
+        return $this->payment_status === 'pending';
+    }
+
+    public function isPaymentFailed(): bool
+    {
+        return $this->payment_status === 'failed';
+    }
+
+    // ========== DOCUMENTS ==========
 
     /**
      * Récupérer les documents requis pour ce type de financement
-     * Ne dépend PAS du statut de l'utilisateur
      */
     public function requiredDocuments(): \Illuminate\Database\Eloquent\Collection
     {
@@ -101,14 +158,13 @@ class FundingRequest extends Model
 
     /**
      * Vérifier si tous les documents requis sont fournis et vérifiés
-     * Basé UNIQUEMENT sur le type de financement
      */
     public function hasAllRequiredDocuments(): bool
     {
         $requiredDocs = $this->requiredDocuments();
 
         if ($requiredDocs->isEmpty()) {
-            return true; // Aucun document requis
+            return true;
         }
 
         $providedDocIds = $this->documentUsers()
@@ -127,7 +183,6 @@ class FundingRequest extends Model
 
     /**
      * Récupérer les documents manquants
-     * Basé UNIQUEMENT sur le type de financement
      */
     public function missingDocuments(): \Illuminate\Database\Eloquent\Collection
     {
@@ -163,7 +218,7 @@ class FundingRequest extends Model
     }
 
     /**
-     * Nombre total de documents requis (basé sur TypeFinancement uniquement)
+     * Nombre total de documents requis
      */
     public function totalRequiredDocumentsCount(): int
     {
@@ -214,11 +269,10 @@ class FundingRequest extends Model
 
     /**
      * Créer les entrées de documents requis après paiement
-     * Basé UNIQUEMENT sur TypeFinancement->requiredTypeDocs()
      */
     public function createRequiredDocuments(): void
     {
-        // Vérifier si déjà créés
+        // Vérifier si déjà créés pour cette demande
         if ($this->documentUsers()->exists()) {
             return;
         }
@@ -232,45 +286,32 @@ class FundingRequest extends Model
         $documentsToCreate = [];
 
         foreach ($requiredDocs as $typeDoc) {
-            // Chercher si l'utilisateur a déjà un document vérifié de ce type (global)
+            // CAS 1: Financement entreprise avec company_id
+            if ($this->company_id) {
+                $existingDoc = DocumentUser::where('user_id', $this->user_id)
+                    ->where('typedoc_id', $typeDoc->id)
+                    ->where('company_id', $this->company_id)
+                    ->where('status', 'verified')
+                    ->first();
+
+                if ($existingDoc) {
+                    $documentsToCreate[] = $this->buildDocumentData($typeDoc, $existingDoc, 'verified');
+                    continue;
+                }
+            }
+
+            // CAS 2: Documents globaux de l'utilisateur
             $existingDoc = DocumentUser::where('user_id', $this->user_id)
                 ->where('typedoc_id', $typeDoc->id)
+                ->whereNull('company_id')
+                ->whereNull('funding_request_id')
                 ->where('status', 'verified')
-                ->whereNull('funding_request_id') // Document global non lié
                 ->first();
 
             if ($existingDoc) {
-                // Lier le document existant
-                $documentsToCreate[] = [
-                    'user_id' => $this->user_id,
-                    'funding_request_id' => $this->id,
-                    'typedoc_id' => $typeDoc->id,
-                    'file_path' => $existingDoc->file_path,
-                    'file_name' => $existingDoc->file_name,
-                    'file_type' => $existingDoc->file_type,
-                    'file_size' => $existingDoc->file_size,
-                    'status' => 'verified',
-                    'verified_at' => $existingDoc->verified_at,
-                    'verified_by' => $existingDoc->verified_by,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+                $documentsToCreate[] = $this->buildDocumentData($typeDoc, $existingDoc, 'verified');
             } else {
-                // Créer un document vide en attente
-                $documentsToCreate[] = [
-                    'user_id' => $this->user_id,
-                    'funding_request_id' => $this->id,
-                    'typedoc_id' => $typeDoc->id,
-                    'file_path' => null,
-                    'file_name' => null,
-                    'file_type' => null,
-                    'file_size' => 0,
-                    'status' => 'pending',
-                    'verified_at' => null,
-                    'verified_by' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+                $documentsToCreate[] = $this->buildEmptyDocumentData($typeDoc);
             }
         }
 
@@ -279,11 +320,233 @@ class FundingRequest extends Model
         }
     }
 
+    /**
+     * Construire les données d'un document existant
+     */
+    private function buildDocumentData($typeDoc, $existingDoc, string $status): array
+    {
+        return [
+            'user_id' => $this->user_id,
+            'funding_request_id' => $this->id,
+            'company_id' => $this->company_id,
+            'typedoc_id' => $typeDoc->id,
+            'file_path' => $existingDoc->file_path,
+            'file_name' => $existingDoc->file_name,
+            'file_type' => $existingDoc->file_type,
+            'file_size' => $existingDoc->file_size,
+            'status' => $status,
+            'verified_at' => $existingDoc->verified_at,
+            'verified_by' => $existingDoc->verified_by,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+
+    /**
+     * Construire les données d'un document vide
+     */
+    private function buildEmptyDocumentData($typeDoc): array
+    {
+        return [
+            'user_id' => $this->user_id,
+            'funding_request_id' => $this->id,
+            'company_id' => $this->company_id,
+            'typedoc_id' => $typeDoc->id,
+            'file_path' => null,
+            'file_name' => null,
+            'file_type' => null,
+            'file_size' => 0,
+            'status' => 'pending',
+            'verified_at' => null,
+            'verified_by' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+
+    // ========== TRANSITIONS DE STATUT ==========
+
+    /**
+     * Soumettre pour examen
+     */
+    public function submit(): bool
+    {
+        if (!$this->isDraft() || !$this->isPaid()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => 'submitted',
+            'submitted_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mettre en examen
+     */
+    public function startReview(): bool
+    {
+        if (!$this->isSubmitted()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => 'under_review',
+            'reviewed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Envoyer au comité
+     */
+    public function sendToCommittee(): bool
+    {
+        if (!$this->isUnderReview()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => 'pending_committee',
+            'committee_review_started_at' => now(),
+        ]);
+    }
+
+    /**
+     * Approuver la demande
+     */
+    public function approve(?float $approvedAmount = null): bool
+    {
+        if (!$this->isUnderReview() && !$this->isPendingCommittee()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => 'approved',
+            'amount_approved' => $approvedAmount ?? $this->amount_requested,
+            'approved_at' => now(),
+        ]);
+    }
+
+    /**
+     * Rejeter la demande
+     */
+    public function reject(string $reason): bool
+    {
+        if ($this->isFunded() || $this->isCompleted() || $this->isCancelled()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => 'rejected',
+            'rejection_reason' => $reason,
+        ]);
+    }
+
+    /**
+     * Financer la demande
+     */
+    public function fund(): bool
+    {
+        if (!$this->isApproved()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => 'funded',
+            'funded_at' => now(),
+        ]);
+    }
+
+    /**
+     * Marquer comme complétée
+     */
+    public function complete(): bool
+    {
+        if (!$this->isFunded()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Annuler la demande
+     */
+    public function cancel(): bool
+    {
+        if (!$this->isDraft() && !$this->isSubmitted()) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now(),
+        ]);
+    }
+
     // ========== SCOPES ==========
 
-    public function scopePendingPayment($query)
+    public function scopeForUser($query, int $userId)
     {
-        return $query->where('payment_status', 'pending');
+        return $query->where('user_id', $userId);
+    }
+
+    public function scopeForCompany($query, int $companyId)
+    {
+        return $query->where('company_id', $companyId);
+    }
+
+    public function scopeOfType($query, int $typeId)
+    {
+        return $query->where('typefinancement_id', $typeId);
+    }
+
+    public function scopeDraft($query)
+    {
+        return $query->where('status', 'draft');
+    }
+
+    public function scopeSubmitted($query)
+    {
+        return $query->where('status', 'submitted');
+    }
+
+    public function scopeUnderReview($query)
+    {
+        return $query->where('status', 'under_review');
+    }
+
+    public function scopePendingCommittee($query)
+    {
+        return $query->where('status', 'pending_committee');
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    public function scopeRejected($query)
+    {
+        return $query->where('status', 'rejected');
+    }
+
+    public function scopeFunded($query)
+    {
+        return $query->where('status', 'funded');
+    }
+
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereNotIn('status', ['rejected', 'cancelled']);
     }
 
     public function scopePaid($query)
@@ -291,9 +554,27 @@ class FundingRequest extends Model
         return $query->where('payment_status', 'paid');
     }
 
-    public function scopeForUser($query, int $userId)
+    public function scopePendingPayment($query)
     {
-        return $query->where('user_id', $userId);
+        return $query->where('payment_status', 'pending');
+    }
+
+    /**
+     * Scope pour vérifier si une demande similaire existe (même type, même entreprise)
+     */
+    public function scopeSimilarExists($query, int $userId, int $typeId, ?int $companyId = null)
+    {
+        $q = $query->where('user_id', $userId)
+            ->where('typefinancement_id', $typeId)
+            ->whereNotIn('status', ['rejected', 'cancelled', 'completed']);
+
+        if ($companyId) {
+            $q->where('company_id', $companyId);
+        } else {
+            $q->whereNull('company_id');
+        }
+
+        return $q;
     }
 
     // ========== HELPERS ==========
@@ -307,14 +588,32 @@ class FundingRequest extends Model
             'draft' => 'Brouillon',
             'submitted' => 'Soumise',
             'under_review' => 'En examen',
-            'pending_committee' => 'Comité',
+            'pending_committee' => 'En attente du comité',
             'approved' => 'Approuvée',
             'rejected' => 'Rejetée',
             'funded' => 'Financée',
-            'in_progress' => 'En cours',
             'completed' => 'Terminée',
             'cancelled' => 'Annulée',
             default => $this->status,
+        };
+    }
+
+    /**
+     * Classe CSS du statut
+     */
+    public function getStatusClass(): string
+    {
+        return match($this->status) {
+            'draft' => 'badge-secondary',
+            'submitted' => 'badge-info',
+            'under_review' => 'badge-warning',
+            'pending_committee' => 'badge-warning',
+            'approved' => 'badge-success',
+            'rejected' => 'badge-danger',
+            'funded' => 'badge-primary',
+            'completed' => 'badge-success',
+            'cancelled' => 'badge-muted',
+            default => 'badge-secondary',
         };
     }
 
@@ -364,5 +663,57 @@ class FundingRequest extends Model
                 'uploaded_at' => $userDoc?->created_at,
             ];
         })->toArray();
+    }
+
+    /**
+     * Montant restant à rembourser
+     */
+    public function getRemainingAmount(): float
+    {
+        return max(0, ($this->amount_approved ?? 0) - ($this->amount_rembursed ?? 0));
+    }
+
+    /**
+     * Progression du remboursement (%)
+     */
+    public function getRepaymentProgress(): float
+    {
+        if (empty($this->amount_approved) || $this->amount_approved == 0) {
+            return 0;
+        }
+
+        return min(100, (($this->amount_rembursed ?? 0) / $this->amount_approved) * 100);
+    }
+
+    /**
+     * Vérifier si la demande peut être modifiée
+     */
+    public function canBeEdited(): bool
+    {
+        return $this->isDraft();
+    }
+
+    /**
+     * Vérifier si la demande peut être payée
+     */
+    public function canBePaid(): bool
+    {
+        return $this->isDraft() && $this->isPaymentPending();
+    }
+
+    /**
+     * Vérifier si la demande peut être annulée
+     */
+    public function canBeCancelled(): bool
+    {
+        return $this->isDraft() || $this->isSubmitted();
+    }
+
+    /**
+     * Vérifier si des documents peuvent être uploadés
+     */
+    public function canUploadDocuments(): bool
+    {
+        return in_array($this->status, ['submitted', 'under_review', 'pending_committee', 'approved']);
     }
 }

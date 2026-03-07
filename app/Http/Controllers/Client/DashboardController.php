@@ -168,42 +168,61 @@ class DashboardController extends Controller
             });
     }
 
-    /**
-     * Résumé financier
-     */
-    private function getFinancialSummary($user): array
-    {
-        $wallet = $user->wallet;
+    
+   /**
+ * Résumé financier
+ */
+private function getFinancialSummary($user): array
+{
+    $wallet = $user->wallet;
 
-        // Calculer les revenus du mois
-        $monthlyIncome = $wallet ? $wallet->transactions()
-            ->where('type', 'credit')
-            ->where('status', 'completed')
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->sum('amount') : 0;
+    // Calculer les revenus du mois
+    $monthlyIncome = $wallet ? $wallet->transactions()
+        ->where('type', 'credit')
+        ->where('status', 'completed')
+        ->whereMonth('created_at', Carbon::now()->month)
+        ->whereYear('created_at', Carbon::now()->year)
+        ->sum('amount') : 0;
 
-        // Calculer les dépenses du mois
-        $monthlyExpenses = $wallet ? $wallet->transactions()
-            ->where('type', 'debit')
-            ->where('status', 'completed')
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->sum('amount') : 0;
+    // Calculer les dépenses du mois
+    $monthlyExpenses = $wallet ? $wallet->transactions()
+        ->where('type', 'debit')
+        ->where('status', 'completed')
+        ->whereMonth('created_at', Carbon::now()->month)
+        ->whereYear('created_at', Carbon::now()->year)
+        ->sum('amount') : 0;
 
-        // Montant en attente de financement
-        $pendingAmount = FundingRequest::where('user_id', $user->id)
-            ->whereIn('status', ['approved', 'funded'])
-            ->whereNull('funded_at')
-            ->sum('amount_approved');
+    // Montant en attente de financement
+    $pendingAmount = FundingRequest::where('user_id', $user->id)
+        ->whereIn('status', ['approved', 'funded'])
+        ->whereNull('funded_at')
+        ->sum('amount_approved');
 
-        return [
-            'wallet_balance' => $wallet?->balance ?? 0,
-            'formatted_balance' => $this->formatAmount($wallet?->balance ?? 0),
-            'monthly_income' => $monthlyIncome,
-            'monthly_expenses' => $monthlyExpenses,
-            'pending_amount' => $pendingAmount,
-            'currency' => $wallet?->currency ?? 'XOF',
-        ];
-    }
+    // Nombre de transactions totales
+    $transactionsCount = $wallet ? $wallet->transactions()->count() : 0;
+
+    // Dernière transaction
+    $lastTransaction = $wallet ? $wallet->transactions()->latest()->first() : null;
+
+    return [
+        'has_wallet' => $wallet !== null,
+        'wallet_balance' => $wallet?->balance ?? 0,
+        'formatted_balance' => $this->formatAmount($wallet?->balance ?? 0),
+        'monthly_income' => $monthlyIncome,
+        'monthly_expenses' => $monthlyExpenses,
+        'pending_amount' => $pendingAmount,
+        'formatted_pending' => $this->formatAmount($pendingAmount),
+        'currency' => $wallet?->currency ?? 'XOF',
+        'transactions_count' => $transactionsCount,
+        'last_transaction' => $lastTransaction ? [
+            'type' => $lastTransaction->type,
+            'amount' => $lastTransaction->amount,
+            'formatted_amount' => $this->formatAmount($lastTransaction->amount),
+            'date' => $lastTransaction->created_at->diffForHumans(),
+            'status' => $lastTransaction->status,
+        ] : null,
+    ];
+}
 
     /**
      * Alertes importantes

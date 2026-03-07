@@ -28,21 +28,10 @@ return new class extends Migration
                 'autre',
             ]);
 
-            $table->enum('sector', [
-                'agriculture',
-                'elevage',
-                'peche',
-                'industrie',
-                'commerce',
-                'services',
-                'tourisme',
-                'batiment',
-                'technologie',
-                'autre',
-            ]);
+           $table->string('sector');
 
             $table->string('job_title')->nullable();
-            $table->integer('employees_count')->default(0);
+            $table->string('employees_count')->nullable();
             $table->decimal('annual_turnover', 15, 2)->default(0);
 
             $table->timestamps();

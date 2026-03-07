@@ -15,7 +15,7 @@ class Wallet extends Model
 
     protected $fillable = [
         'user_id',
-        'type',             // Nouveau : 'user', 'system', 'commission'
+        'type',             // 'user', 'system', 'commission'
         'wallet_number',    // BHDM-WALLET-XXXXXXXX
         'balance',
         'currency',         // XOF, EUR, USD
@@ -60,6 +60,23 @@ class Wallet extends Model
     public function scopeUser($query)
     {
         return $query->where('type', 'user');
+    }
+
+    /**
+     * Créer un wallet pour un utilisateur (méthode manquante)
+     */
+    public static function createForUser(int $userId, string $currency = 'XOF'): self
+    {
+        return self::create([
+            'user_id' => $userId,
+            'type' => 'user',
+            'wallet_number' => self::generateWalletNumber(),
+            'balance' => 0.00,
+            'currency' => $currency,
+            'status' => 'active',
+            'activated_at' => now(),
+            'last_transaction_at' => null,
+        ]);
     }
 
     /**

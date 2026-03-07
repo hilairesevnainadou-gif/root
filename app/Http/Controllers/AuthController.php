@@ -9,6 +9,7 @@ use App\Models\Wallet;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -116,7 +117,6 @@ class AuthController extends Controller
             'phone' => ['required', 'string', 'max:20', 'unique:users,phone'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'city' => ['required', 'string', 'max:255'],
-            'verification_method' => ['required', 'in:email,sms'],
             'terms' => ['required', 'accepted'],
             'birth_date' => ['nullable', 'date'],
             'gender' => ['nullable', 'in:male,female,other'],
@@ -132,7 +132,6 @@ class AuthController extends Controller
             'password.min' => 'Le mot de passe doit faire au moins 8 caractères.',
             'password.confirmed' => 'Les mots de passe ne correspondent pas.',
             'city.required' => 'La ville est obligatoire.',
-            'verification_method.required' => 'Choisissez une méthode de vérification.',
             'terms.accepted' => 'Vous devez accepter les conditions d\'utilisation.',
         ]);
 
@@ -147,7 +146,7 @@ class AuthController extends Controller
             'member_status' => 'pending',
             'is_active' => true,
             'is_verified' => false,
-            'preferred_verification_method' => $validated['verification_method'],
+            'preferred_verification_method' => 'email', // Forcé à email
             'birth_date' => $validated['birth_date'] ?? null,
             'gender' => $validated['gender'] ?? null,
             'address' => $validated['address'] ?? null,
@@ -163,17 +162,19 @@ class AuthController extends Controller
             'activated_at' => now(),
         ]);
 
+        // Stockage en session pour la vérification
         Session::put('verification_user_id', $user->id);
-        Session::put('verification_method', $validated['verification_method']);
+        Session::put('verification_method', 'email');
 
+        // Envoi du code de vérification par email
         try {
-            $this->sendVerificationCode($user, $validated['verification_method']);
+            $this->sendVerificationCode($user, 'email');
         } catch (\Exception $e) {
             Log::error("Erreur envoi code de vérification pour user {$user->id} : ".$e->getMessage());
         }
 
         return redirect()->route('verification.show')
-            ->with('success', 'Compte créé ! Vérifiez votre '.($validated['verification_method'] === 'email' ? 'email' : 'téléphone').' pour activer votre compte.');
+            ->with('success', 'Compte créé avec succès ! Un code de vérification a été envoyé à votre adresse email.');
     }
 
     // =====================
@@ -298,27 +299,28 @@ class AuthController extends Controller
 
         return redirect()->route('verification.show')->with('success', 'Méthode changée. Nouveau code envoyé.');
     }
-// Dans VerificationController
-public function updateContact(Request $request)
-{
-    $method = $request->input('method');
 
-    if ($method === 'email') {
-        $request->validate(['new_email' => 'required|email']);
-        // Mettre à jour en session + en base
-        $user = User::find(session('verification_user_id'));
-        $user->update(['email' => $request->new_email]);
-    } else {
-        $request->validate(['new_phone' => 'required|string|min:8']);
-        $user = User::find(session('verification_user_id'));
-        $user->update(['phone' => $request->new_phone]);
+    // Dans VerificationController
+    public function updateContact(Request $request)
+    {
+        $method = $request->input('method');
+
+        if ($method === 'email') {
+            $request->validate(['new_email' => 'required|email']);
+            // Mettre à jour en session + en base
+            $user = User::find(session('verification_user_id'));
+            $user->update(['email' => $request->new_email]);
+        } else {
+            $request->validate(['new_phone' => 'required|string|min:8']);
+            $user = User::find(session('verification_user_id'));
+            $user->update(['phone' => $request->new_phone]);
+        }
+
+        // Renvoyer un nouveau code
+        // ... votre logique d'envoi de code
+
+        return back()->with('success', 'Contact mis à jour. Un nouveau code a été envoyé.');
     }
-
-    // Renvoyer un nouveau code
-    // ... votre logique d'envoi de code
-
-    return back()->with('success', 'Contact mis à jour. Un nouveau code a été envoyé.');
-}
     // =====================
     // PRIVATE METHODS
     // =====================
@@ -386,21 +388,21 @@ public function updateContact(Request $request)
             //     'channel' => 'generic',
             //     'api_key' => $apiKey,
             // ]);
-         $response = Http::withOptions(['verify' => false])
-    ->withHeaders(['Content-Type' => 'application/json'])
-    ->post('https://api.ng.termii.com/api/sms/otp/send', [
-        'api_key'          => $apiKey,
-        'message_type'     => 'NUMERIC',
-        'to'               => $to,
-        'from'             => 'N-Alert',
-        'channel'          => 'generic',
-        'pin_attempts'     => 3,
-        'pin_time_to_live' => 10,
-        'pin_length'       => 6,
-        'pin_placeholder'  => '< 123456 >',
-        'message_text'     => 'Votre code de vérification BHDM est : '.$code,
-        'pin_type'         => 'NUMERIC',
-    ]);
+            $response = Http::withOptions(['verify' => false])
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post('https://api.ng.termii.com/api/sms/otp/send', [
+                    'api_key' => $apiKey,
+                    'message_type' => 'NUMERIC',
+                    'to' => $to,
+                    'from' => 'N-Alert',
+                    'channel' => 'generic',
+                    'pin_attempts' => 3,
+                    'pin_time_to_live' => 10,
+                    'pin_length' => 6,
+                    'pin_placeholder' => '< 123456 >',
+                    'message_text' => 'Votre code de vérification BHDM est : '.$code,
+                    'pin_type' => 'NUMERIC',
+                ]);
 
             if ($response->successful()) {
                 Log::info("SMS envoyé avec succès à {$to}", $response->json());
@@ -431,5 +433,79 @@ public function updateContact(Request $request)
         }
 
         return str_repeat('*', $length - 4).substr($phone, -4);
+    }
+
+    // =====================
+    // PASSWORD RESET
+    // =====================
+
+    public function showForgotPasswordForm(): View
+    {
+        return view('auth.forgot-password');
+    }
+
+    public function sendResetLink(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email', 'exists:users,email'],
+        ], [
+            'email.required' => 'L\'adresse email est obligatoire.',
+            'email.email' => 'Veuillez entrer une adresse email valide.',
+            'email.exists' => 'Cette adresse email n\'est pas enregistrée.',
+        ]);
+
+        // Générer un token
+        $token = Str::random(64);
+
+        // Stocker le token (vous devriez créer une table password_resets)
+        DB::table('password_resets')->insert([
+            'email' => $request->email,
+            'token' => Hash::make($token),
+            'created_at' => now(),
+        ]);
+
+        // Envoyer l'email (à implémenter avec votre système de mail)
+        try {
+            // Mail::to($request->email)->send(new ResetPasswordMail($token));
+            Log::info("Lien de réinitialisation généré pour : {$request->email}");
+        } catch (\Exception $e) {
+            Log::error('Erreur envoi email reset password : '.$e->getMessage());
+        }
+
+        return back()->with('status', 'Un lien de réinitialisation a été envoyé à votre adresse email.');
+    }
+
+    public function showResetPasswordForm(string $token): View
+    {
+        return view('auth.reset-password', ['token' => $token]);
+    }
+
+    public function resetPassword(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'token' => ['required'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        // Vérifier le token
+        $reset = DB::table('password_resets')
+            ->where('email', $request->email)
+            ->first();
+
+        if (! $reset || ! Hash::check($request->token, $reset->token)) {
+            return back()->withErrors(['email' => 'Ce lien de réinitialisation est invalide ou a expiré.']);
+        }
+
+        // Mettre à jour le mot de passe
+        $user = User::where('email', $request->email)->first();
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        // Supprimer le token utilisé
+        DB::table('password_resets')->where('email', $request->email)->delete();
+
+        return redirect()->route('login')->with('success', 'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.');
     }
 }

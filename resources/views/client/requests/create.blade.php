@@ -35,6 +35,7 @@
                 onclick="selectFinancement({{ $financement->id }})"
                 data-id="{{ $financement->id }}"
                 data-name="{{ $financement->name }}"
+                data-type="{{ $financement->typeusers }}"
                 data-variable="{{ $financement->is_variable_amount ? '1' : '0' }}"
                 data-max-daily="{{ $financement->max_daily_amount }}"
                 data-daily-gain="{{ $financement->daily_gain }}"
@@ -53,14 +54,26 @@
                 </div>
 
                 <div class="financement-icon">
+                    @if($financement->typeusers === 'entreprise')
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    @else
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
+                    @endif
                 </div>
 
                 <div class="financement-body">
-                    <h3 class="financement-name">{{ $financement->name }}</h3>
+                    <div class="financement-header-row">
+                        <h3 class="financement-name">{{ $financement->name }}</h3>
+                        <span class="financement-badge badge-{{ $financement->typeusers }}">
+                            {{ $financement->typeusers === 'entreprise' ? 'Entreprise' : 'Particulier' }}
+                        </span>
+                    </div>
                     <p class="financement-desc">{{ Str::limit($financement->description, 100) }}</p>
 
                     <div class="financement-tags">
@@ -119,21 +132,129 @@
             @csrf
             <input type="hidden" name="typefinancement_id" id="selected_type_id"
                 value="{{ $preselectedType ? $preselectedType->id : '' }}">
+            <input type="hidden" name="financement_type" id="financement_type"
+                value="{{ $preselectedType ? $preselectedType->typeusers : '' }}">
 
             {{-- Résumé du financement --}}
             <div class="selected-financement" id="selected-summary">
                 @if($preselectedType)
                 <div class="sf-icon">
+                    @if($preselectedType->typeusers === 'entreprise')
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    @else
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
+                    @endif
                 </div>
                 <div class="sf-info">
                     <span class="sf-label">Financement sélectionné</span>
                     <span class="sf-name">{{ $preselectedType->name }}</span>
+                    <span class="sf-type-badge badge-{{ $preselectedType->typeusers }}">
+                        {{ $preselectedType->typeusers === 'entreprise' ? 'Entreprise' : 'Particulier' }}
+                    </span>
                 </div>
                 @endif
+            </div>
+
+            {{-- SECTION ENTREPRISE : Sélection ou ajout --}}
+            <div class="form-group company-section" id="company-section" style="display: none;">
+                <label class="form-label">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Entreprise concernée <span class="text-danger">*</span>
+                </label>
+
+                {{-- Liste des entreprises existantes --}}
+                <div id="existing-companies" class="companies-list">
+                    <p class="text-muted mb-2">Sélectionnez une entreprise :</p>
+                    <div class="companies-grid" id="companies-grid">
+                        {{-- Injecté par JS --}}
+                    </div>
+                </div>
+
+                {{-- Option ajouter nouvelle entreprise --}}
+                <div class="add-company-option">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="toggleNewCompanyForm()">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Ajouter une nouvelle entreprise
+                    </button>
+                </div>
+
+                {{-- Formulaire nouvelle entreprise --}}
+                <div id="new-company-form" class="new-company-form" style="display: none;">
+                    <div class="ncf-header">
+                        <h4>Nouvelle entreprise</h4>
+                        <button type="button" class="btn-close" onclick="toggleNewCompanyForm()">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label class="form-label">Nom de l'entreprise <span class="text-danger">*</span></label>
+                            <input type="text" name="new_company[name]" id="new_company_name" class="form-control"
+                                placeholder="Ex: Ma Société SARL">
+                        </div>
+                        <div class="form-col">
+                            <label class="form-label">Type d'entreprise <span class="text-danger">*</span></label>
+                            <select name="new_company[company_type]" id="new_company_type" class="form-control">
+                                <option value="">Choisir...</option>
+                                <option value="SARL">SARL</option>
+                                <option value="SA">SA</option>
+                                <option value="SAS">SAS</option>
+                                <option value="Entreprise Individuelle">Entreprise Individuelle</option>
+                                <option value="GIE">GIE</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label class="form-label">Secteur d'activité <span class="text-danger">*</span></label>
+                            <input type="text" name="new_company[sector]" id="new_company_sector" class="form-control"
+                                placeholder="Ex: Agriculture, Commerce, IT...">
+                        </div>
+                        <div class="form-col">
+                            <label class="form-label">Votre poste <span class="text-danger">*</span></label>
+                            <input type="text" name="new_company[job_title]" id="new_company_job" class="form-control"
+                                placeholder="Ex: Directeur Général">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label class="form-label">Nombre d'employés</label>
+                            <select name="new_company[employees_count]" id="new_company_employees" class="form-control">
+                                <option value="">Choisir...</option>
+                                <option value="1">1 (Auto-entrepreneur)</option>
+                                <option value="2-5">2 à 5</option>
+                                <option value="6-10">6 à 10</option>
+                                <option value="11-50">11 à 50</option>
+                                <option value="51-200">51 à 200</option>
+                                <option value="200+">Plus de 200</option>
+                            </select>
+                        </div>
+                        <div class="form-col">
+                            <label class="form-label">Chiffre d'affaires annuel (FCFA)</label>
+                            <input type="number" name="new_company[annual_turnover]" id="new_company_turnover"
+                                class="form-control" placeholder="Ex: 50000000" min="0" step="100000">
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="company_id" id="selected_company_id" value="">
+                </div>
             </div>
 
             {{-- MONTANT --}}
@@ -283,11 +404,14 @@
 <script src="https://cdn.kkiapay.me/k.js"></script>
 
 <script>
+// Données injectées par le contrôleur
 const financements = @json($availableTypes->keyBy('id'));
+const userCompanies = @json($userCompanies ?? []);
 let currentSelection = {{ $preselectedType ? $preselectedType->id : 'null' }};
 let currentFundingRequestId = null;
 let currentTransaction = null;
 let isProcessing = false;
+let selectedCompanyId = null;
 
 document.addEventListener('DOMContentLoaded', function () {
     setupEventListeners();
@@ -296,7 +420,6 @@ document.addEventListener('DOMContentLoaded', function () {
         updateFormForSelection({{ $preselectedType->id }});
     @endif
 
-    // Attacher listeners Kkiapay
     if (typeof addSuccessListener === 'function') {
         addSuccessListener(onKkiapaySuccess);
         addFailedListener(onKkiapayFailed);
@@ -309,13 +432,11 @@ function getCsrfToken() {
 }
 
 function setupEventListeners() {
-    // Montant variable
     const amountInput = document.getElementById('amount_requested');
     if (amountInput) {
         amountInput.addEventListener('input', calculateTotals);
     }
 
-    // Compteur description
     const descInput = document.getElementById('description');
     if (descInput) {
         descInput.addEventListener('input', function() {
@@ -342,7 +463,7 @@ function updateFormForSelection(id) {
     const fin = financements[id];
     if (!fin) return;
 
-    // UI sélection
+    // UI sélection carte
     document.querySelectorAll('.financement-card').forEach(card => {
         card.classList.remove('selected');
         const r = card.querySelector('.radio-circle');
@@ -359,36 +480,128 @@ function updateFormForSelection(id) {
         }
     }
 
-    // Mettre à jour champs
+    // Mettre à jour champs cachés
     document.getElementById('selected_type_id').value = id;
+    document.getElementById('financement_type').value = fin.typeusers;
     document.getElementById('step-form').style.display = 'block';
 
-    // Résumé
+    // Afficher/masquer section entreprise
+    toggleCompanySection(fin.typeusers);
+
+    // Mise à jour des sections
     updateSummary(fin);
-
-    // Montant
     updateAmountSection(fin);
-
-    // Durée
     updateDurationSection(fin);
-
-    // Frais
     updateFeesSection(fin);
 
     document.getElementById('submitBtn').disabled = false;
 }
 
-function updateSummary(fin) {
-    document.getElementById('selected-summary').innerHTML = `
-        <div class="sf-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
+function toggleCompanySection(type) {
+    const companySection = document.getElementById('company-section');
+
+    if (type === 'entreprise') {
+        companySection.style.display = 'block';
+        renderCompaniesList();
+        // Réinitialiser la sélection d'entreprise
+        selectedCompanyId = null;
+        document.getElementById('selected_company_id').value = '';
+    } else {
+        companySection.style.display = 'none';
+        // Vider le formulaire entreprise
+        document.getElementById('new-company-form').style.display = 'none';
+        selectedCompanyId = null;
+    }
+}
+
+function renderCompaniesList() {
+    const grid = document.getElementById('companies-grid');
+
+    if (userCompanies.length === 0) {
+        grid.innerHTML = `
+            <div class="no-companies">
+                <p>Vous n'avez aucune entreprise enregistrée.</p>
+                <button type="button" class="btn btn-primary btn-sm" onclick="toggleNewCompanyForm()">
+                    Créer votre première entreprise
+                </button>
+            </div>
+        `;
+        document.getElementById('existing-companies').style.display = 'block';
+        return;
+    }
+
+    grid.innerHTML = userCompanies.map(company => `
+        <div class="company-card ${selectedCompanyId == company.id ? 'selected' : ''}"
+             onclick="selectCompany(${company.id})"
+             data-company-id="${company.id}">
+            <div class="company-radio">
+                <div class="radio-circle ${selectedCompanyId == company.id ? 'checked' : ''}">
+                    ${selectedCompanyId == company.id ? '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : ''}
+                </div>
+            </div>
+            <div class="company-info">
+                <h4 class="company-name">${escapeHtml(company.company_name)}</h4>
+                <span class="company-type">${escapeHtml(company.company_type)}</span>
+                <p class="company-sector">${escapeHtml(company.sector)}</p>
+                <span class="company-poste">${escapeHtml(company.job_title)}</span>
+            </div>
         </div>
+    `).join('');
+}
+
+function selectCompany(id) {
+    selectedCompanyId = id;
+    document.getElementById('selected_company_id').value = id;
+
+    // Masquer le formulaire nouvelle entreprise si ouvert
+    document.getElementById('new-company-form').style.display = 'none';
+
+    // Mettre à jour l'UI
+    renderCompaniesList();
+}
+
+function toggleNewCompanyForm() {
+    const form = document.getElementById('new-company-form');
+    const isVisible = form.style.display === 'block';
+
+    if (isVisible) {
+        form.style.display = 'none';
+        // Si on ferme le formulaire, on remet la sélection précédente si elle existe
+        if (selectedCompanyId) {
+            document.getElementById('selected_company_id').value = selectedCompanyId;
+        }
+    } else {
+        form.style.display = 'block';
+        // Désélectionner l'entreprise existante
+        selectedCompanyId = null;
+        document.getElementById('selected_company_id').value = '';
+        renderCompaniesList();
+
+        // Scroll vers le formulaire
+        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+function updateSummary(fin) {
+    const isEntreprise = fin.typeusers === 'entreprise';
+    const iconSvg = isEntreprise
+        ? `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+               d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+           </svg>`
+        : `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+               d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+           </svg>`;
+
+    document.getElementById('selected-summary').innerHTML = `
+        <div class="sf-icon">${iconSvg}</div>
         <div class="sf-info">
             <span class="sf-label">Financement sélectionné</span>
             <span class="sf-name">${escapeHtml(fin.name)}</span>
+            <span class="sf-type-badge badge-${fin.typeusers}">
+                ${isEntreprise ? 'Entreprise' : 'Particulier'}
+            </span>
         </div>`;
 }
 
@@ -440,9 +653,10 @@ async function preparePayment() {
     const csrfToken = getCsrfToken();
     const typeId = document.getElementById('selected_type_id')?.value;
     const fin = financements[typeId];
+    const financementType = document.getElementById('financement_type')?.value;
 
-    // Validations
-    if (!validateForm(fin)) {
+    // Validations de base
+    if (!validateForm(fin, financementType)) {
         isProcessing = false;
         return;
     }
@@ -478,7 +692,7 @@ async function preparePayment() {
 
         currentTransaction = initData.transaction;
 
-        // Étape 3: Ouvrir widget
+        // Étape 3: Ouvrir widget Kkiapay
         openKkiapayWidget({
             amount: initData.kkiapay_config.amount,
             key: initData.kkiapay_config.key,
@@ -496,18 +710,45 @@ async function preparePayment() {
     }
 }
 
-function validateForm(fin) {
+function validateForm(fin, financementType) {
     const csrfToken = getCsrfToken();
     if (!csrfToken) { alert('Erreur CSRF'); return false; }
 
+    // Validation montant
     if (fin.is_variable_amount == 1) {
         const amount = parseInt(document.getElementById('amount_requested')?.value);
         if (!amount || amount < 1000) { alert('Montant minimum: 1 000 FCFA/jour'); return false; }
         if (amount > fin.max_daily_amount) { alert(`Montant maximum: ${fin.max_daily_amount} FCFA`); return false; }
     }
 
+    // Validation titre
     const title = document.getElementById('title')?.value.trim();
     if (!title) { alert('Veuillez saisir un titre'); return false; }
+
+    // Validation entreprise si type entreprise
+    if (financementType === 'entreprise') {
+        const companyId = document.getElementById('selected_company_id')?.value;
+        const newCompanyName = document.getElementById('new_company_name')?.value.trim();
+
+        // Soit une entreprise existante sélectionnée, soit un nouveau formulaire rempli
+        if (!companyId && !newCompanyName) {
+            alert('Veuillez sélectionner une entreprise ou en créer une nouvelle');
+            return false;
+        }
+
+        // Si nouveau formulaire, vérifier les champs requis
+        if (!companyId && newCompanyName) {
+            const requiredFields = ['new_company_type', 'new_company_sector', 'new_company_job'];
+            for (const fieldId of requiredFields) {
+                const field = document.getElementById(fieldId);
+                if (!field || !field.value.trim()) {
+                    alert('Veuillez remplir tous les champs obligatoires de la nouvelle entreprise');
+                    field?.focus();
+                    return false;
+                }
+            }
+        }
+    }
 
     return true;
 }
@@ -532,7 +773,6 @@ async function onKkiapaySuccess(response) {
         return;
     }
 
-    // Afficher le loading
     const paymentSection = document.getElementById('payment-section');
     paymentSection.innerHTML = `
         <div class="payment-loading">
@@ -542,16 +782,15 @@ async function onKkiapaySuccess(response) {
         </div>
     `;
 
-    // Polling avec backoff exponentiel
     const maxAttempts = 20;
     let attempt = 0;
-    
+
     while (attempt < maxAttempts) {
         attempt++;
-        const delay = Math.min(1000 * Math.pow(1.2, attempt), 5000); // Backoff max 5s
-        
+        const delay = Math.min(1000 * Math.pow(1.2, attempt), 5000);
+
         console.log(`🔄 Polling attempt ${attempt}/${maxAttempts}, delay: ${delay}ms`);
-        
+
         try {
             const verifyRes = await fetch('/payment/verify', {
                 method: 'POST',
@@ -570,7 +809,6 @@ async function onKkiapaySuccess(response) {
             const data = await verifyRes.json();
             console.log('Verify response:', data);
 
-            // Mettre à jour le statut visuel
             const statusEl = document.getElementById('verify-status');
             if (statusEl) {
                 statusEl.textContent = `Tentative ${attempt}/${maxAttempts}...`;
@@ -591,14 +829,13 @@ async function onKkiapaySuccess(response) {
                 window.location.href = data.redirect_url;
                 return;
             }
-            
+
             if (data.status === 'failed') {
                 alert('Paiement échoué: ' + (data.message || 'Erreur inconnue'));
                 hideLoading();
                 return;
             }
 
-            // Attendre avant prochaine tentative
             await new Promise(resolve => setTimeout(resolve, delay));
 
         } catch (err) {
@@ -607,10 +844,9 @@ async function onKkiapaySuccess(response) {
         }
     }
 
-    // Timeout - mais ne pas abandonner, rediriger vers la page de statut
     console.warn('Max polling attempts reached');
     alert('Votre paiement est en cours de traitement. Vous serez notifié par email.');
-    window.location.href = `/my-requests`; // Page liste des demandes
+    window.location.href = `/my-requests`;
 }
 
 function onKkiapayFailed(response) {
@@ -693,6 +929,35 @@ function escapeHtml(text) {
         background: #eff6ff;
     }
 
+    .financement-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .financement-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.25rem 0.6rem;
+        border-radius: 9999px;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .badge-particulier {
+        background: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #3b82f6;
+    }
+
+    .badge-entreprise {
+        background: #fce7f3;
+        color: #9d174d;
+        border: 1px solid #ec4899;
+    }
+
     .financement-radio {
         flex-shrink: 0;
     }
@@ -735,7 +1000,7 @@ function escapeHtml(text) {
     .financement-name {
         font-size: 1rem;
         font-weight: 600;
-        margin: 0 0 0.35rem;
+        margin: 0;
         color: var(--text);
     }
 
@@ -774,6 +1039,175 @@ function escapeHtml(text) {
         border-color: #22c55e;
     }
 
+    /* Section Entreprise */
+    .company-section {
+        background: #fdf2f8;
+        border: 1px solid #fbcfe8;
+        border-radius: var(--radius);
+        padding: 1.25rem;
+    }
+
+    .company-section .form-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #9d174d;
+        font-weight: 600;
+    }
+
+    .companies-list {
+        margin-bottom: 1rem;
+    }
+
+    .companies-list > p {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .companies-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .company-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        background: white;
+        border: 2px solid #fbcfe8;
+        border-radius: var(--radius-sm);
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .company-card:hover {
+        border-color: #ec4899;
+        box-shadow: 0 2px 8px rgba(236, 72, 153, 0.1);
+    }
+
+    .company-card.selected {
+        border-color: #ec4899;
+        background: #fce7f3;
+    }
+
+    .company-radio {
+        flex-shrink: 0;
+        margin-top: 0.125rem;
+    }
+
+    .company-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .company-name {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0 0 0.25rem;
+    }
+
+    .company-type {
+        font-size: 0.75rem;
+        background: #fce7f3;
+        color: #9d174d;
+        padding: 0.125rem 0.5rem;
+        border-radius: 9999px;
+        font-weight: 500;
+    }
+
+    .company-sector {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin: 0.5rem 0 0.25rem;
+    }
+
+    .company-poste {
+        font-size: 0.75rem;
+        color: #9d174d;
+        font-weight: 500;
+    }
+
+    .no-companies {
+        text-align: center;
+        padding: 1.5rem;
+        background: white;
+        border-radius: var(--radius-sm);
+        border: 2px dashed #fbcfe8;
+    }
+
+    .no-companies p {
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+
+    .add-company-option {
+        text-align: center;
+        padding-top: 0.5rem;
+        border-top: 1px solid #fbcfe8;
+    }
+
+    .new-company-form {
+        background: white;
+        border: 2px solid #ec4899;
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        margin-top: 1rem;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .ncf-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #fbcfe8;
+    }
+
+    .ncf-header h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #9d174d;
+        margin: 0;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        color: #9d174d;
+        cursor: pointer;
+        padding: 0.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-close:hover {
+        color: #be185d;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-col {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-col .form-label {
+        font-size: 0.8rem;
+        margin-bottom: 0.375rem;
+        color: var(--text);
+    }
+
     .selected-financement {
         display: flex;
         align-items: center;
@@ -799,6 +1233,7 @@ function escapeHtml(text) {
     .sf-info {
         display: flex;
         flex-direction: column;
+        gap: 0.25rem;
     }
 
     .sf-label {
@@ -810,6 +1245,14 @@ function escapeHtml(text) {
         font-size: 0.95rem;
         font-weight: 600;
         color: var(--text);
+    }
+
+    .sf-type-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.2rem 0.5rem;
+        border-radius: 9999px;
+        width: fit-content;
     }
 
     .form-group {
@@ -844,6 +1287,26 @@ function escapeHtml(text) {
         border-color: var(--primary);
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         outline: none;
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+
+    .btn-outline:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: #eff6ff;
     }
 
     .amount-input-wrapper {
@@ -1100,6 +1563,14 @@ function escapeHtml(text) {
         .financement-icon {
             width: 40px;
             height: 40px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .companies-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
