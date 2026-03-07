@@ -4,7 +4,7 @@
 
 @section('content')
     @if($errors->any())
-        <div class="alert alert-error mb-4">
+        <div class="alert alert-error">
             @foreach($errors->all() as $error)
                 <p>{{ $error }}</p>
             @endforeach
@@ -12,168 +12,170 @@
     @endif
 
     @if(session('status'))
-        <div class="alert alert-success mb-4">
+        <div class="alert alert-success">
             {{ session('status') }}
         </div>
     @endif
 
-    <form method="POST" action="{{ route('login.submit') }}" id="loginForm" class="professional-form">
-        @csrf
+    <div class="login-tabs">
+        <button type="button" class="tab-btn active" data-method="email" onclick="switchMethod('email')">
+            Email
+        </button>
+        <button type="button" class="tab-btn" data-method="phone" onclick="switchMethod('phone')">
+            Téléphone
+        </button>
+    </div>
 
-        <div class="login-method-tabs">
-            <button type="button" class="method-tab active" data-method="email" onclick="switchMethod('email')">
-                Email
-            </button>
-            <button type="button" class="method-tab" data-method="phone" onclick="switchMethod('phone')">
-                Téléphone
-            </button>
-        </div>
-
+    <form action="{{ url('/login') }}" method="post" id="loginForm" class="login-form">
+        <input type="hidden" name="_token" value="{{ csrf_token() }}">
         <input type="hidden" name="login_method" id="loginMethod" value="email">
 
-        <!-- Champ Email -->
-        <div class="form-group" id="emailField">
-            <label class="form-label">Adresse email <span class="required">*</span></label>
-            <input type="email" name="email" id="emailInput" value="{{ old('email') }}"
-                   class="form-input" placeholder="jean.dupont@email.com" required>
+        <div class="input-group" id="emailField">
+            <label for="email">Adresse email <span class="required">*</span></label>
+            <input type="email" id="email" name="email" value="{{ old('email') }}" placeholder="votre@email.com">
         </div>
 
-        <!-- Champ Téléphone (caché par défaut) -->
-        <div class="form-group hidden" id="phoneField">
-            <label class="form-label">Numéro de téléphone <span class="required">*</span></label>
-            <input type="tel" name="phone" id="phoneInput" value="{{ old('phone') }}"
-                   class="form-input" placeholder="+225 01 23 45 67 89">
+        <div class="input-group hidden" id="phoneField">
+            <label for="phone">Numéro de téléphone <span class="required">*</span></label>
+            <input type="text" id="phone" name="phone" value="{{ old('phone') }}" placeholder="0123456789">
         </div>
 
-        <div class="form-group">
-            <label class="form-label">Mot de passe <span class="required">*</span></label>
-            <div class="password-field">
-                <input type="password" name="password" id="password" class="form-input" placeholder="Votre mot de passe" required>
-                <button type="button" class="toggle-password" onclick="togglePassword()">
-                    Afficher
-                </button>
+        <div class="input-group">
+            <label for="password">Mot de passe <span class="required">*</span></label>
+            <div class="password-wrap">
+                <input type="password" id="password" name="password" placeholder="Votre mot de passe" required>
+                <span class="toggle-pass" onclick="togglePass()">Afficher</span>
             </div>
         </div>
 
         <div class="form-options">
-            <label class="checkbox-field">
+            <label class="checkbox-wrap">
                 <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
-                <span class="checkbox-text">Se souvenir de moi</span>
+                <span>Se souvenir de moi</span>
             </label>
-            <a href="{{ route('password.request') }}" class="forgot-link">
-                Mot de passe oublié ?
-            </a>
+            <a href="{{ url('/forgot-password') }}" class="forgot-link">Mot de passe oublié ?</a>
         </div>
 
-        <button type="submit" class="btn-submit" id="submitBtn">
-            Se connecter
-        </button>
+        <button type="submit" class="btn-submit" id="submitBtn">Se connecter</button>
     </form>
 
-    <div class="form-footer">
-        <p>Pas encore de compte ? <a href="{{ route('register') }}" class="link-register">Créer un compte</a></p>
+    <div class="register-link">
+        Pas encore de compte ? <a href="{{ url('/register') }}">Créer un compte</a>
     </div>
 @endsection
 
 @section('styles')
 <style>
-    .professional-form {
-        max-width: 100%;
+    .alert {
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        border-radius: 4px;
+        font-size: 14px;
     }
 
-    .login-method-tabs {
+    .alert-error {
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+    }
+
+    .alert-success {
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+    }
+
+    .login-tabs {
         display: flex;
-        gap: 0.5rem;
-        margin-bottom: 1.5rem;
+        gap: 8px;
+        margin-bottom: 20px;
         border-bottom: 2px solid #e2e8f0;
     }
 
-    .method-tab {
+    .tab-btn {
         flex: 1;
-        padding: 0.75rem;
+        padding: 12px;
         background: none;
         border: none;
         border-bottom: 2px solid transparent;
         margin-bottom: -2px;
-        font-size: 0.875rem;
+        font-size: 14px;
         font-weight: 500;
         color: #64748b;
         cursor: pointer;
-        transition: all 0.2s;
         text-transform: uppercase;
-        letter-spacing: 0.025em;
+        letter-spacing: 0.5px;
+        transition: all 0.2s;
     }
 
-    .method-tab:hover {
+    .tab-btn:hover {
         color: #1e3a5f;
     }
 
-    .method-tab.active {
+    .tab-btn.active {
         color: #1e3a5f;
         border-bottom-color: #1e3a5f;
     }
 
-    .form-group {
-        margin-bottom: 1.25rem;
+    .login-form {
+        width: 100%;
     }
 
-    .form-group.hidden {
+    .input-group {
+        margin-bottom: 16px;
+    }
+
+    .input-group.hidden {
         display: none;
     }
 
-    .form-label {
+    .input-group label {
         display: block;
-        font-size: 0.875rem;
+        font-size: 13px;
         font-weight: 500;
         color: #334155;
-        margin-bottom: 0.5rem;
+        margin-bottom: 6px;
     }
 
     .required {
         color: #dc2626;
     }
 
-    .form-input {
+    .input-group input {
         width: 100%;
-        padding: 0.75rem;
+        padding: 10px 12px;
         border: 1px solid #cbd5e1;
         border-radius: 4px;
-        font-size: 0.9375rem;
-        transition: border-color 0.2s, box-shadow 0.2s;
-        background: #ffffff;
+        font-size: 14px;
+        transition: border-color 0.2s;
     }
 
-    .form-input:focus {
+    .input-group input:focus {
         outline: none;
         border-color: #1e3a5f;
-        box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
     }
 
-    .password-field {
+    .password-wrap {
         position: relative;
-        display: flex;
-        align-items: center;
     }
 
-    .password-field .form-input {
-        padding-right: 5rem;
+    .password-wrap input {
+        padding-right: 70px;
     }
 
-    .toggle-password {
+    .toggle-pass {
         position: absolute;
-        right: 0.5rem;
-        background: none;
-        border: none;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 12px;
         color: #64748b;
-        font-size: 0.75rem;
-        font-weight: 500;
         cursor: pointer;
-        padding: 0.25rem 0.5rem;
+        user-select: none;
         text-transform: uppercase;
-        letter-spacing: 0.025em;
     }
 
-    .toggle-password:hover {
+    .toggle-pass:hover {
         color: #1e3a5f;
     }
 
@@ -181,32 +183,28 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 1.5rem;
+        margin-bottom: 20px;
         flex-wrap: wrap;
-        gap: 0.75rem;
+        gap: 12px;
     }
 
-    .checkbox-field {
+    .checkbox-wrap {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 8px;
         cursor: pointer;
-    }
-
-    .checkbox-field input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
-        accent-color: #1e3a5f;
-        cursor: pointer;
-    }
-
-    .checkbox-text {
-        font-size: 0.875rem;
+        font-size: 13px;
         color: #475569;
     }
 
+    .checkbox-wrap input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #1e3a5f;
+    }
+
     .forgot-link {
-        font-size: 0.875rem;
+        font-size: 13px;
         color: #1e3a5f;
         text-decoration: none;
         font-weight: 500;
@@ -218,68 +216,45 @@
 
     .btn-submit {
         width: 100%;
-        padding: 1rem;
-        background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-        color: white;
+        padding: 14px;
+        background: #1e3a5f;
+        color: #ffffff;
         border: none;
         border-radius: 4px;
-        font-size: 0.9375rem;
+        font-size: 14px;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
         cursor: pointer;
         transition: all 0.2s;
-        text-transform: uppercase;
-        letter-spacing: 0.025em;
     }
 
     .btn-submit:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(30, 58, 95, 0.3);
+        background: #2c5282;
     }
 
     .btn-submit:disabled {
         opacity: 0.7;
         cursor: not-allowed;
-        transform: none;
     }
 
-    .form-footer {
+    .register-link {
         text-align: center;
-        margin-top: 1.5rem;
-        padding-top: 1.5rem;
+        margin-top: 20px;
+        padding-top: 20px;
         border-top: 1px solid #e2e8f0;
-    }
-
-    .form-footer p {
-        font-size: 0.875rem;
+        font-size: 14px;
         color: #64748b;
     }
 
-    .link-register {
+    .register-link a {
         color: #1e3a5f;
         font-weight: 600;
         text-decoration: none;
     }
 
-    .link-register:hover {
+    .register-link a:hover {
         text-decoration: underline;
-    }
-
-    .alert {
-        padding: 1rem;
-        border-radius: 4px;
-        font-size: 0.875rem;
-    }
-
-    .alert-error {
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        color: #dc2626;
-    }
-
-    .alert-success {
-        background: #f0fdf4;
-        border: 1px solid #bbf7d0;
-        color: #16a34a;
     }
 
     @media (max-width: 480px) {
@@ -294,22 +269,20 @@
 @section('scripts')
 <script>
     function switchMethod(method) {
-        const emailField = document.getElementById('emailField');
-        const phoneField = document.getElementById('phoneField');
-        const emailInput = document.getElementById('emailInput');
-        const phoneInput = document.getElementById('phoneInput');
-        const loginMethod = document.getElementById('loginMethod');
-        const tabs = document.querySelectorAll('.method-tab');
+        var emailField = document.getElementById('emailField');
+        var phoneField = document.getElementById('phoneField');
+        var emailInput = document.getElementById('email');
+        var phoneInput = document.getElementById('phone');
+        var loginMethod = document.getElementById('loginMethod');
+        var tabs = document.querySelectorAll('.tab-btn');
 
-        // Mise à jour des onglets
-        tabs.forEach(tab => {
+        tabs.forEach(function(tab) {
             tab.classList.remove('active');
             if (tab.dataset.method === method) {
                 tab.classList.add('active');
             }
         });
 
-        // Mise à jour des champs
         if (method === 'email') {
             emailField.classList.remove('hidden');
             phoneField.classList.add('hidden');
@@ -327,49 +300,25 @@
         }
     }
 
-    function togglePassword() {
-        const password = document.getElementById('password');
-        const button = password.nextElementSibling;
+    function togglePass() {
+        var input = document.getElementById('password');
+        var span = input.nextElementSibling;
 
-        if (password.type === 'password') {
-            password.type = 'text';
-            button.textContent = 'Masquer';
+        if (input.type === 'password') {
+            input.type = 'text';
+            span.textContent = 'Masquer';
         } else {
-            password.type = 'password';
-            button.textContent = 'Afficher';
+            input.type = 'password';
+            span.textContent = 'Afficher';
         }
     }
 
-    // Validation avant soumission
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-        const method = document.getElementById('loginMethod').value;
-        const email = document.getElementById('emailInput').value;
-        const phone = document.getElementById('phoneInput').value;
-        const password = document.getElementById('password').value;
-
-        if (method === 'email' && !email) {
-            e.preventDefault();
-            alert('Veuillez saisir votre adresse email.');
-            return false;
-        }
-
-        if (method === 'phone' && !phone) {
-            e.preventDefault();
-            alert('Veuillez saisir votre numéro de téléphone.');
-            return false;
-        }
-
-        if (!password) {
-            e.preventDefault();
-            alert('Veuillez saisir votre mot de passe.');
-            return false;
-        }
-
+    document.getElementById('loginForm').addEventListener('submit', function() {
         document.getElementById('submitBtn').disabled = true;
         document.getElementById('submitBtn').textContent = 'Connexion en cours...';
     });
 
-    // Préservation de la méthode après erreur de validation
+    // Préservation méthode après erreur
     @if(old('login_method') === 'phone')
         switchMethod('phone');
     @endif

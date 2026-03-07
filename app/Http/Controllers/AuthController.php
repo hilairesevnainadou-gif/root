@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ResetPasswordMail;
 use App\Mail\VerificationCodeMail;
 use App\Models\User;
 use App\Models\VerificationCode;
@@ -459,11 +460,17 @@ class AuthController extends Controller
     // PASSWORD RESET
     // =====================
 
+     /**
+     * Affiche le formulaire de demande de réinitialisation
+     */
     public function showForgotPasswordForm(): View
     {
         return view('auth.forgot-password');
     }
 
+    /**
+     * Envoie le lien de réinitialisation par email
+     */
     public function sendResetLink(Request $request): RedirectResponse
     {
         $request->validate([
@@ -474,58 +481,104 @@ class AuthController extends Controller
             'email.exists' => 'Cette adresse email n\'est pas enregistrée.',
         ]);
 
-        // Générer un token
+        $email = $request->email;
         $token = Str::random(64);
 
-        // Stocker le token (vous devriez créer une table password_resets)
-        DB::table('password_resets')->insert([
-            'email' => $request->email,
-            'token' => Hash::make($token),
-            'created_at' => now(),
-        ]);
+        // Stocker le token (Laravel 10+ utilise password_reset_tokens)
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $email],
+            [
+                'token' => Hash::make($token),
+                'created_at' => now(),
+            ]
+        );
 
-        // Envoyer l'email (à implémenter avec votre système de mail)
+        // ENVOI DE L'EMAIL
         try {
-            // Mail::to($request->email)->send(new ResetPasswordMail($token));
-            Log::info("Lien de réinitialisation généré pour : {$request->email}");
+            Mail::to($email)->send(new ResetPasswordMail($token, $email));
+
+            Log::info("Email de réinitialisation envoyé à : {$email}");
+
         } catch (\Exception $e) {
-            Log::error('Erreur envoi email reset password : '.$e->getMessage());
+            Log::error("Erreur envoi email reset password à {$email} : " . $e->getMessage());
+
+            // En développement, on peut logguer le token pour tester
+            if (app()->environment('local')) {
+                Log::info("TOKEN DEBUG pour {$email} : {$token}");
+            }
+
+            return back()->withErrors(['email' => 'Impossible d\'envoyer l\'email. Veuillez réessayer plus tard.']);
         }
 
         return back()->with('status', 'Un lien de réinitialisation a été envoyé à votre adresse email.');
     }
 
+    /**
+     * Affiche le formulaire de nouveau mot de passe
+     */
     public function showResetPasswordForm(string $token): View
     {
         return view('auth.reset-password', ['token' => $token]);
     }
 
+    /**
+     * Traite la réinitialisation du mot de passe
+     */
     public function resetPassword(Request $request): RedirectResponse
     {
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'token.required' => 'Le token est manquant.',
+            'email.required' => 'L\'email est obligatoire.',
+            'email.email' => 'L\'email n\'est pas valide.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'password.confirmed' => 'Les mots de passe ne correspondent pas.',
         ]);
 
+        $email = $request->email;
+        $token = $request->token;
+
         // Vérifier le token
-        $reset = DB::table('password_resets')
-            ->where('email', $request->email)
+        $reset = DB::table('password_reset_tokens')
+            ->where('email', $email)
             ->first();
 
-        if (! $reset || ! Hash::check($request->token, $reset->token)) {
-            return back()->withErrors(['email' => 'Ce lien de réinitialisation est invalide ou a expiré.']);
+        if (! $reset) {
+            return back()->withErrors(['email' => 'Aucune demande de réinitialisation trouvée pour cet email.']);
+        }
+
+        if (! Hash::check($token, $reset->token)) {
+            return back()->withErrors(['email' => 'Le lien de réinitialisation est invalide.']);
+        }
+
+        // Vérifier expiration (60 minutes)
+        if (now()->diffInMinutes($reset->created_at) > 60) {
+            // Supprimer le token expiré
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
+
+            return back()->withErrors(['email' => 'Ce lien de réinitialisation a expiré. Veuillez faire une nouvelle demande.']);
         }
 
         // Mettre à jour le mot de passe
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $email)->first();
+
+        if (! $user) {
+            return back()->withErrors(['email' => 'Utilisateur non trouvé.']);
+        }
+
         $user->update([
             'password' => Hash::make($request->password),
         ]);
 
         // Supprimer le token utilisé
-        DB::table('password_resets')->where('email', $request->email)->delete();
+        DB::table('password_reset_tokens')->where('email', $email)->delete();
 
-        return redirect()->route('login')->with('success', 'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.');
+        Log::info("Mot de passe réinitialisé pour : {$email}");
+
+        return redirect()->url('/login')->with('success', 'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.');
     }
 }
