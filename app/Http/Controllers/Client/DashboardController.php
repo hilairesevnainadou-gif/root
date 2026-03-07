@@ -301,12 +301,16 @@ class DashboardController extends Controller
     /**
      * Actions prioritaires
      */
+       /**
+     * Actions prioritaires
+     */
     private function getPriorityActions($user): array
     {
         $actions = [];
 
         // Vérifier documents manquants pour demandes soumises
-        $requestsWithMissingDocs = FundingRequest::with('typeFinancement')
+        // Basé UNIQUEMENT sur TypeFinancement->requiredTypeDocs()
+        $requestsWithMissingDocs = FundingRequest::with(['typeFinancement.requiredTypeDocs', 'documentUsers'])
             ->where('user_id', $user->id)
             ->where('status', 'submitted')
             ->get()
@@ -315,13 +319,16 @@ class DashboardController extends Controller
             });
 
         foreach ($requestsWithMissingDocs as $request) {
-            $missingCount = count($request->missingDocuments());
+            $missingCount = $request->missingDocuments()->count();
+            $totalCount = $request->totalRequiredDocumentsCount();
+            
             $actions[] = [
                 'priority' => 'high',
                 'title' => 'Documents manquants',
-                'description' => "Ajoutez {$missingCount} document(s) pour finaliser \"{$request->title}\"",
+                'description' => "Ajoutez {$missingCount}/{$totalCount} document(s) pour finaliser \"{$request->title}\"",
                 'url' => route('client.documents.required', $request),
                 'deadline' => $request->created_at->addDays(14)->diffForHumans(),
+                'progress' => $request->documentsCompletionPercentage(),
             ];
         }
 
@@ -331,22 +338,6 @@ class DashboardController extends Controller
                 'priority' => 'medium',
                 'title' => 'Première demande',
                 'description' => 'Découvrez les financements disponibles et faites votre première demande',
-                'url' => route('client.financements.index'),
-                'deadline' => null,
-            ];
-        }
-
-        // Renouvellement si financement récent
-        $lastFunded = FundingRequest::where('user_id', $user->id)
-            ->where('status', 'funded')
-            ->where('funded_at', '>', Carbon::now()->subMonths(6))
-            ->first();
-
-        if ($lastFunded) {
-            $actions[] = [
-                'priority' => 'low',
-                'title' => 'Nouveau financement',
-                'description' => 'Vous pouvez faire une nouvelle demande de financement',
                 'url' => route('client.financements.index'),
                 'deadline' => null,
             ];
