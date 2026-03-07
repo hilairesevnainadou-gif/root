@@ -4,42 +4,41 @@
 
 @section('content')
     @if($errors->any())
-        <div class="alert alert-error mb-4">
+        <div class="alert alert-error">
             @foreach($errors->all() as $error)
                 <p>{{ $error }}</p>
             @endforeach
         </div>
     @endif
 
-    <form method="POST" action="{{ route('register.submit') }}" id="registerForm" class="professional-form">
-        @csrf
+    <form action="{{ url('/register') }}" method="post" accept-charset="UTF-8" class="register-form">
+        <input type="hidden" name="_token" value="{{ csrf_token() }}">
 
-        <!-- Section Identité -->
-        <div class="form-section">
-            <h3 class="section-title">Identité</h3>
+        <div class="form-block">
+            <h3 class="block-title">Informations personnelles</h3>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Prénom <span class="required">*</span></label>
-                    <input type="text" name="first_name" value="{{ old('first_name') }}"
-                           class="form-input" placeholder="Jean" required>
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="first_name">Prénom <span class="star">*</span></label>
+                    <input type="text" id="first_name" name="first_name" value="{{ old('first_name') }}" required>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Nom <span class="required">*</span></label>
-                    <input type="text" name="last_name" value="{{ old('last_name') }}"
-                           class="form-input" placeholder="Dupont" required>
+
+                <div class="input-group">
+                    <label for="last_name">Nom <span class="star">*</span></label>
+                    <input type="text" id="last_name" name="last_name" value="{{ old('last_name') }}" required>
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Date de naissance</label>
-                    <input type="date" name="birth_date" value="{{ old('birth_date') }}" class="form-input">
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="birth_date">Date de naissance</label>
+                    <input type="date" id="birth_date" name="birth_date" value="{{ old('birth_date') }}">
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Genre</label>
-                    <select name="gender" class="form-select">
-                        <option value="">Sélectionner</option>
+
+                <div class="input-group">
+                    <label for="gender">Genre</label>
+                    <select id="gender" name="gender">
+                        <option value="">-- Sélectionner --</option>
                         <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>Homme</option>
                         <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>Femme</option>
                         <option value="other" {{ old('gender') == 'other' ? 'selected' : '' }}>Autre</option>
@@ -48,291 +47,267 @@
             </div>
         </div>
 
-        <!-- Section Contact -->
-        <div class="form-section">
-            <h3 class="section-title">Coordonnées</h3>
+        <div class="form-block">
+            <h3 class="block-title">Coordonnées</h3>
 
-            <div class="form-group">
-                <label class="form-label">Adresse email <span class="required">*</span></label>
-                <input type="email" name="email" value="{{ old('email') }}"
-                       class="form-input" placeholder="jean.dupont@email.com" required>
+            <div class="input-group">
+                <label for="email">Adresse email <span class="star">*</span></label>
+                <input type="email" id="email" name="email" value="{{ old('email') }}" required>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Téléphone <span class="required">*</span></label>
-                <input type="tel" name="phone" value="{{ old('phone') }}"
-                       class="form-input" placeholder="+225 01 23 45 67 89" required>
+            <div class="input-group">
+                <label for="phone">Téléphone <span class="star">*</span></label>
+                <input type="text" id="phone" name="phone" value="{{ old('phone') }}" required>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Adresse</label>
-                <input type="text" name="address" value="{{ old('address') }}"
-                       class="form-input" placeholder="123 Rue des Exemples">
+            <div class="input-group">
+                <label for="address">Adresse postale</label>
+                <input type="text" id="address" name="address" value="{{ old('address') }}">
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Ville <span class="required">*</span></label>
-                <input type="text" name="city" value="{{ old('city') }}"
-                       class="form-input" placeholder="Abidjan" required>
+            <div class="input-group">
+                <label for="city">Ville <span class="star">*</span></label>
+                <input type="text" id="city" name="city" value="{{ old('city') }}" required>
             </div>
         </div>
 
-        <!-- Section Sécurité -->
-        <div class="form-section">
-            <h3 class="section-title">Sécurité</h3>
+        <div class="form-block">
+            <h3 class="block-title">Sécurité</h3>
 
-            <div class="form-group">
-                <label class="form-label">Mot de passe <span class="required">*</span></label>
-                <div class="password-field">
-                    <input type="password" name="password" id="password"
-                           class="form-input" placeholder="Minimum 8 caractères" required>
-                    <button type="button" class="toggle-password" onclick="togglePassword('password')">
-                        Afficher
-                    </button>
+            <div class="input-group">
+                <label for="password">Mot de passe <span class="star">*</span></label>
+                <div class="password-wrap">
+                    <input type="password" id="password" name="password" minlength="8" required>
+                    <span class="show-pass" onclick="togglePass('password')">Afficher</span>
                 </div>
-                <div class="password-hint">Le mot de passe doit contenir au moins 8 caractères</div>
+                <small class="help-text">Minimum 8 caractères</small>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Confirmer le mot de passe <span class="required">*</span></label>
-                <div class="password-field">
-                    <input type="password" name="password_confirmation" id="passwordConfirm"
-                           class="form-input" placeholder="Répéter le mot de passe" required>
-                    <button type="button" class="toggle-password" onclick="togglePassword('passwordConfirm')">
-                        Afficher
-                    </button>
+            <div class="input-group">
+                <label for="password_confirmation">Confirmer le mot de passe <span class="star">*</span></label>
+                <div class="password-wrap">
+                    <input type="password" id="password_confirmation" name="password_confirmation" required>
+                    <span class="show-pass" onclick="togglePass('password_confirmation')">Afficher</span>
                 </div>
             </div>
         </div>
 
-        <!-- Note de vérification -->
-        <div class="verification-notice">
-            <p>Un code de vérification sera envoyé à votre adresse email pour sécuriser votre compte.</p>
+        <div class="info-box">
+            Un code de vérification sera envoyé à votre adresse email pour activer votre compte.
         </div>
 
-        <!-- Conditions -->
-        <div class="form-section terms-section">
-            <label class="checkbox-field">
-                <input type="checkbox" name="terms" required {{ old('terms') ? 'checked' : '' }}>
-                <span class="checkbox-text">
-                    J'accepte les <a href="#" target="_blank">conditions d'utilisation</a>
-                    et la <a href="#" target="_blank">politique de confidentialité</a> de BHDM.
-                    <span class="required">*</span>
+        <div class="terms-box">
+            <label class="checkbox-wrap">
+                <input type="checkbox" name="terms" value="1" required {{ old('terms') ? 'checked' : '' }}>
+                <span class="check-text">
+                    J'accepte les <a href="#" target="_blank">conditions d'utilisation</a> et la
+                    <a href="#" target="_blank">politique de confidentialité</a> <span class="star">*</span>
                 </span>
             </label>
         </div>
 
-        <button type="submit" class="btn-submit" id="submitBtn">
-            Créer mon compte
-        </button>
+        <button type="submit" class="submit-btn">Créer mon compte</button>
     </form>
 
-    <div class="form-footer">
-        <p>Déjà un compte ? <a href="{{ route('login') }}" class="link-login">Se connecter</a></p>
+    <div class="bottom-link">
+        Déjà inscrit ? <a href="{{ url('/login') }}">Se connecter</a>
     </div>
 @endsection
 
 @section('styles')
 <style>
-    .professional-form {
-        max-width: 100%;
+    .alert {
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        font-size: 14px;
     }
 
-    .form-section {
-        margin-bottom: 2rem;
-        padding-bottom: 1.5rem;
-        border-bottom: 1px solid #e2e8f0;
+    .alert-error {
+        background-color: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
     }
 
-    .form-section:last-of-type {
-        border-bottom: none;
+    .register-form {
+        width: 100%;
     }
 
-    .section-title {
-        font-size: 0.875rem;
+    .form-block {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .block-title {
+        font-size: 13px;
         font-weight: 600;
         color: #1e3a5f;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 1.25rem;
-        padding-bottom: 0.5rem;
+        letter-spacing: 0.5px;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
         border-bottom: 2px solid #1e3a5f;
     }
 
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin-bottom: 1rem;
+    .input-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 12px;
     }
 
-    .form-group {
-        margin-bottom: 1rem;
+    .input-group {
+        flex: 1;
+        margin-bottom: 12px;
     }
 
-    .form-label {
+    .input-group label {
         display: block;
-        font-size: 0.875rem;
+        font-size: 13px;
         font-weight: 500;
         color: #334155;
-        margin-bottom: 0.5rem;
+        margin-bottom: 6px;
     }
 
-    .required {
+    .star {
         color: #dc2626;
     }
 
-    .form-input,
-    .form-select {
+    .input-group input,
+    .input-group select {
         width: 100%;
-        padding: 0.75rem;
+        padding: 10px 12px;
         border: 1px solid #cbd5e1;
         border-radius: 4px;
-        font-size: 0.9375rem;
-        transition: border-color 0.2s, box-shadow 0.2s;
+        font-size: 14px;
         background: #ffffff;
     }
 
-    .form-input:focus,
-    .form-select:focus {
+    .input-group input:focus,
+    .input-group select:focus {
         outline: none;
         border-color: #1e3a5f;
-        box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
     }
 
-    .password-field {
+    .password-wrap {
         position: relative;
-        display: flex;
-        align-items: center;
     }
 
-    .password-field .form-input {
-        padding-right: 5rem;
+    .password-wrap input {
+        padding-right: 70px;
     }
 
-    .toggle-password {
+    .show-pass {
         position: absolute;
-        right: 0.5rem;
-        background: none;
-        border: none;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 12px;
         color: #64748b;
-        font-size: 0.75rem;
-        font-weight: 500;
         cursor: pointer;
-        padding: 0.25rem 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.025em;
+        user-select: none;
     }
 
-    .toggle-password:hover {
+    .show-pass:hover {
         color: #1e3a5f;
     }
 
-    .password-hint {
-        font-size: 0.75rem;
+    .help-text {
+        display: block;
+        font-size: 12px;
         color: #64748b;
-        margin-top: 0.375rem;
+        margin-top: 4px;
     }
 
-    .verification-notice {
+    .info-box {
         background: #eff6ff;
         border-left: 4px solid #1e3a5f;
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-        border-radius: 0 4px 4px 0;
-    }
-
-    .verification-notice p {
-        font-size: 0.875rem;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        font-size: 13px;
         color: #1e3a5f;
-        margin: 0;
     }
 
-    .terms-section {
+    .terms-box {
         background: #f8fafc;
-        padding: 1.25rem;
-        border-radius: 4px;
         border: 1px solid #e2e8f0;
+        padding: 16px;
+        border-radius: 4px;
+        margin-bottom: 20px;
     }
 
-    .checkbox-field {
+    .checkbox-wrap {
         display: flex;
         align-items: flex-start;
-        gap: 0.75rem;
+        gap: 10px;
         cursor: pointer;
     }
 
-    .checkbox-field input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
+    .checkbox-wrap input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
         margin-top: 2px;
         accent-color: #1e3a5f;
-        cursor: pointer;
     }
 
-    .checkbox-text {
-        font-size: 0.875rem;
+    .check-text {
+        font-size: 13px;
         color: #475569;
         line-height: 1.5;
     }
 
-    .checkbox-text a {
+    .check-text a {
         color: #1e3a5f;
         text-decoration: underline;
-        font-weight: 500;
     }
 
-    .btn-submit {
+    .submit-btn {
         width: 100%;
-        padding: 1rem;
-        background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-        color: white;
+        padding: 14px;
+        background: #1e3a5f;
+        color: #ffffff;
         border: none;
         border-radius: 4px;
-        font-size: 0.9375rem;
+        font-size: 14px;
         font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
         text-transform: uppercase;
-        letter-spacing: 0.025em;
+        letter-spacing: 0.5px;
+        cursor: pointer;
     }
 
-    .btn-submit:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(30, 58, 95, 0.3);
+    .submit-btn:hover {
+        background: #2c5282;
     }
 
-    .btn-submit:disabled {
-        opacity: 0.7;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    .form-footer {
+    .bottom-link {
         text-align: center;
-        margin-top: 1.5rem;
-        padding-top: 1.5rem;
+        margin-top: 20px;
+        padding-top: 20px;
         border-top: 1px solid #e2e8f0;
-    }
-
-    .form-footer p {
-        font-size: 0.875rem;
+        font-size: 14px;
         color: #64748b;
     }
 
-    .link-login {
+    .bottom-link a {
         color: #1e3a5f;
         font-weight: 600;
         text-decoration: none;
     }
 
-    .link-login:hover {
+    .bottom-link a:hover {
         text-decoration: underline;
     }
 
-    @media (max-width: 640px) {
-        .form-row {
-            grid-template-columns: 1fr;
+    @media (max-width: 480px) {
+        .input-row {
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .form-block {
+            padding: 16px;
         }
     }
 </style>
@@ -340,37 +315,34 @@
 
 @section('scripts')
 <script>
-    function togglePassword(inputId) {
-        const input = document.getElementById(inputId);
-        const button = input.nextElementSibling;
+    function togglePass(id) {
+        var input = document.getElementById(id);
+        var span = input.nextElementSibling;
 
         if (input.type === 'password') {
             input.type = 'text';
-            button.textContent = 'Masquer';
+            span.textContent = 'Masquer';
         } else {
             input.type = 'password';
-            button.textContent = 'Afficher';
+            span.textContent = 'Afficher';
         }
     }
 
-    document.getElementById('registerForm').addEventListener('submit', function(e) {
-        const password = document.getElementById('password').value;
-        const confirm = document.getElementById('passwordConfirm').value;
+    document.querySelector('.register-form').addEventListener('submit', function(e) {
+        var pass = document.getElementById('password').value;
+        var confirm = document.getElementById('password_confirmation').value;
 
-        if (password !== confirm) {
+        if (pass !== confirm) {
             e.preventDefault();
             alert('Les mots de passe ne correspondent pas.');
             return false;
         }
 
-        if (password.length < 8) {
+        if (pass.length < 8) {
             e.preventDefault();
             alert('Le mot de passe doit contenir au moins 8 caractères.');
             return false;
         }
-
-        document.getElementById('submitBtn').disabled = true;
-        document.getElementById('submitBtn').textContent = 'Création en cours...';
     });
 </script>
 @endsection
