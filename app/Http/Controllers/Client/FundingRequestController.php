@@ -18,21 +18,30 @@ class FundingRequestController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = FundingRequest::with('typeFinancement')
-            ->where('user_id', auth()->id());
+        $userId = auth()->id();
+        
+        $query = FundingRequest::with(['typeFinancement', 'transactions'])
+            ->where('user_id', $userId);
 
-        if ($request->status) {
+        // Filtre par statut
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        // Filtre par statut de paiement
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
         }
 
         $requests = $query->orderByDesc('created_at')->paginate(10);
 
-        $userId = auth()->id();
+        // Statistiques pour les cartes récapitulatives
         $stats = [
             'all' => FundingRequest::where('user_id', $userId)->count(),
             'draft' => FundingRequest::where('user_id', $userId)->where('status', 'draft')->count(),
-            'pending' => FundingRequest::where('user_id', $userId)
-                ->whereIn('status', ['submitted', 'under_review', 'pending_committee'])->count(),
+            'pending_payment' => FundingRequest::where('user_id', $userId)->where('payment_status', 'pending')->where('status', 'draft')->count(),
+            'submitted' => FundingRequest::where('user_id', $userId)->where('status', 'submitted')->count(),
+            'under_review' => FundingRequest::where('user_id', $userId)->whereIn('status', ['under_review', 'pending_committee'])->count(),
             'approved' => FundingRequest::where('user_id', $userId)->where('status', 'approved')->count(),
             'funded' => FundingRequest::where('user_id', $userId)->where('status', 'funded')->count(),
             'rejected' => FundingRequest::where('user_id', $userId)->where('status', 'rejected')->count(),

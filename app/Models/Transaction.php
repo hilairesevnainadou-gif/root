@@ -96,4 +96,36 @@ class Transaction extends Model
     {
         return $query->where('status', 'completed');
     }
+
+
+    /**
+     * Libellé du type de transaction
+     */
+    public function getTypeLabel(): string
+    {
+        return match($this->type) {
+            'credit' => 'Dépôt',
+            'debit' => 'Retrait',
+            'payment' => 'Paiement',
+            'transfer' => 'Transfert',
+            'refund' => 'Remboursement',
+            'fee' => 'Frais',
+            default => $this->type,
+        };
+    }
+
+    /**
+     * Libellé du statut
+     */
+    public function getStatusLabel(): string
+    {
+        return match($this->status) {
+            'pending' => 'En attente',
+            'processing' => 'En cours',
+            'completed' => 'Complété',
+            'failed' => 'Échoué',
+            'cancelled' => 'Annulé',
+            default => $this->status,
+        };
+    }
 }

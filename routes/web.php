@@ -52,6 +52,16 @@ Route::get('/track/{requestNumber}', [ClientFundingRequestController::class, 'tr
 
 /*
 |--------------------------------------------------------------------------
+| Webhook Kkiapay (Public - Sans Auth)
+|--------------------------------------------------------------------------
+*/
+// IMPORTANT: Cette route doit être accessible sans authentification
+// mais elle garde le middleware 'web' pour la session et le CSRF
+Route::post('/payment/webhook', [KkiapayPaymentController::class, 'webhook'])
+    ->name('client.payment.webhook');
+
+/*
+|--------------------------------------------------------------------------
 | Routes Client (Authentifié)
 |--------------------------------------------------------------------------
 */
@@ -63,19 +73,17 @@ Route::middleware(['auth'])->group(function () {
     // Profil
     Route::get('/profile', [ProfileController::class, 'show'])->name('client.profile');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('client.profile.update');
+    Route::post('/profile/acknowledge', [ProfileController::class, 'acknowledgeModal'])->name('client.profile.acknowledge');
 
     // Types de Financement
     Route::get('/financements', [ClientTypeFinancementController::class, 'index'])->name('client.financements.index');
     Route::get('/financements/{typeFinancement}', [ClientTypeFinancementController::class, 'show'])->name('client.financements.show');
 
-    // PAIEMENT KKIAPAY - Routes spécifiques AVANT les routes avec paramètres
+    // PAIEMENT KKIAPAY - Routes spécifiques AVANT les routes avec {fundingRequest}
     Route::post('/requests/{fundingRequest}/payment/initialize', [KkiapayPaymentController::class, 'initialize'])
         ->name('client.payment.initialize');
     Route::post('/payment/verify', [KkiapayPaymentController::class, 'verify'])
         ->name('client.payment.verify');
-    Route::post('/payment/webhook', [KkiapayPaymentController::class, 'webhook'])
-        ->name('client.payment.webhook')
-        ->withoutMiddleware(['auth', 'web']); // Important : pas d'auth, pas de session
 
     // Documents requis (après paiement)
     Route::get('/requests/{fundingRequest}/documents', [ClientDocumentController::class, 'required'])
@@ -86,7 +94,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/requests/create', [ClientFundingRequestController::class, 'create'])->name('client.requests.create');
     Route::post('/requests', [ClientFundingRequestController::class, 'store'])->name('client.requests.store');
 
-    // Demandes - Routes avec {fundingRequest} en DERNIER
+    // Demandes - Routes avec {fundingRequest} en DERNIER pour éviter les conflits
     Route::get('/requests/{fundingRequest}/edit', [ClientFundingRequestController::class, 'edit'])->name('client.requests.edit');
     Route::patch('/requests/{fundingRequest}', [ClientFundingRequestController::class, 'update'])->name('client.requests.update');
     Route::delete('/requests/{fundingRequest}', [ClientFundingRequestController::class, 'destroy'])->name('client.requests.destroy');

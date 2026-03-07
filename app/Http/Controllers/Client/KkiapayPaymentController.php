@@ -53,7 +53,6 @@ class KkiapayPaymentController extends Controller
 
         $amount = $typeFinancement->registration_fee;
 
-        // Créer ou récupérer le wallet
         $wallet = Wallet::where('user_id', auth()->id())
             ->where('status', 'active')
             ->first();
@@ -162,21 +161,12 @@ class KkiapayPaymentController extends Controller
             ]);
         }
 
-        // ==== MODE SANDBOX : Vérifier directement via API Kkiapay ====
-        if ($this->sandbox) {
-            return $this->verifyViaApi($transaction, $freshRequest, $validated['transactionId']);
-        }
-
-        // En attente du webhook (production)
-        return response()->json([
-            'success' => true,
-            'status'  => 'pending',
-            'message' => 'Confirmation en cours...',
-        ]);
+        // ==== Vérifier via API Kkiapay (fonctionne en sandbox ET production) ====
+        return $this->verifyViaApi($transaction, $freshRequest, $validated['transactionId']);
     }
 
     /**
-     * Vérifier le statut via API Kkiapay (sandbox uniquement)
+     * Vérifier le statut via API Kkiapay
      */
     private function verifyViaApi(Transaction $transaction, FundingRequest $fundingRequest, string $kkiapayId): JsonResponse
     {
@@ -238,113 +228,175 @@ class KkiapayPaymentController extends Controller
      */
     public function webhook(Request $request): JsonResponse
     {
-        Log::channel('kkiapay')->info('=== WEBHOOK RECEIVED ===', [
-            'ip'       => $request->ip(),
-            'method'   => $request->method(),
-            'all_data' => $request->all(),
+        Log::channel('kkiapay')->info('╔════════════════════════════════════════════════════════╗');
+        Log::channel('kkiapay')->info('║              WEBHOOK KKIAPAY REÇU                      ║');
+        Log::channel('kkiapay')->info('╚════════════════════════════════════════════════════════╝');
+        Log::channel('kkiapay')->info('Détails de la requête', [
+            'ip'         => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'method'     => $request->method(),
+            'url'        => $request->fullUrl(),
+            'headers'    => $request->headers->all(),
+            'payload'    => $request->all(),
         ]);
 
         // Vérification signature
         if ($this->webhookSecret) {
             $receivedSecret = $request->header('x-kkiapay-secret');
             
+            Log::channel('kkiapay')->info('Vérification signature', [
+                'received' => $receivedSecret,
+                'expected' => $this->webhookSecret,
+                'match'    => $receivedSecret === $this->webhookSecret,
+            ]);
+
             if ($receivedSecret !== $this->webhookSecret) {
-                Log::channel('kkiapay')->error('Invalid signature', [
-                    'received' => $receivedSecret,
-                    'expected' => $this->webhookSecret,
-                ]);
+                Log::channel('kkiapay')->error('⛔ SIGNATURE INVALIDE');
                 return response()->json(['error' => 'Invalid signature'], 401);
             }
         }
 
-        // Payload
+        // Payload Kkiapay
         $transactionId  = $request->input('transactionId');
-        $isSuccess      = $request->boolean('isPaymentSucces');
+        $isSuccess      = $request->boolean('isPaymentSucces'); // Typo Kkiapay
         $event          = $request->input('event');
         $amount         = (float) $request->input('amount', 0);
         $fees           = (float) $request->input('fees', 0);
+        $account        = $request->input('account');
+        $method         = $request->input('method');
+        $failureCode    = $request->input('failureCode');
+        $failureMessage = $request->input('failureMessage');
+        $performedAt    = $request->input('performedAt');
 
-        Log::channel('kkiapay')->info('Webhook parsed', [
+        Log::channel('kkiapay')->info('Payload analysé', [
             'transactionId' => $transactionId,
             'isSuccess'     => $isSuccess,
             'event'         => $event,
+            'amount'        => $amount,
+            'fees'          => $fees,
         ]);
 
         if (!$transactionId) {
+            Log::channel('kkiapay')->error('❌ transactionId manquant');
             return response()->json(['error' => 'Missing transactionId'], 400);
         }
 
         try {
-            DB::transaction(function () use ($transactionId, $isSuccess, $event, $amount, $fees, $request) {
+            DB::transaction(function () use (
+                $transactionId, $isSuccess, $event, $amount, $fees,
+                $account, $method, $failureCode, $failureMessage, $performedAt
+            ) {
                 // Chercher la transaction par référence
                 $transaction = Transaction::where('reference', $transactionId)
-                    ->orWhereJsonContains('metadata->kkiapay_transaction_id', $transactionId)
                     ->lockForUpdate()
                     ->first();
 
+                // Si pas trouvé par référence, chercher dans metadata
                 if (!$transaction) {
-                    // Chercher aussi dans les metadata
                     $transaction = Transaction::whereJsonContains('metadata', ['kkiapay_transaction_id' => $transactionId])
                         ->lockForUpdate()
                         ->first();
                 }
 
                 if (!$transaction) {
-                    Log::channel('kkiapay')->warning('Transaction not found', ['id' => $transactionId]);
-                    return;
+                    Log::channel('kkiapay')->warning('⚠️ Transaction non trouvée', ['id' => $transactionId]);
+                    return; // Retourner 200 pour éviter les retries
                 }
 
-                Log::channel('kkiapay')->info('Found transaction', [
-                    'id'     => $transaction->id,
-                    'status' => $transaction->status,
+                Log::channel('kkiapay')->info('✅ Transaction trouvée', [
+                    'db_id'          => $transaction->id,
+                    'transaction_id'   => $transaction->transaction_id,
+                    'current_status'   => $transaction->status,
+                    'funding_request_id' => $transaction->funding_request_id,
                 ]);
 
                 // Éviter double traitement
                 if ($transaction->status === 'completed') {
-                    Log::channel('kkiapay')->info('Already completed');
+                    Log::channel('kkiapay')->info('ℹ️ Déjà complétée, ignoré');
                     return;
                 }
 
                 $fundingRequest = FundingRequest::lockForUpdate()->find($transaction->funding_request_id);
 
                 if (!$fundingRequest) {
-                    Log::channel('kkiapay')->error('FundingRequest not found');
+                    Log::channel('kkiapay')->error('❌ FundingRequest non trouvée');
                     return;
                 }
 
+                Log::channel('kkiapay')->info('📋 FundingRequest trouvée', [
+                    'id'     => $fundingRequest->id,
+                    'status' => $fundingRequest->status,
+                ]);
+
                 if ($isSuccess && $event === 'transaction.success') {
-                    $this->processSuccessfulPayment($transaction, $fundingRequest, $transactionId, [
-                        'amount' => $amount,
-                        'fees'   => $fees,
-                        'method' => $request->input('method'),
-                        'account'=> $request->input('account'),
+                    // ========== PAIEMENT RÉUSSI ==========
+                    Log::channel('kkiapay')->info('💰 PAIEMENT RÉUSSI - Traitement...');
+
+                    $transaction->update([
+                        'status'       => 'completed',
+                        'completed_at' => now(),
+                        'fee'          => $fees,
+                        'reference'    => $transactionId,
+                        'metadata'     => array_merge($transaction->metadata ?? [], [
+                            'kkiapay_transaction_id' => $transactionId,
+                            'kkiapay_event'          => 'transaction.success',
+                            'kkiapay_method'         => $method,
+                            'kkiapay_account'        => $account,
+                            'kkiapay_fees'           => $fees,
+                            'kkiapay_performed_at'   => $performedAt,
+                            'webhook_processed_at'   => now()->toIso8601String(),
+                        ]),
                     ]);
+
+                    // Mise à jour CRITIQUE de la demande
+                    $fundingRequest->markAsPaid($transactionId, $amount);
+
+                    Log::channel('kkiapay')->info('✅✅✅ TRAITEMENT RÉUSSI', [
+                        'funding_request_id' => $fundingRequest->id,
+                        'new_status'         => $fundingRequest->fresh()->status,
+                        'payment_status'     => $fundingRequest->fresh()->payment_status,
+                    ]);
+
                 } else {
-                    // Échec
+                    // ========== PAIEMENT ÉCHOUÉ ==========
+                    Log::channel('kkiapay')->warning('❌ PAIEMENT ÉCHOUÉ', [
+                        'event'          => $event,
+                        'failureCode'    => $failureCode,
+                        'failureMessage' => $failureMessage,
+                    ]);
+
                     $transaction->update([
                         'status'   => 'failed',
+                        'reference' => $transactionId,
                         'metadata' => array_merge($transaction->metadata ?? [], [
                             'kkiapay_transaction_id' => $transactionId,
-                            'kkiapay_event'          => $event,
-                            'failure_code'           => $request->input('failureCode'),
-                            'failure_message'        => $request->input('failureMessage'),
+                            'kkiapay_event'          => $event ?? 'transaction.failed',
+                            'failure_code'           => $failureCode,
+                            'failure_message'        => $failureMessage,
+                            'webhook_processed_at'   => now()->toIso8601String(),
                         ]),
                     ]);
 
                     $fundingRequest->update(['payment_status' => 'failed']);
-                    Log::channel('kkiapay')->warning('Payment failed');
+
+                    Log::channel('kkiapay')->info('Statut échec enregistré');
                 }
             });
 
         } catch (\Exception $e) {
-            Log::channel('kkiapay')->error('Webhook error', [
+            Log::channel('kkiapay')->error('💥 ERREUR CRITIQUE WEBHOOK', [
                 'message' => $e->getMessage(),
+                'line'    => $e->getLine(),
+                'file'    => $e->getFile(),
                 'trace'   => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Processing error'], 500);
+            // Retourner 500 pour que Kkiapay retry
+            return response()->json(['error' => 'Processing error: ' . $e->getMessage()], 500);
         }
 
-        return response()->json(['status' => 'received'], 200);
+        // ✅ Toujours retourner 200 si OK
+        Log::channel('kkiapay')->info('✅ Webhook terminé avec succès (HTTP 200)');
+        return response()->json(['status' => 'received', 'success' => true], 200);
     }
 
     /**
@@ -360,6 +412,7 @@ class KkiapayPaymentController extends Controller
             'status'       => 'completed',
             'completed_at' => now(),
             'fee'          => $data['fees'] ?? 0,
+            'reference'    => $transactionId,
             'metadata'     => array_merge($transaction->metadata ?? [], [
                 'kkiapay_transaction_id' => $transactionId,
                 'kkiapay_event'          => 'transaction.success',

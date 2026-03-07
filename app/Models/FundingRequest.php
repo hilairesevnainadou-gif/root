@@ -49,6 +49,40 @@ class FundingRequest extends Model
         'funded_at' => 'datetime',
     ];
 
+    /**
+     * Libellé lisible du statut
+     */
+    public function getStatusLabel(): string
+    {
+        return match($this->status) {
+            'draft' => 'Brouillon',
+            'submitted' => 'Soumise',
+            'under_review' => 'En examen',
+            'pending_committee' => 'Comité',
+            'approved' => 'Approuvée',
+            'rejected' => 'Rejetée',
+            'funded' => 'Financée',
+            'in_progress' => 'En cours',
+            'completed' => 'Terminée',
+            'cancelled' => 'Annulée',
+            default => $this->status,
+        };
+    }
+
+    /**
+     * Libellé du statut de paiement
+     */
+    public function getPaymentStatusLabel(): string
+    {
+        return match($this->payment_status) {
+            'pending' => 'En attente',
+            'paid' => 'Payé',
+            'failed' => 'Échoué',
+            'refunded' => 'Remboursé',
+            default => $this->payment_status,
+        };
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
