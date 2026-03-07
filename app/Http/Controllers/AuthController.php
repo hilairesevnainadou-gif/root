@@ -30,7 +30,20 @@ class AuthController extends Controller
     }
 
     public function login(Request $request): RedirectResponse
-    {
+{
+    $loginMethod = $request->input('login_method', 'email');
+
+    if ($loginMethod === 'phone') {
+        $credentials = $request->validate([
+            'phone' => ['required', 'string'],
+            'password' => ['required'],
+        ], [
+            'phone.required' => 'Le numéro de téléphone est obligatoire.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+        ]);
+
+        $user = User::where('phone', $credentials['phone'])->first();
+    } else {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
@@ -40,55 +53,62 @@ class AuthController extends Controller
             'password.required' => 'Le mot de passe est obligatoire.',
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
-            $user = Auth::user();
+        $user = User::where('email', $credentials['email'])->first();
+    }
 
-            // 🔴 Vérification obligatoire
-            if (! $user->is_verified) {
-                Auth::logout();
-                $request->session()->invalidate();
-
-                Session::put('verification_user_id', $user->id);
-                Session::put('verification_method', $user->preferred_verification_method ?? 'email');
-
-                try {
-                    $this->sendVerificationCode($user, $user->preferred_verification_method ?? 'email');
-                } catch (\Exception $e) {
-                    Log::error("Erreur envoi code de vérification pour user {$user->id} : ".$e->getMessage());
-                }
-
-                return redirect()->route('verification.show')
-                    ->with('warning', 'Votre compte n\'est pas encore vérifié. Un code a été envoyé à votre '.
-                        ($user->preferred_verification_method === 'sms' ? 'téléphone' : 'email').'.');
-            }
-
-            if (! $user->is_active) {
-                Auth::logout();
-                $request->session()->invalidate();
-
-                return back()->withErrors([
-                    'email' => 'Votre compte a été désactivé. Contactez l\'administration.',
-                ]);
-            }
-
-            $user->update([
-                'last_login_at' => now(),
-                'last_login_ip' => $request->ip(),
-                'last_login_device' => $request->userAgent(),
-            ]);
-
-            if ($user->is_admin || $user->is_moderator) {
-                return redirect()->intended(route('admin.dashboard'));
-            }
-
-            return redirect()->intended(route('client.dashboard'));
-        }
-
+    // Tentative d'authentification
+    if (!$user || !Hash::check($request->password, $user->password)) {
         return back()->withErrors([
             'email' => 'Les identifiants ne correspondent pas.',
-        ])->onlyInput('email');
+        ])->withInput($request->except('password'));
     }
+
+    // Connexion manuelle
+    Auth::login($user, $request->boolean('remember'));
+
+    $request->session()->regenerate();
+
+    // Vérification du compte
+    if (!$user->is_verified) {
+        Auth::logout();
+        $request->session()->invalidate();
+
+        Session::put('verification_user_id', $user->id);
+        Session::put('verification_method', 'email');
+
+        try {
+            $this->sendVerificationCode($user, 'email');
+        } catch (\Exception $e) {
+            Log::error("Erreur envoi code de vérification pour user {$user->id} : " . $e->getMessage());
+        }
+
+        return redirect()->route('verification.show')
+            ->with('warning', 'Votre compte n\'est pas encore vérifié. Un code a été envoyé à votre email.');
+    }
+
+    if (!$user->is_active) {
+        Auth::logout();
+        $request->session()->invalidate();
+
+        return back()->withErrors([
+            'email' => 'Votre compte a été désactivé. Contactez l\'administration.',
+        ]);
+    }
+
+    // Mise à jour des infos de connexion
+    $user->update([
+        'last_login_at' => now(),
+        'last_login_ip' => $request->ip(),
+        'last_login_device' => $request->userAgent(),
+    ]);
+
+    // Redirection selon le rôle
+    if ($user->is_admin || $user->is_moderator) {
+        return redirect()->intended(route('admin.dashboard'));
+    }
+
+    return redirect()->intended(route('client.dashboard'));
+}
 
     public function logout(Request $request): RedirectResponse
     {
