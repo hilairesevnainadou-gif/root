@@ -209,99 +209,98 @@ class DashboardController extends Controller
      * Alertes importantes
      */
     private function getAlerts($user): array
-{
-    $alerts = [];
+    {
+        $alerts = [];
 
-    // Documents rejetés
-    $rejectedDocs = DocumentUser::where('user_id', $user->id)
-        ->where('status', 'rejected')
-        ->count();
+        // Documents rejetés
+        $rejectedDocs = DocumentUser::where('user_id', $user->id)
+            ->where('status', 'rejected')
+            ->count();
 
-    if ($rejectedDocs > 0) {
-        $alerts[] = [
-            'type' => 'error',
-            'icon' => 'document',
-            'title' => 'Documents rejetés',
-            'message' => "{$rejectedDocs} document(s) nécessitent votre attention",
-            'action_url' => route('client.documents.index'),
-            'action_text' => 'Corriger',
-        ];
-    }
-
-    // Brouillons non finalisés
-    $drafts = FundingRequest::where('user_id', $user->id)
-        ->where('status', 'draft')
-        ->where('created_at', '<', Carbon::now()->subDays(7))
-        ->count();
-
-    if ($drafts > 0) {
-        $alerts[] = [
-            'type' => 'warning',
-            'icon' => 'draft',
-            'title' => 'Brouillons en attente',
-            'message' => "{$drafts} demande(s) non finalisée(s) depuis plus de 7 jours",
-            'action_url' => route('client.requests.index', ['status' => 'draft']),
-            'action_text' => 'Finaliser',
-        ];
-    }
-
-    // Notifications non lues importantes
-    $unreadImportant = Notification::where('user_id', $user->id)
-        ->where('is_read', false)
-        ->whereIn('type', ['request_approved', 'request_rejected', 'document_rejected'])
-        ->count();
-
-    if ($unreadImportant > 0) {
-        $alerts[] = [
-            'type' => 'info',
-            'icon' => 'notification',
-            'title' => 'Nouvelles notifications',
-            'message' => "{$unreadImportant} notification(s) importante(s) non lue(s)",
-            'action_url' => route('client.notifications.index'),
-            'action_text' => 'Voir',
-        ];
-    }
-
-    // Profil incomplet - VÉRIFICATION AMÉLIORÉE
-    $requiredFields = ['phone', 'address', 'city'];
-    $missingFields = [];
-
-    foreach ($requiredFields as $field) {
-        if (empty($user->$field)) {
-            $missingFields[] = $field;
+        if ($rejectedDocs > 0) {
+            $alerts[] = [
+                'type' => 'error',
+                'icon' => 'document',
+                'title' => 'Documents rejetés',
+                'message' => "{$rejectedDocs} document(s) nécessitent votre attention",
+                'action_url' => route('client.documents.index'),
+                'action_text' => 'Corriger',
+            ];
         }
-    }
 
-    // Vérifier si entreprise et champs entreprise manquants
-    if ($user->isEntreprise() || $user->company) {
-        $companyRequired = ['company_name', 'company_type', 'sector'];
-        $company = $user->company;
+        // Brouillons non finalisés
+        $drafts = FundingRequest::where('user_id', $user->id)
+            ->where('status', 'draft')
+            ->where('created_at', '<', Carbon::now()->subDays(7))
+            ->get();
 
-        foreach ($companyRequired as $field) {
-            if (!$company || empty($company->$field)) {
-                $missingFields[] = 'company_' . $field;
+        if ($drafts->count() > 0) {
+            // Pour les brouillons, on redirige vers la première demande en brouillon pour paiement
+            $firstDraft = $drafts->first();
+            $alerts[] = [
+                'type' => 'warning',
+                'icon' => 'draft',
+                'title' => 'Brouillons en attente',
+                'message' => $drafts->count() . " demande(s) non finalisée(s) depuis plus de 7 jours",
+                'action_url' => route('client.requests.payment', $firstDraft),
+                'action_text' => 'Compléter le paiement',
+            ];
+        }
+
+        // Notifications non lues importantes
+        $unreadImportant = Notification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->whereIn('type', ['request_approved', 'request_rejected', 'document_rejected'])
+            ->count();
+
+        if ($unreadImportant > 0) {
+            $alerts[] = [
+                'type' => 'info',
+                'icon' => 'notification',
+                'title' => 'Nouvelles notifications',
+                'message' => "{$unreadImportant} notification(s) importante(s) non lue(s)",
+                'action_url' => route('client.notifications.index'),
+                'action_text' => 'Voir',
+            ];
+        }
+
+        // Profil incomplet
+        $requiredFields = ['phone', 'address', 'city'];
+        $missingFields = [];
+
+        foreach ($requiredFields as $field) {
+            if (empty($user->$field)) {
+                $missingFields[] = $field;
             }
         }
-    }
 
-    if (!empty($missingFields)) {
-        $alerts[] = [
-            'type' => 'warning',
-            'icon' => 'profile',
-            'title' => 'Profil incomplet',
-            'message' => 'Complétez votre profil pour accéder à tous les financements',
-            'action_url' => route('client.profile'),
-            'action_text' => 'Compléter',
-        ];
-    }
+        // Vérifier si entreprise et champs entreprise manquants
+        if ($user->isEntreprise() || $user->company) {
+            $companyRequired = ['company_name', 'company_type', 'sector'];
+            $company = $user->company;
 
-    return $alerts;
-}
+            foreach ($companyRequired as $field) {
+                if (!$company || empty($company->$field)) {
+                    $missingFields[] = 'company_' . $field;
+                }
+            }
+        }
+
+        if (!empty($missingFields)) {
+            $alerts[] = [
+                'type' => 'warning',
+                'icon' => 'profile',
+                'title' => 'Profil incomplet',
+                'message' => 'Complétez votre profil pour accéder à tous les financements',
+                'action_url' => route('client.profile'),
+                'action_text' => 'Compléter',
+            ];
+        }
+
+        return $alerts;
+    }
 
     /**
-     * Actions prioritaires
-     */
-       /**
      * Actions prioritaires
      */
     private function getPriorityActions($user): array
@@ -309,7 +308,6 @@ class DashboardController extends Controller
         $actions = [];
 
         // Vérifier documents manquants pour demandes soumises
-        // Basé UNIQUEMENT sur TypeFinancement->requiredTypeDocs()
         $requestsWithMissingDocs = FundingRequest::with(['typeFinancement.requiredTypeDocs', 'documentUsers'])
             ->where('user_id', $user->id)
             ->where('status', 'submitted')
@@ -479,7 +477,7 @@ class DashboardController extends Controller
     private function getNextAction($request): ?array
     {
         return match($request->status) {
-            'draft' => ['text' => 'Finaliser', 'url' => route('client.requests.edit', $request)],
+            'draft' => ['text' => 'Payer', 'url' => route('client.requests.payment', $request)],
             'submitted' => ['text' => 'Compléter docs', 'url' => route('client.documents.required', $request)],
             'under_review', 'pending_committee' => ['text' => 'Suivre', 'url' => route('client.requests.show', $request)],
             'approved' => ['text' => 'Finaliser', 'url' => route('client.requests.show', $request)],

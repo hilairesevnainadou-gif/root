@@ -2,327 +2,260 @@
 
 @section('title', 'Tableau de bord - BHDM')
 
-@section('header-title', 'Tableau de bord')
+@section('header-title', 'Mon Tableau de bord')
 
 @section('content')
-<div class="dashboard-container">
+@php
+    $hour = now()->hour;
+    if ($hour >= 5 && $hour < 12) {
+        $greeting = 'Bonjour';
+    } elseif ($hour >= 12 && $hour < 14) {
+        $greeting = 'Bon après-midi';
+    } elseif ($hour >= 14 && $hour < 18) {
+        $greeting = 'Bonne après-midi';
+    } else {
+        $greeting = 'Bonsoir';
+    }
+@endphp
 
-    {{-- Section Bienvenue --}}
-    <div class="welcome-section">
-        <div class="welcome-content">
-            <h1 class="welcome-title">Bonjour, {{ $user->first_name }} !</h1>
-            <p class="welcome-subtitle">
+<div class="dashboard-mobile">
+    
+    {{-- En-tête avec salutation --}}
+    <div class="dashboard-header">
+        <div class="user-greeting">
+            <h1>{{ $greeting }}, <span class="user-name">{{ $user->first_name }}</span></h1>
+            <p class="user-status">
                 @if($stats['active_requests'] > 0)
-                    Vous avez {{ $stats['active_requests'] }} demande{{ $stats['active_requests'] > 1 ? 's' : '' }} en cours
+                    <span class="status-badge pulse">{{ $stats['active_requests'] }}</span> 
+                    demande{{ $stats['active_requests'] > 1 ? 's' : '' }} active{{ $stats['active_requests'] > 1 ? 's' : '' }}
                 @else
-                    Gérez vos demandes de financement en toute simplicité
+                    Prêt à démarrer ?
                 @endif
             </p>
         </div>
-        <a href="{{ route('client.requests.create') }}" class="btn btn-primary btn-create">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Nouvelle demande
+        <a href="{{ route('client.requests.create') }}" class="btn-quick-action" title="Nouvelle demande">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
         </a>
     </div>
 
-    {{-- Alertes --}}
-    @if(!empty($alerts))
-        <div class="alerts-section">
-            @foreach($alerts as $alert)
-                <div class="alert-card alert-{{ $alert['type'] }}">
-                    <div class="alert-icon">
-                        @switch($alert['icon'])
-                            @case('document')
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                @break
-                            @case('draft')
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                @break
-                            @case('notification')
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                                @break
-                            @case('profile')
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                @break
-                            @default
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        @endswitch
-                    </div>
-                    <div class="alert-content">
-                        <h4 class="alert-title">{{ $alert['title'] }}</h4>
-                        <p class="alert-message">{{ $alert['message'] }}</p>
-                    </div>
-                    <a href="{{ $alert['action_url'] }}" class="btn btn-sm btn-alert">{{ $alert['action_text'] }}</a>
-                </div>
-            @endforeach
+    {{-- Carte Portefeuille Compacte (visible si pas dans le layout) --}}
+    @if(!isset($financialSummary))
+        <div class="wallet-mini">
+            <div class="wallet-mini-content">
+                <span class="wallet-mini-label">Solde disponible</span>
+                <span class="wallet-mini-value">--</span>
+            </div>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
         </div>
     @endif
 
-    {{-- Statistiques Principales --}}
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-header">
-                <div class="stat-icon stat-icon-blue">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                </div>
-                @if($stats['total_requests']['trend'] != 0)
-                    <span class="stat-trend {{ $stats['total_requests']['trend'] > 0 ? 'trend-up' : 'trend-down' }}">
-                        {{ $stats['total_requests']['trend'] > 0 ? '+' : '' }}{{ $stats['total_requests']['trend'] }}%
-                    </span>
-                @endif
+    {{-- Actions Rapides --}}
+    <div class="quick-actions">
+        <a href="{{ route('client.wallet.show') }}" class="action-chip">
+            <div class="action-icon action-blue">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                </svg>
             </div>
-            <div class="stat-value">{{ $stats['total_requests']['value'] }}</div>
-            <div class="stat-label">Demandes totales</div>
-            <div class="stat-subtitle">{{ $stats['total_requests']['this_month'] }} ce mois</div>
-        </div>
+            <span>Portefeuille</span>
+        </a>
+        
+        <a href="{{ route('client.requests.index') }}" class="action-chip">
+            <div class="action-icon action-green">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+            </div>
+            <span>Mes demandes</span>
+        </a>
 
-        <div class="stat-card">
-            <div class="stat-header">
-                <div class="stat-icon stat-icon-green">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
+        <a href="{{ route('client.profile') }}" class="action-chip">
+            <div class="action-icon action-purple">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
             </div>
-            <div class="stat-value">{{ $stats['total_funded']['formatted'] }}</div>
-            <div class="stat-label">Montant financé</div>
-            <div class="stat-subtitle">Total approuvé</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-header">
-                <div class="stat-icon stat-icon-purple">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-            </div>
-            <div class="stat-value">{{ $stats['success_rate']['value'] }}%</div>
-            <div class="stat-label">Taux de succès</div>
-            <div class="stat-subtitle {{ $stats['success_rate']['value'] >= 70 ? 'text-success' : ($stats['success_rate']['value'] >= 40 ? 'text-warning' : 'text-danger') }}">
-                {{ $stats['success_rate']['label'] }}
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-header">
-                <div class="stat-icon stat-icon-orange">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-            </div>
-            <div class="stat-value">{{ $stats['active_requests'] }}</div>
-            <div class="stat-label">En cours</div>
-            <div class="stat-subtitle">Demandes actives</div>
-        </div>
+            <span>Mon profil</span>
+        </a>
     </div>
 
-    {{-- Graphique d'Activité --}}
-    <div class="chart-section">
-        <div class="section-header">
-            <h2 class="section-title">Activité des 12 derniers mois</h2>
-        </div>
-        <div class="chart-container">
-            <canvas id="activityChart"></canvas>
-        </div>
-    </div>
-    <div class="two-columns">
-        {{-- Demandes Actives --}}
-        <div class="column-main">
-            <div class="section-header">
-                <h2 class="section-title">Demandes en cours</h2>
-                <a href="{{ route('client.requests.index') }}" class="link-view-all">Voir tout</a>
-            </div>
-
-            @if($activeRequests->count() > 0)
-                <div class="requests-list">
-                    @foreach($activeRequests as $request)
-                        <div class="request-card">
-                            <div class="request-header">
-                                <div class="request-info">
-                                    <h4 class="request-title">{{ $request->title }}</h4>
-                                    <span class="request-number">{{ $request->request_number }}</span>
-                                </div>
-                                <span class="badge badge-{{ $request->status }}">
-                                    {{ $request->progress_label }}
-                                </span>
-                            </div>
-
-                            <div class="request-type">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                                {{ $request->typeFinancement->name ?? 'Non défini' }}
-                            </div>
-
-                            <div class="progress-section">
-                                <div class="progress-header">
-                                    <span class="progress-label">Progression</span>
-                                    <span class="progress-value">{{ $request->progress }}%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: {{ $request->progress }}%"></div>
-                                </div>
-                            </div>
-
-                            @if($request->next_action)
-                                <div class="request-footer">
-                                    <a href="{{ $request->next_action['url'] }}" class="btn btn-sm btn-action">
-                                        {{ $request->next_action['text'] }}
-                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                    </a>
-                                </div>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                    </div>
-                    <p class="empty-text">Aucune demande en cours</p>
-                    <a href="{{ route('client.financements.index') }}" class="btn btn-primary">Découvrir les financements</a>
-                </div>
-            @endif
-        </div>
-
-        {{-- Colonne Latérale : Portefeuille + Actions --}}
-        <div class="column-side">
-            {{-- Portefeuille --}}
-            <div class="wallet-card">
-                <div class="wallet-header">
-                    <h3 class="wallet-title">Portefeuille</h3>
-                    @if($walletStats['has_wallet'])
-                        <span class="wallet-status">Actif</span>
-                    @endif
-                </div>
-
-                @if($walletStats['has_wallet'])
-                    <div class="wallet-balance">
-                        <span class="balance-amount">{{ $walletStats['formatted_balance'] }}</span>
-                        <span class="balance-currency">{{ $walletStats['currency'] }}</span>
-                    </div>
-
-                    <div class="wallet-stats">
-                        <div class="wallet-stat">
-                            <span class="wallet-stat-label">Transactions</span>
-                            <span class="wallet-stat-value">{{ $walletStats['transactions_count'] }}</span>
-                        </div>
-                        @if($walletStats['last_transaction'])
-                            <div class="wallet-stat">
-                                <span class="wallet-stat-label">Dernière</span>
-                                <span class="wallet-stat-value">{{ $walletStats['last_transaction']['date'] }}</span>
-                            </div>
-                        @endif
-                    </div>
-
-                    <div class="wallet-actions">
-                        <a href="{{ route('client.wallet.show') }}" class="btn btn-outline btn-block">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                            Voir détails
-                        </a>
-                    </div>
-                @else
-                    <div class="wallet-empty">
-                        <p>Aucun portefeuille actif</p>
-                        <a href="{{ route('client.wallet.show') }}" class="btn btn-primary btn-block">Activer</a>
-                    </div>
-                @endif
-            </div>
-
-            {{-- Actions Prioritaires --}}
-            @if(!empty($priorityActions))
-                <div class="priority-section">
-                    <h3 class="section-title-small">Actions prioritaires</h3>
-                    <div class="priority-list">
-                        @foreach($priorityActions as $action)
-                            <div class="priority-item priority-{{ $action['priority'] }}">
-                                <div class="priority-dot"></div>
-                                <div class="priority-content">
-                                    <h4 class="priority-title">{{ $action['title'] }}</h4>
-                                    <p class="priority-desc">{{ $action['description'] }}</p>
-                                    @if($action['deadline'])
-                                        <span class="priority-deadline">⏰ {{ $action['deadline'] }}</span>
-                                    @endif
-                                </div>
-                                <a href="{{ $action['url'] }}" class="priority-link">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                </a>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-
-            {{-- Résumé Financier --}}
-            <div class="financial-summary">
-                <h3 class="section-title-small">Résumé financier</h3>
-                <div class="financial-grid">
-                    <div class="financial-item">
-                        <span class="financial-label">Revenus (mois)</span>
-                        <span class="financial-value text-success">+{{ number_format($financialSummary['monthly_income'], 0, ',', ' ') }} FCFA</span>
-                    </div>
-                    <div class="financial-item">
-                        <span class="financial-label">Dépenses (mois)</span>
-                        <span class="financial-value text-danger">-{{ number_format($financialSummary['monthly_expenses'], 0, ',', ' ') }} FCFA</span>
-                    </div>
-                    <div class="financial-item">
-                        <span class="financial-label">En attente</span>
-                        <span class="financial-value text-warning">{{ number_format($financialSummary['pending_amount'], 0, ',', ' ') }} FCFA</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Activités Récentes --}}
-    <div class="activities-section">
-        <div class="section-header">
-            <h2 class="section-title">Activités récentes</h2>
-        </div>
-
-        @if($recentActivities->count() > 0)
-            <div class="activities-list">
-                @foreach($recentActivities as $activity)
-                    <div class="activity-item">
-                        <div class="activity-icon activity-{{ $activity['type'] }}">
-                            @switch($activity['icon'])
+    {{-- Alertes Prioritaires --}}
+    @if(!empty($alerts))
+        <div class="section-priority">
+            <h2 class="section-title">À traiter en priorité</h2>
+            <div class="alerts-swipe">
+                @foreach($alerts as $alert)
+                    <div class="alert-card-mobile alert-{{ $alert['type'] }}">
+                        <div class="alert-mobile-icon">
+                            @switch($alert['icon'])
                                 @case('document')
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                     @break
-                                @case('bell')
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                @case('draft')
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     @break
-                                @case('arrow-down')
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-                                    @break
-                                @case('arrow-up')
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                                @case('notification')
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                                     @break
                                 @default
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             @endswitch
                         </div>
-                        <div class="activity-content">
-                            <div class="activity-header">
-                                <h4 class="activity-title">{{ $activity['title'] }}</h4>
-                                @if(isset($activity['amount_formatted']))
-                                    <span class="activity-amount {{ $activity['type'] === 'credit' ? 'text-success' : 'text-danger' }}">
-                                        {{ $activity['type'] === 'credit' ? '+' : '-' }}{{ $activity['amount_formatted'] }}
-                                    </span>
-                                @endif
-                            </div>
-                            <p class="activity-desc">{{ $activity['description'] }}</p>
-                            <div class="activity-meta">
-                                <span class="activity-status status-{{ $activity['status'] }}">{{ $activity['status'] }}</span>
-                                <span class="activity-date">{{ $activity['date']->diffForHumans() }}</span>
-                            </div>
+                        <div class="alert-mobile-content">
+                            <h4>{{ $alert['title'] }}</h4>
+                            <p>{{ $alert['message'] }}</p>
                         </div>
-                        <a href="{{ $activity['url'] }}" class="activity-link">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        <a href="{{ $alert['action_url'] }}" class="alert-mobile-action">
+                            {{ $alert['action_text'] }}
                         </a>
                     </div>
                 @endforeach
             </div>
-        @else
-            <div class="empty-state-small">
-                <p>Aucune activité récente</p>
+        </div>
+    @endif
+
+    {{-- Statistiques en grille --}}
+    <div class="stats-section">
+        <h2 class="section-title">Vue d'ensemble</h2>
+        <div class="stats-grid-mobile">
+            <div class="stat-tile">
+                <div class="stat-tile-icon stat-blue">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+                <div class="stat-tile-info">
+                    <span class="stat-tile-value">{{ $stats['total_requests']['value'] }}</span>
+                    <span class="stat-tile-label">Total demandes</span>
+                </div>
+                @if($stats['total_requests']['trend'] != 0)
+                    <span class="stat-trend-mini {{ $stats['total_requests']['trend'] > 0 ? 'up' : 'down' }}">
+                        {{ $stats['total_requests']['trend'] > 0 ? '+' : '' }}{{ $stats['total_requests']['trend'] }}%
+                    </span>
+                @endif
             </div>
-        @endif
+
+            <div class="stat-tile">
+                <div class="stat-tile-icon stat-green">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="stat-tile-info">
+                    <span class="stat-tile-value">{{ $stats['total_funded']['formatted'] }}</span>
+                    <span class="stat-tile-label">Financé</span>
+                </div>
+            </div>
+
+            <div class="stat-tile">
+                <div class="stat-tile-icon stat-purple">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="stat-tile-info">
+                    <span class="stat-tile-value">{{ $stats['success_rate']['value'] }}%</span>
+                    <span class="stat-tile-label">Taux réussite</span>
+                </div>
+                <span class="stat-badge {{ $stats['success_rate']['value'] >= 70 ? 'excellent' : ($stats['success_rate']['value'] >= 40 ? 'good' : 'low') }}">
+                    {{ $stats['success_rate']['label'] }}
+                </span>
+            </div>
+
+            <div class="stat-tile">
+                <div class="stat-tile-icon stat-orange">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="stat-tile-info">
+                    <span class="stat-tile-value">{{ $stats['active_requests'] }}</span>
+                    <span class="stat-tile-label">En cours</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Demandes Actives --}}
+    @if($activeRequests->count() > 0)
+        <div class="requests-section">
+            <div class="section-header-row">
+                <h2 class="section-title">Demandes en cours</h2>
+                <a href="{{ route('client.requests.index') }}" class="link-see-all">Voir tout</a>
+            </div>
+            
+            <div class="requests-list-mobile">
+                @foreach($activeRequests->take(3) as $request)
+                    <div class="request-item-mobile">
+                        <div class="request-item-header">
+                            <div class="request-meta">
+                                <span class="request-number">{{ $request->request_number }}</span>
+                                <span class="badge-status badge-{{ $request->status }}">{{ $request->progress_label }}</span>
+                            </div>
+                            <h4 class="request-title-mobile">{{ Str::limit($request->title, 35) }}</h4>
+                            <span class="request-type-tag">{{ $request->typeFinancement->name ?? 'Non défini' }}</span>
+                        </div>
+                        
+                        <div class="request-progress-compact">
+                            <div class="progress-bar-mini">
+                                <div class="progress-fill-mini" style="width: {{ $request->progress }}%"></div>
+                            </div>
+                            <span class="progress-text-mini">{{ $request->progress }}%</span>
+                        </div>
+
+                        @if($request->next_action)
+                            <a href="{{ $request->next_action['url'] }}" class="request-action-btn">
+                                {{ $request->next_action['text'] }}
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- Activités Récentes --}}
+    @if($recentActivities->count() > 0)
+        <div class="activities-section">
+            <h2 class="section-title">Activités récentes</h2>
+            <div class="activities-timeline">
+                @foreach($recentActivities->take(5) as $activity)
+                    <div class="activity-row">
+                        <div class="activity-dot activity-{{ $activity['type'] }}"></div>
+                        <div class="activity-content-mini">
+                            <div class="activity-top">
+                                <span class="activity-title-mini">{{ $activity['title'] }}</span>
+                                <span class="activity-time">{{ $activity['date']->diffForHumans(short: true) }}</span>
+                            </div>
+                            <p class="activity-desc-mini">{{ $activity['description'] }}</p>
+                        </div>
+                        <a href="{{ $activity['url'] }}" class="activity-arrow">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- CTA Final --}}
+    <div class="dashboard-footer-cta">
+        <p>Besoin d'un nouveau financement ?</p>
+        <a href="{{ route('client.requests.create') }}" class="btn btn-primary btn-large">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Créer une demande
+        </a>
     </div>
 
 </div>
@@ -330,372 +263,412 @@
 
 @section('styles')
 <style>
-    /* Variables et Reset */
+    /* Design System Mobile-First */
     :root {
-        --primary: #2563eb;
-        --primary-dark: #1d4ed8;
-        --success: #10b981;
-        --warning: #f59e0b;
-        --danger: #ef4444;
-        --purple: #8b5cf6;
-        --orange: #f97316;
-        --gray-50: #f9fafb;
-        --gray-100: #f3f4f6;
-        --gray-200: #e5e7eb;
-        --gray-300: #d1d5db;
-        --gray-400: #9ca3af;
-        --gray-500: #6b7280;
-        --gray-600: #4b5563;
-        --gray-700: #374151;
-        --gray-800: #1f2937;
-        --gray-900: #111827;
-        --radius: 12px;
-        --radius-sm: 8px;
-        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        --primary-600: #1e40af;
+        --primary-500: #3b82f6;
+        --primary-50: #eff6ff;
+        --success-500: #10b981;
+        --warning-500: #f59e0b;
+        --danger-500: #ef4444;
+        --purple-500: #8b5cf6;
+        --orange-500: #f97316;
+        --gray-900: #0f172a;
+        --gray-800: #1e293b;
+        --gray-700: #334155;
+        --gray-600: #475569;
+        --gray-500: #64748b;
+        --gray-400: #94a3b8;
+        --gray-300: #cbd5e1;
+        --gray-200: #e2e8f0;
+        --gray-100: #f1f5f9;
+        --gray-50: #f8fafc;
+        --radius: 16px;
+        --radius-sm: 12px;
+        --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+        --shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
+        --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1);
     }
 
-    .dashboard-container {
-        padding: 1rem;
-        max-width: 1200px;
-        margin: 0 auto;
-        padding-bottom: 80px; /* Espace pour la nav mobile */
+    .dashboard-mobile {
+        padding: 16px;
+        padding-bottom: 100px;
+        max-width: 100%;
+        overflow-x: hidden;
     }
 
-    /* Section Bienvenue */
-    .welcome-section {
+    /* Header Dashboard */
+    .dashboard-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
-        gap: 1rem;
+        margin-bottom: 20px;
+        padding: 4px;
     }
 
-    .welcome-title {
+    .user-greeting h1 {
         font-size: 1.5rem;
         font-weight: 700;
         color: var(--gray-900);
-        margin: 0;
+        margin: 0 0 6px 0;
+        line-height: 1.2;
     }
 
-    .welcome-subtitle {
-        color: var(--gray-500);
-        margin: 0.25rem 0 0 0;
+    .user-name {
+        color: var(--primary-600);
+    }
+
+    .user-status {
         font-size: 0.875rem;
-    }
-
-    .btn-create {
+        color: var(--gray-500);
+        margin: 0;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.25rem;
-        background: var(--primary);
+        gap: 8px;
+    }
+
+    .status-badge {
+        background: var(--primary-500);
         color: white;
-        border-radius: var(--radius);
-        text-decoration: none;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-
-    .btn-create:hover {
-        background: var(--primary-dark);
-        transform: translateY(-1px);
-    }
-
-    .btn-create svg {
         width: 20px;
         height: 20px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
     }
 
-    /* Alertes */
-    .alerts-section {
+    .status-badge.pulse {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .btn-quick-action {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+        color: white;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        transition: transform 0.2s;
+    }
+
+    .btn-quick-action:active {
+        transform: scale(0.95);
+    }
+
+    /* Wallet Mini (fallback) */
+    .wallet-mini {
+        background: linear-gradient(135deg, var(--gray-800), var(--gray-700));
+        color: white;
+        padding: 16px 20px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .wallet-mini-label {
+        font-size: 0.75rem;
+        opacity: 0.7;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .wallet-mini-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: block;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .action-chip {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-sm);
+        padding: 16px 8px;
+        text-align: center;
+        text-decoration: none;
+        color: var(--gray-700);
+        font-size: 0.8125rem;
+        font-weight: 500;
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .alert-card {
-        display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 1rem;
-        border-radius: var(--radius);
-        border-left: 4px solid;
+        gap: 8px;
+        transition: all 0.2s;
+        box-shadow: var(--shadow-sm);
     }
 
-    .alert-error {
-        background: #fef2f2;
-        border-color: var(--danger);
+    .action-chip:active {
+        transform: scale(0.98);
+        background: var(--gray-50);
     }
 
-    .alert-warning {
-        background: #fffbeb;
-        border-color: var(--warning);
-    }
-
-    .alert-info {
-        background: #eff6ff;
-        border-color: var(--primary);
-    }
-
-    .alert-icon {
-        flex-shrink: 0;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
+    .action-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: white;
-    }
-
-    .alert-error .alert-icon { color: var(--danger); }
-    .alert-warning .alert-icon { color: var(--warning); }
-    .alert-info .alert-icon { color: var(--primary); }
-
-    .alert-icon svg {
-        width: 20px;
-        height: 20px;
-    }
-
-    .alert-content {
-        flex: 1;
-    }
-
-    .alert-title {
-        font-size: 0.875rem;
-        font-weight: 600;
-        margin: 0 0 0.25rem 0;
-        color: var(--gray-900);
-    }
-
-    .alert-message {
-        font-size: 0.8125rem;
-        color: var(--gray-600);
-        margin: 0;
-    }
-
-    .btn-alert {
-        padding: 0.5rem 1rem;
-        border-radius: var(--radius-sm);
-        font-size: 0.8125rem;
-        font-weight: 600;
-        text-decoration: none;
-        white-space: nowrap;
-    }
-
-    .alert-error .btn-alert {
-        background: var(--danger);
         color: white;
     }
 
-    .alert-warning .btn-alert {
-        background: var(--warning);
-        color: white;
-    }
+    .action-blue { background: linear-gradient(135deg, #3b82f6, var(--primary-500)); }
+    .action-green { background: linear-gradient(135deg, #10b981, var(--success-500)); }
+    .action-purple { background: linear-gradient(135deg, #8b5cf6, var(--purple-500)); }
 
-    .alert-info .btn-alert {
-        background: var(--primary);
-        color: white;
-    }
-
-    /* Statistiques */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-
-    @media (min-width: 768px) {
-        .stats-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-    }
-
-    .stat-card {
-        background: white;
-        padding: 1.25rem;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--gray-200);
-    }
-
-    .stat-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.75rem;
-    }
-
-    .stat-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: var(--radius-sm);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .stat-icon svg {
-        width: 20px;
-        height: 20px;
-        color: white;
-    }
-
-    .stat-icon-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-    .stat-icon-green { background: linear-gradient(135deg, #34d399, #10b981); }
-    .stat-icon-purple { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
-    .stat-icon-orange { background: linear-gradient(135deg, #fb923c, #f97316); }
-
-    .stat-trend {
-        font-size: 0.75rem;
-        font-weight: 600;
-        padding: 0.25rem 0.5rem;
-        border-radius: 9999px;
-    }
-
-    .trend-up {
-        background: #d1fae5;
-        color: #065f46;
-    }
-
-    .trend-down {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-
-    .stat-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--gray-900);
-        line-height: 1;
-    }
-
-    .stat-label {
-        font-size: 0.875rem;
-        color: var(--gray-500);
-        margin-top: 0.25rem;
-    }
-
-    .stat-subtitle {
-        font-size: 0.75rem;
-        color: var(--gray-400);
-        margin-top: 0.25rem;
-    }
-
-    .text-success { color: var(--success); }
-    .text-warning { color: var(--warning); }
-    .text-danger { color: var(--danger); }
-
-    /* Graphique */
-    .chart-section {
-        background: white;
-        padding: 1.25rem;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--gray-200);
-        margin-bottom: 1.5rem;
-    }
-
-    .chart-container {
-        height: 250px;
-        position: relative;
-    }
-
-    /* Layout Deux Colonnes */
-    .two-columns {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    @media (min-width: 1024px) {
-        .two-columns {
-            grid-template-columns: 2fr 1fr;
-        }
-    }
-
-    /* Section Headers */
-    .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
+    /* Sections */
+    .section-priority {
+        margin-bottom: 24px;
     }
 
     .section-title {
         font-size: 1.125rem;
         font-weight: 700;
         color: var(--gray-900);
-        margin: 0;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    .section-title-small {
-        font-size: 0.9375rem;
-        font-weight: 600;
-        color: var(--gray-800);
-        margin: 0 0 0.75rem 0;
+    /* Alerts Mobile */
+    .alerts-swipe {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
     }
 
-    .link-view-all {
-        font-size: 0.875rem;
-        color: var(--primary);
-        text-decoration: none;
-        font-weight: 500;
+    .alerts-swipe::-webkit-scrollbar {
+        display: none;
     }
 
-    /* Demandes */
-    .requests-list {
+    .alert-card-mobile {
+        flex: 0 0 85%;
+        background: white;
+        border-radius: var(--radius-sm);
+        padding: 16px;
+        border-left: 4px solid;
+        box-shadow: var(--shadow);
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 12px;
     }
 
-    .request-card {
-        background: white;
-        padding: 1.25rem;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--gray-200);
-        transition: all 0.2s;
-    }
+    .alert-card-mobile.alert-error { border-left-color: var(--danger-500); }
+    .alert-card-mobile.alert-warning { border-left-color: var(--warning-500); }
+    .alert-card-mobile.alert-info { border-left-color: var(--primary-500); }
 
-    .request-card:hover {
-        box-shadow: var(--shadow);
-        transform: translateY(-2px);
-    }
-
-    .request-header {
+    .alert-mobile-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
         display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 0.75rem;
+        align-items: center;
+        justify-content: center;
     }
 
-    .request-title {
+    .alert-error .alert-mobile-icon { background: #fef2f2; color: var(--danger-500); }
+    .alert-warning .alert-mobile-icon { background: #fffbeb; color: var(--warning-500); }
+    .alert-info .alert-mobile-icon { background: #eff6ff; color: var(--primary-500); }
+
+    .alert-mobile-content h4 {
         font-size: 1rem;
         font-weight: 600;
         color: var(--gray-900);
+        margin: 0 0 4px 0;
+    }
+
+    .alert-mobile-content p {
+        font-size: 0.875rem;
+        color: var(--gray-600);
         margin: 0;
+        line-height: 1.4;
+    }
+
+    .alert-mobile-action {
+        align-self: flex-start;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        color: white;
+    }
+
+    .alert-error .alert-mobile-action { background: var(--danger-500); }
+    .alert-warning .alert-mobile-action { background: var(--warning-500); }
+    .alert-info .alert-mobile-action { background: var(--primary-500); }
+
+    /* Stats Grid */
+    .stats-section {
+        margin-bottom: 24px;
+    }
+
+    .stats-grid-mobile {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .stat-tile {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-sm);
+        padding: 16px;
+        position: relative;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .stat-tile-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-bottom: 12px;
+    }
+
+    .stat-blue { background: linear-gradient(135deg, #3b82f6, var(--primary-500)); }
+    .stat-green { background: linear-gradient(135deg, #10b981, var(--success-500)); }
+    .stat-purple { background: linear-gradient(135deg, #8b5cf6, var(--purple-500)); }
+    .stat-orange { background: linear-gradient(135deg, #f97316, var(--orange-500)); }
+
+    .stat-tile-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-tile-value {
+        font-size: 1.375rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        line-height: 1.2;
+    }
+
+    .stat-tile-label {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        margin-top: 4px;
+    }
+
+    .stat-trend-mini {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 20px;
+    }
+
+    .stat-trend-mini.up {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .stat-trend-mini.down {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .stat-badge {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        font-size: 0.625rem;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 20px;
+        text-transform: uppercase;
+    }
+
+    .stat-badge.excellent { background: #d1fae5; color: #065f46; }
+    .stat-badge.good { background: #fef3c7; color: #92400e; }
+    .stat-badge.low { background: #fee2e2; color: #991b1b; }
+
+    /* Requests Section */
+    .requests-section {
+        margin-bottom: 24px;
+    }
+
+    .section-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .link-see-all {
+        font-size: 0.875rem;
+        color: var(--primary-500);
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    .requests-list-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .request-item-mobile {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-sm);
+        padding: 16px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .request-item-header {
+        margin-bottom: 12px;
+    }
+
+    .request-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
     }
 
     .request-number {
         font-size: 0.75rem;
         color: var(--gray-400);
-        font-family: monospace;
+        font-family: ui-monospace, monospace;
+        font-weight: 500;
     }
 
-    .badge {
-        font-size: 0.75rem;
+    .badge-status {
+        font-size: 0.6875rem;
         font-weight: 600;
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
+        padding: 4px 10px;
+        border-radius: 20px;
         text-transform: uppercase;
+        letter-spacing: 0.025em;
     }
 
     .badge-draft { background: var(--gray-100); color: var(--gray-600); }
@@ -703,585 +676,218 @@
     .badge-under_review { background: #fef3c7; color: #92400e; }
     .badge-pending_committee { background: #e0e7ff; color: #3730a3; }
     .badge-approved { background: #d1fae5; color: #065f46; }
-    .badge-funded { background: #d1fae5; color: #065f46; }
 
-    .request-type {
+    .request-title-mobile {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0 0 6px 0;
+    }
+
+    .request-type-tag {
+        font-size: 0.75rem;
+        color: var(--gray-500);
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        font-size: 0.875rem;
-        color: var(--gray-600);
-        margin-bottom: 1rem;
+        gap: 4px;
     }
 
-    .request-type svg {
-        width: 16px;
-        height: 16px;
-    }
-
-    .progress-section {
-        margin-bottom: 1rem;
-    }
-
-    .progress-header {
+    .request-progress-compact {
         display: flex;
-        justify-content: space-between;
-        font-size: 0.8125rem;
-        margin-bottom: 0.5rem;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
     }
 
-    .progress-label { color: var(--gray-500); }
-    .progress-value { color: var(--gray-700); font-weight: 600; }
-
-    .progress-bar {
+    .progress-bar-mini {
+        flex: 1;
         height: 6px;
         background: var(--gray-200);
-        border-radius: 9999px;
+        border-radius: 3px;
         overflow: hidden;
     }
 
-    .progress-fill {
+    .progress-fill-mini {
         height: 100%;
-        background: linear-gradient(90deg, var(--primary), #60a5fa);
-        border-radius: 9999px;
+        background: linear-gradient(90deg, var(--primary-500), #60a5fa);
+        border-radius: 3px;
         transition: width 0.5s ease;
     }
 
-    .request-footer {
-        display: flex;
-        justify-content: flex-end;
+    .progress-text-mini {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--primary-600);
+        min-width: 32px;
+        text-align: right;
     }
 
-    .btn-action {
+    .request-action-btn {
         display: flex;
         align-items: center;
-        gap: 0.25rem;
-        padding: 0.5rem 1rem;
-        background: var(--primary);
-        color: white;
-        border-radius: var(--radius-sm);
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        padding: 10px;
+        background: var(--primary-50);
+        color: var(--primary-600);
+        border-radius: 8px;
         text-decoration: none;
         font-size: 0.875rem;
-        font-weight: 500;
-    }
-
-    .btn-action svg {
-        width: 16px;
-        height: 16px;
-    }
-
-    /* Portefeuille */
-    .wallet-card {
-        background: linear-gradient(135deg, #1e3a8a, #3730a3);
-        color: white;
-        padding: 1.5rem;
-        border-radius: var(--radius);
-        margin-bottom: 1.5rem;
-    }
-
-    .wallet-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-
-    .wallet-title {
-        font-size: 0.9375rem;
         font-weight: 600;
-        margin: 0;
-        opacity: 0.9;
+        transition: all 0.2s;
     }
 
-    .wallet-status {
-        font-size: 0.75rem;
-        background: rgba(255,255,255,0.2);
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
+    .request-action-btn:active {
+        background: var(--primary-100);
     }
 
-    .wallet-balance {
-        margin-bottom: 1.25rem;
-    }
-
-    .balance-amount {
-        font-size: 2rem;
-        font-weight: 700;
-        display: block;
-    }
-
-    .balance-currency {
-        font-size: 0.875rem;
-        opacity: 0.8;
-    }
-
-    .wallet-stats {
-        display: flex;
-        gap: 1.5rem;
-        margin-bottom: 1.25rem;
-    }
-
-    .wallet-stat {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .wallet-stat-label {
-        font-size: 0.75rem;
-        opacity: 0.7;
-    }
-
-    .wallet-stat-value {
-        font-size: 0.9375rem;
-        font-weight: 600;
-    }
-
-    .btn-outline {
-        background: transparent;
-        border: 1px solid rgba(255,255,255,0.3);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-    }
-
-    .btn-outline:hover {
-        background: rgba(255,255,255,0.1);
-    }
-
-    .wallet-empty {
-        text-align: center;
-        padding: 1rem 0;
-    }
-
-    .wallet-empty p {
-        opacity: 0.8;
-        margin-bottom: 1rem;
-    }
-
-    /* Actions Prioritaires */
-    .priority-section {
-        background: white;
-        padding: 1.25rem;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--gray-200);
-        margin-bottom: 1.5rem;
-    }
-
-    .priority-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .priority-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.875rem;
-        background: var(--gray-50);
-        border-radius: var(--radius-sm);
-        border-left: 3px solid;
-    }
-
-    .priority-high { border-color: var(--danger); }
-    .priority-medium { border-color: var(--warning); }
-    .priority-low { border-color: var(--primary); }
-
-    .priority-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-    .priority-high .priority-dot { background: var(--danger); }
-    .priority-medium .priority-dot { background: var(--warning); }
-    .priority-low .priority-dot { background: var(--primary); }
-
-    .priority-content {
-        flex: 1;
-    }
-
-    .priority-title {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--gray-900);
-        margin: 0 0 0.25rem 0;
-    }
-
-    .priority-desc {
-        font-size: 0.8125rem;
-        color: var(--gray-600);
-        margin: 0 0 0.25rem 0;
-        line-height: 1.4;
-    }
-
-    .priority-deadline {
-        font-size: 0.75rem;
-        color: var(--danger);
-        font-weight: 500;
-    }
-
-    .priority-link {
-        color: var(--gray-400);
-        display: flex;
-        align-items: center;
-    }
-
-    .priority-link svg {
-        width: 20px;
-        height: 20px;
-    }
-
-    /* Résumé Financier */
-    .financial-summary {
-        background: white;
-        padding: 1.25rem;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--gray-200);
-    }
-
-    .financial-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .financial-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem 0;
-        border-bottom: 1px solid var(--gray-100);
-    }
-
-    .financial-item:last-child {
-        border-bottom: none;
-    }
-
-    .financial-label {
-        font-size: 0.875rem;
-        color: var(--gray-600);
-    }
-
-    .financial-value {
-        font-size: 0.9375rem;
-        font-weight: 600;
-    }
-
-    /* Activités */
+    /* Activities */
     .activities-section {
+        margin-bottom: 24px;
+    }
+
+    .activities-timeline {
         background: white;
-        padding: 1.25rem;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-sm);
         border: 1px solid var(--gray-200);
+        border-radius: var(--radius-sm);
+        padding: 8px 16px;
+        box-shadow: var(--shadow-sm);
     }
 
-    .activities-list {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .activity-item {
+    .activity-row {
         display: flex;
         align-items: center;
-        gap: 0.875rem;
-        padding: 1rem 0;
+        gap: 12px;
+        padding: 14px 0;
         border-bottom: 1px solid var(--gray-100);
     }
 
-    .activity-item:last-child {
+    .activity-row:last-child {
         border-bottom: none;
     }
 
-    .activity-icon {
-        width: 40px;
-        height: 40px;
+    .activity-dot {
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         flex-shrink: 0;
     }
 
-    .activity-icon svg {
-        width: 20px;
-        height: 20px;
-        color: white;
-    }
+    .activity-dot.activity-request { background: var(--primary-500); }
+    .activity-dot.activity-notification { background: var(--warning-500); }
+    .activity-dot.activity-transaction { background: var(--success-500); }
 
-    .activity-request { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-    .activity-notification { background: linear-gradient(135deg, #f59e0b, #d97706); }
-    .activity-transaction { background: linear-gradient(135deg, #10b981, #059669); }
-
-    .activity-content {
+    .activity-content-mini {
         flex: 1;
         min-width: 0;
     }
 
-    .activity-header {
+    .activity-top {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0.25rem;
+        margin-bottom: 4px;
     }
 
-    .activity-title {
+    .activity-title-mini {
         font-size: 0.9375rem;
         font-weight: 600;
         color: var(--gray-900);
-        margin: 0;
     }
 
-    .activity-amount {
-        font-size: 0.875rem;
-        font-weight: 600;
+    .activity-time {
+        font-size: 0.75rem;
+        color: var(--gray-400);
     }
 
-    .activity-desc {
+    .activity-desc-mini {
         font-size: 0.8125rem;
         color: var(--gray-600);
-        margin: 0 0 0.25rem 0;
+        margin: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
-    .activity-meta {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .activity-status {
-        font-size: 0.75rem;
-        padding: 0.125rem 0.5rem;
-        border-radius: 9999px;
-        text-transform: capitalize;
-    }
-
-    .status-draft { background: var(--gray-100); color: var(--gray-600); }
-    .status-submitted { background: #dbeafe; color: #1e40af; }
-    .status-read { background: var(--gray-100); color: var(--gray-500); }
-    .status-unread { background: #dbeafe; color: #1e40af; }
-    .status-completed { background: #d1fae5; color: #065f46; }
-    .status-pending { background: #fef3c7; color: #92400e; }
-
-    .activity-date {
-        font-size: 0.75rem;
+    .activity-arrow {
         color: var(--gray-400);
+        flex-shrink: 0;
     }
 
-    .activity-link {
-        color: var(--gray-400);
-        display: flex;
-        align-items: center;
-    }
-
-    .activity-link svg {
-        width: 20px;
-        height: 20px;
-    }
-
-    /* Empty States */
-    .empty-state {
-        text-align: center;
-        padding: 3rem 1.5rem;
-        background: var(--gray-50);
+    /* Footer CTA */
+    .dashboard-footer-cta {
+        background: linear-gradient(135deg, var(--gray-50), white);
+        border: 2px dashed var(--gray-300);
         border-radius: var(--radius);
-        border: 2px dashed var(--gray-200);
-    }
-
-    .empty-icon {
-        width: 64px;
-        height: 64px;
-        margin: 0 auto 1rem;
-        color: var(--gray-300);
-    }
-
-    .empty-icon svg {
-        width: 100%;
-        height: 100%;
-    }
-
-    .empty-text {
-        color: var(--gray-500);
-        margin-bottom: 1.5rem;
-    }
-
-    .empty-state-small {
+        padding: 24px;
         text-align: center;
-        padding: 2rem;
-        color: var(--gray-400);
-        font-size: 0.875rem;
+        margin-top: 8px;
     }
 
-    /* Boutons */
-    .btn {
-        display: inline-flex;
-        align-items: center;
+    .dashboard-footer-cta p {
+        font-size: 0.9375rem;
+        color: var(--gray-600);
+        margin: 0 0 16px 0;
+    }
+
+    .btn-large {
+        width: 100%;
+        padding: 14px 24px;
+        font-size: 1rem;
         justify-content: center;
-        gap: 0.5rem;
-        padding: 0.625rem 1.25rem;
-        border-radius: var(--radius-sm);
-        font-weight: 500;
-        text-decoration: none;
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s;
     }
 
     .btn-primary {
-        background: var(--primary);
+        background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
         color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: all 0.2s;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
     }
 
-    .btn-primary:hover {
-        background: var(--primary-dark);
+    .btn-primary:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
     }
 
-    .btn-sm {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
+    /* Responsive adjustments */
+    @media (min-width: 640px) {
+        .dashboard-mobile {
+            padding: 24px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .quick-actions {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .stats-grid-mobile {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .alert-card-mobile {
+            flex: 0 0 45%;
+        }
     }
 
-    .btn-block {
-        width: 100%;
-    }
-
-    /* Responsive */
-    @media (max-width: 640px) {
-        .welcome-section {
-            flex-direction: column;
-            align-items: flex-start;
+    @media (min-width: 1024px) {
+        .dashboard-mobile {
+            max-width: 900px;
         }
 
-        .welcome-title {
-            font-size: 1.25rem;
-        }
-
-        .btn-create {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .stat-value {
-            font-size: 1.25rem;
-        }
-
-        .balance-amount {
-            font-size: 1.5rem;
+        .two-columns-desktop {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 24px;
         }
     }
 </style>
-@endsection
-
-@section('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    // Graphique d'activité
-    const ctx = document.getElementById('activityChart').getContext('2d');
-    const activityChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: @json($activityChart['labels']),
-            datasets: [
-                {
-                    label: 'Demandes créées',
-                    data: @json($activityChart['requests']),
-                    backgroundColor: 'rgba(37, 99, 235, 0.8)',
-                    borderColor: 'rgba(37, 99, 235, 1)',
-                    borderWidth: 0,
-                    borderRadius: 4,
-                },
-                {
-                    label: 'Montant financé (FCFA)',
-                    data: @json($activityChart['funded']),
-                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
-                    borderColor: 'rgba(16, 185, 129, 1)',
-                    borderWidth: 0,
-                    borderRadius: 4,
-                    yAxisID: 'y1'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 20,
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
-                    padding: 12,
-                    cornerRadius: 8,
-                    titleFont: {
-                        size: 13
-                    },
-                    bodyFont: {
-                        size: 12
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 11
-                        }
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    },
-                    ticks: {
-                        font: {
-                            size: 11
-                        }
-                    }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    beginAtZero: true,
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return value >= 1000000 ? (value/1000000).toFixed(1) + 'M' :
-                                   value >= 1000 ? (value/1000).toFixed(0) + 'K' : value;
-                        },
-                        font: {
-                            size: 11
-                        }
-                    }
-                }
-            }
-        }
-    });
-</script>
 @endsection

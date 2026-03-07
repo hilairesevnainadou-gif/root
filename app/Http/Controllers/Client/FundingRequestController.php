@@ -50,6 +50,58 @@ class FundingRequestController extends Controller
         return view('client.requests.index', compact('requests', 'stats'));
     }
 
+    /**
+ * Affiche la page de paiement pour une demande existante
+ */
+public function payment(FundingRequest $fundingRequest): View|RedirectResponse
+{
+    // Vérification propriétaire
+    if ($fundingRequest->user_id !== auth()->id()) {
+        abort(403, 'Accès non autorisé.');
+    }
+
+    // Vérifier que la demande est en brouillon avec paiement en attente
+    if ($fundingRequest->status !== 'draft' || $fundingRequest->payment_status !== 'pending') {
+        return redirect()
+            ->route('client.requests.show', $fundingRequest)
+            ->with('info', 'Cette demande ne nécessite pas de paiement.');
+    }
+
+    $fundingRequest->load('typeFinancement');
+
+    // UNIQUEMENT les frais d'inscription initiaux à payer maintenant
+    $fees = [
+        'registration' => $fundingRequest->typeFinancement->registration_fee,  // À payer maintenant
+        'final' => $fundingRequest->typeFinancement->registration_final_fee,      // À payer plus tard
+        'current' => $fundingRequest->typeFinancement->registration_fee,        // Montant du paiement actuel
+    ];
+
+    return view('client.requests.payment', compact('fundingRequest', 'fees'));
+}
+
+/**
+ * Annule une demande en brouillon (suppression)
+ */
+public function destroy(FundingRequest $fundingRequest): RedirectResponse
+{
+    // Vérifier que l'utilisateur est propriétaire
+    if ($fundingRequest->user_id !== auth()->id()) {
+        abort(403);
+    }
+
+    // Vérifier que la demande est bien en draft
+    if ($fundingRequest->status !== 'draft') {
+        return back()->with('error', 'Seules les demandes en brouillon peuvent être annulées.');
+    }
+
+    // Supprimer la demande
+    $fundingRequest->delete();
+
+    return redirect()
+        ->route('client.requests.index')
+        ->with('success', 'Demande annulée avec succès.');
+}
+
     public function create(Request $request): View
     {
         $preselectedType = null;
@@ -185,20 +237,7 @@ class FundingRequestController extends Controller
             ->with('success', 'Demande mise à jour.');
     }
 
-    public function destroy(FundingRequest $fundingRequest): RedirectResponse
-    {
-        $this->authorize('delete', $fundingRequest);
-
-        if (! in_array($fundingRequest->status, ['draft', 'submitted'])) {
-            return back()->with('error', 'Impossible d\'annuler une demande en cours de traitement.');
-        }
-
-        $fundingRequest->delete();
-
-        return redirect()
-            ->route('client.requests.index')
-            ->with('success', 'Demande annulée.');
-    }
+   
 
     public function track(string $requestNumber): View
     {

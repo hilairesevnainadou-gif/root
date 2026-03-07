@@ -3,782 +3,596 @@
 @section('title', 'Mon portefeuille')
 @section('header-title', 'Mon portefeuille')
 
-@section('header-action')
-    <button type="button" class="btn btn-primary" onclick="openDepositModal()">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Alimenter
-    </button>
-@endsection
-
 @section('content')
 
-<div class="wallet-show">
+<div class="wallet-container">
 
-    {{-- Carte principale du solde --}}
-    <div class="balance-card">
+    {{-- Carte Solde Principale --}}
+    <div class="balance-card-main">
         <div class="balance-header">
-            <div class="balance-info">
+            <div>
                 <span class="balance-label">Solde disponible</span>
-                <h2 class="balance-value">{{ number_format($wallet->balance, 0, ',', ' ') }} <small>FCFA</small></h2>
+                <h1 class="balance-amount">{{ number_format($wallet->balance, 0, ',', ' ') }} <small>FCFA</small></h1>
                 <span class="wallet-number">{{ $wallet->wallet_number }}</span>
             </div>
-            <div class="balance-icon">
+            <div class="balance-icon-large">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                 </svg>
             </div>
         </div>
 
-        <div class="balance-stats">
-            <div class="stat-item">
-                <span class="stat-value text-success">+{{ number_format($stats['total_deposits'], 0, ',', ' ') }} FCFA</span>
-                <span class="stat-label">Total dépôts</span>
+        <div class="balance-quick-stats">
+            <div class="quick-stat">
+                <span class="quick-stat-value text-success">+{{ number_format($stats['total_deposits'], 0, ',', ' ') }}</span>
+                <span class="quick-stat-label">Dépôts</span>
             </div>
-            <div class="stat-item">
-                <span class="stat-value text-danger">-{{ number_format($stats['total_withdrawals'], 0, ',', ' ') }} FCFA</span>
-                <span class="stat-label">Total retraits</span>
+            <div class="quick-stat">
+                <span class="quick-stat-value text-danger">-{{ number_format($stats['total_withdrawals'], 0, ',', ' ') }}</span>
+                <span class="quick-stat-label">Retraits</span>
             </div>
-            <div class="stat-item">
-                <span class="stat-value">{{ $stats['pending_transactions'] }}</span>
-                <span class="stat-label">En attente</span>
+            <div class="quick-stat">
+                <span class="quick-stat-value">{{ $stats['pending_transactions'] }}</span>
+                <span class="quick-stat-label">En attente</span>
             </div>
         </div>
 
-        <div class="balance-actions">
-            <button type="button" class="btn btn-light" onclick="openDepositModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+        <div class="balance-actions-main">
+            <a href="{{ route('client.wallet.deposit') }}" class="btn-action btn-deposit">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
                 Déposer
-            </button>
-            <a href="{{ route('client.wallet.transactions') }}" class="btn btn-secondary">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+            </a>
+            <a href="{{ route('client.wallet.withdraw') }}" class="btn-action btn-withdraw">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                </svg>
+                Retirer
+            </a>
+        </div>
+    </div>
+
+    {{-- Actions Rapides --}}
+    <div class="quick-actions-grid">
+        <a href="{{ route('client.wallet.transactions') }}" class="action-card">
+            <div class="action-icon blue">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                 </svg>
-                Historique complet
-            </a>
+            </div>
+            <span>Historique</span>
+        </a>
+        
+        <div class="action-card" onclick="copyWalletNumber()">
+            <div class="action-icon green">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <span>Copier N°</span>
         </div>
     </div>
 
-    {{-- Informations du compte --}}
-    <div class="info-grid">
-        <div class="info-card">
-            <h3>Informations du compte</h3>
-            <div class="info-list">
-                <div class="info-item">
-                    <span class="info-label">Numéro de compte</span>
-                    <span class="info-value">{{ $wallet->wallet_number }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Devise</span>
-                    <span class="info-value">{{ $wallet->currency }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Statut</span>
-                    <span class="badge badge-{{ $wallet->status }}">
-                        {{ $wallet->status === 'active' ? 'Actif' : ($wallet->status === 'suspended' ? 'Suspendu' : 'Fermé') }}
-                    </span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Activé le</span>
-                    <span class="info-value">{{ $wallet->activated_at?->format('d/m/Y') ?? 'N/A' }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Dernière transaction</span>
-                    <span class="info-value">{{ $wallet->last_transaction_at?->diffForHumans() ?? 'Jamais' }}</span>
-                </div>
-            </div>
-        </div>
-
-        {{-- Méthodes de paiement rapide --}}
-        <div class="info-card">
-            <h3>Modes de dépôt</h3>
-            <div class="payment-methods">
-                <div class="payment-method">
-                    <div class="pm-icon" style="background: #ff6b00;">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
-                    </div>
-                    <span>Orange Money</span>
-                </div>
-                <div class="payment-method">
-                    <div class="pm-icon" style="background: #009688;">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
-                    </div>
-                    <span>Wave</span>
-                </div>
-                <div class="payment-method">
-                    <div class="pm-icon" style="background: #1a73e8;">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
-                    </div>
-                    <span>Free Money</span>
-                </div>
-                <div class="payment-method">
-                    <div class="pm-icon" style="background: #635bff;">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
-                    </div>
-                    <span>Carte bancaire</span>
-                </div>
-            </div>
-            <button type="button" class="btn btn-outline btn-block mt-3" onclick="openDepositModal()">
-                Effectuer un dépôt
-            </button>
-        </div>
-    </div>
-
-    {{-- Transactions récentes --}}
-    <div class="card">
-        <div class="card-header">
-            <h2 class="section-title">Transactions récentes</h2>
-            <a href="{{ route('client.wallet.transactions') }}" class="btn btn-sm btn-secondary">
-                Voir tout
-            </a>
+    {{-- Transactions Récentes --}}
+    <div class="section-card">
+        <div class="section-header">
+            <h2>Transactions récentes</h2>
+            <a href="{{ route('client.wallet.transactions') }}" class="link-see-all">Voir tout</a>
         </div>
 
         @if($recentTransactions->count() > 0)
-            <div class="transactions-list">
-                @foreach($recentTransactions as $transaction)
-                <div class="transaction-item {{ $transaction->type }} {{ $transaction->status }}">
-                    <div class="transaction-icon">
+            <div class="transactions-list-compact">
+                @foreach($recentTransactions->take(5) as $transaction)
+                <div class="transaction-row {{ $transaction->type }} {{ $transaction->status }}">
+                    <div class="transaction-icon-sm">
                         @if($transaction->type === 'credit')
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/>
                             </svg>
                         @elseif($transaction->type === 'debit')
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"/>
                             </svg>
-                        @elseif($transaction->type === 'payment')
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z"/>
-                            </svg>
                         @else
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                             </svg>
                         @endif
                     </div>
-
-                    <div class="transaction-info">
-                        <span class="transaction-type">{{ $transaction->getTypeLabel() }}</span>
-                        <span class="transaction-desc">{{ $transaction->description ?? 'Transaction sans description' }}</span>
-                        <span class="transaction-date">{{ $transaction->created_at->format('d/m/Y H:i') }}</span>
+                    
+                    <div class="transaction-info-sm">
+                        <span class="transaction-type-sm">{{ $transaction->getTypeLabel() }}</span>
+                        <span class="transaction-desc-sm">{{ Str::limit($transaction->description, 30) }}</span>
+                        <span class="transaction-date-sm">{{ $transaction->created_at->diffForHumans() }}</span>
                     </div>
 
-                    <div class="transaction-amount">
-                        <span class="amount {{ $transaction->type === 'credit' ? 'positive' : ($transaction->type === 'debit' ? 'negative' : '') }}">
-                            {{ $transaction->type === 'credit' ? '+' : ($transaction->type === 'debit' ? '-' : '') }}
-                            {{ number_format($transaction->amount, 0, ',', ' ') }} FCFA
+                    <div class="transaction-amount-sm">
+                        <span class="amount {{ $transaction->type === 'credit' ? 'positive' : 'negative' }}">
+                            {{ $transaction->type === 'credit' ? '+' : '-' }}{{ number_format($transaction->amount, 0, ',', ' ') }}
                         </span>
-                        @if($transaction->fee > 0)
-                            <span class="fee">Frais: {{ number_format($transaction->fee, 0, ',', ' ') }} FCFA</span>
+                        @if($transaction->status === 'pending')
+                            <span class="status-badge pending">En attente</span>
+                        @elseif($transaction->status === 'failed')
+                            <span class="status-badge failed">Échoué</span>
                         @endif
-                    </div>
-
-                    <div class="transaction-status">
-                        <span class="badge badge-{{ $transaction->status }}">
-                            {{ $transaction->getStatusLabel() }}
-                        </span>
                     </div>
                 </div>
                 @endforeach
             </div>
         @else
-            <div class="empty-state">
-                <div class="empty-icon">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                </div>
-                <h3>Aucune transaction</h3>
-                <p>Votre historique de transactions est vide.</p>
-                <button type="button" class="btn btn-primary" onclick="openDepositModal()">
-                    Effectuer un premier dépôt
-                </button>
+            <div class="empty-state-sm">
+                <p>Aucune transaction récente</p>
+                <a href="{{ route('client.wallet.deposit') }}" class="btn btn-primary btn-sm">Faire un dépôt</a>
             </div>
         @endif
     </div>
 
+    {{-- Informations du compte --}}
+    <div class="section-card">
+        <h2 class="section-title-sm">Informations du compte</h2>
+        <div class="info-list-compact">
+            <div class="info-row">
+                <span>Statut</span>
+                <span class="badge-status {{ $wallet->status }}">
+                    {{ $wallet->status === 'active' ? 'Actif' : ($wallet->status === 'suspended' ? 'Suspendu' : 'Fermé') }}
+                </span>
+            </div>
+            <div class="info-row">
+                <span>Devise</span>
+                <span>{{ $wallet->currency }}</span>
+            </div>
+            <div class="info-row">
+                <span>Activé le</span>
+                <span>{{ $wallet->activated_at?->format('d/m/Y') ?? 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+                <span>Dernière activité</span>
+                <span>{{ $wallet->last_transaction_at?->diffForHumans() ?? 'Jamais' }}</span>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-{{-- Modal de dépôt --}}
-<div id="depositModal" class="modal" style="display: none;">
-    <div class="modal-overlay" onclick="closeDepositModal()"></div>
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Alimenter mon portefeuille</h3>
-            <button type="button" class="btn-close" onclick="closeDepositModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-        
-        <form action="{{ route('client.wallet.deposit') }}" method="POST" id="depositForm">
-            @csrf
-            
-            <div class="form-group">
-                <label class="form-label">Montant à déposer (FCFA)</label>
-                <div class="amount-input-wrapper">
-                    <input type="number" name="amount" id="depositAmount" class="form-control" 
-                           placeholder="10000" min="1000" step="100" required>
-                    <span class="amount-currency">FCFA</span>
-                </div>
-                <small class="form-hint">Minimum: 1 000 FCFA</small>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Mode de paiement</label>
-                <div class="payment-options">
-                    <label class="payment-option">
-                        <input type="radio" name="payment_method" value="orange_money" checked>
-                        <span class="option-content">
-                            <span class="option-icon" style="background: #ff6b00;"></span>
-                            <span class="option-label">Orange Money</span>
-                        </span>
-                    </label>
-                    <label class="payment-option">
-                        <input type="radio" name="payment_method" value="wave">
-                        <span class="option-content">
-                            <span class="option-icon" style="background: #009688;"></span>
-                            <span class="option-label">Wave</span>
-                        </span>
-                    </label>
-                    <label class="payment-option">
-                        <input type="radio" name="payment_method" value="free_money">
-                        <span class="option-content">
-                            <span class="option-icon" style="background: #1a73e8;"></span>
-                            <span class="option-label">Free Money</span>
-                        </span>
-                    </label>
-                    <label class="payment-option">
-                        <input type="radio" name="payment_method" value="card">
-                        <span class="option-content">
-                            <span class="option-icon" style="background: #635bff;"></span>
-                            <span class="option-label">Carte bancaire</span>
-                        </span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="fee-preview" id="feePreview">
-                <div class="fee-row">
-                    <span>Montant</span>
-                    <strong id="previewAmount">0 FCFA</strong>
-                </div>
-                <div class="fee-row">
-                    <span>Frais</span>
-                    <strong id="previewFee">0 FCFA</strong>
-                </div>
-                <div class="fee-row total">
-                    <span>Total à payer</span>
-                    <strong id="previewTotal">0 FCFA</strong>
-                </div>
-            </div>
-
-            <div class="modal-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeDepositModal()">Annuler</button>
-                <button type="submit" class="btn btn-primary btn-block">
-                    Procéder au paiement
-                </button>
-            </div>
-        </form>
-    </div>
+{{-- Toast pour copie --}}
+<div id="copyToast" class="toast" style="display: none;">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span>Numéro copié !</span>
 </div>
 
 @endsection
 
 @section('scripts')
 <script>
-function openDepositModal() {
-    document.getElementById('depositModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-function closeDepositModal() {
-    document.getElementById('depositModal').style.display = 'none';
-    document.body.style.overflow = '';
-}
-
-// Calcul des frais en temps réel
-document.getElementById('depositAmount')?.addEventListener('input', function() {
-    const amount = parseFloat(this.value) || 0;
-    const method = document.querySelector('input[name="payment_method"]:checked')?.value || 'orange_money';
-    
-    let feeRate = 0.01; // 1% par défaut
-    if (method === 'card') feeRate = 0.025; // 2.5% pour carte
-    
-    const fee = Math.round(amount * feeRate);
-    const total = amount + fee;
-
-    document.getElementById('previewAmount').textContent = amount.toLocaleString('fr-FR') + ' FCFA';
-    document.getElementById('previewFee').textContent = fee.toLocaleString('fr-FR') + ' FCFA';
-    document.getElementById('previewTotal').textContent = total.toLocaleString('fr-FR') + ' FCFA';
-    
-    document.getElementById('feePreview').style.display = amount > 0 ? 'block' : 'none';
-});
-
-// Mettre à jour les frais quand on change de méthode
-document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        document.getElementById('depositAmount')?.dispatchEvent(new Event('input'));
+function copyWalletNumber() {
+    const walletNumber = '{{ $wallet->wallet_number }}';
+    navigator.clipboard.writeText(walletNumber).then(() => {
+        const toast = document.getElementById('copyToast');
+        toast.style.display = 'flex';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 2000);
     });
-});
-
-// Fermer avec Escape
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeDepositModal();
-});
+}
 </script>
 @endsection
 
 @section('styles')
 <style>
-    .wallet-show {
-        max-width: 1000px;
-        margin: 0 auto;
+    .wallet-container {
+        padding: 16px;
+        padding-bottom: 100px;
     }
 
-    /* Balance Card */
-    .balance-card {
-        background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
+    /* Balance Card Main */
+    .balance-card-main {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
         color: white;
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 10px 40px rgba(37, 99, 235, 0.2);
+        border-radius: 24px;
+        padding: 28px;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 40px -10px rgba(30, 64, 175, 0.4);
+    }
+
+    .balance-card-main::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        border-radius: 50%;
     }
 
     .balance-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 2rem;
-    }
-
-    .balance-info {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
+        margin-bottom: 24px;
+        position: relative;
+        z-index: 1;
     }
 
     .balance-label {
-        font-size: 0.9rem;
+        font-size: 0.875rem;
+        opacity: 0.85;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .balance-amount {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin: 0;
+        line-height: 1;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .balance-amount small {
+        font-size: 1.25rem;
+        font-weight: 600;
         opacity: 0.9;
     }
 
-    .balance-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 0;
-        line-height: 1;
-    }
-
-    .balance-value small {
-        font-size: 1rem;
-        font-weight: 500;
-    }
-
     .wallet-number {
+        display: inline-block;
         font-family: monospace;
-        font-size: 0.85rem;
-        opacity: 0.8;
-        background: rgba(255,255,255,0.1);
-        padding: 0.25rem 0.75rem;
-        border-radius: var(--radius-sm);
-        margin-top: 0.5rem;
+        font-size: 0.8rem;
+        opacity: 0.7;
+        background: rgba(255,255,255,0.15);
+        padding: 4px 12px;
+        border-radius: 20px;
+        margin-top: 12px;
     }
 
-    .balance-icon {
-        opacity: 0.2;
+    .balance-icon-large {
+        opacity: 0.3;
     }
 
-    .balance-stats {
+    .balance-quick-stats {
         display: flex;
-        gap: 2rem;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1.5rem;
+        gap: 24px;
+        margin-bottom: 24px;
+        padding-bottom: 20px;
         border-bottom: 1px solid rgba(255,255,255,0.2);
+        position: relative;
+        z-index: 1;
     }
 
-    .stat-item {
+    .quick-stat {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
     }
 
-    .stat-item .stat-value {
-        font-size: 1.1rem;
-        font-weight: 600;
+    .quick-stat-value {
+        font-size: 1.125rem;
+        font-weight: 700;
     }
 
-    .stat-item .stat-value.text-success {
+    .quick-stat-value.text-success {
         color: #86efac;
     }
 
-    .stat-item .stat-value.text-danger {
+    .quick-stat-value.text-danger {
         color: #fca5a5;
     }
 
-    .stat-item .stat-label {
+    .quick-stat-label {
         font-size: 0.75rem;
-        opacity: 0.8;
+        opacity: 0.7;
     }
 
-    .balance-actions {
-        display: flex;
-        gap: 0.75rem;
-    }
-
-    .btn-light {
-        background: rgba(255,255,255,0.9);
-        color: var(--primary);
-        border: none;
-    }
-
-    .btn-light:hover {
-        background: white;
-    }
-
-    /* Info Grid */
-    .info-grid {
+    .balance-actions-main {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.5rem;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        position: relative;
+        z-index: 1;
     }
 
-    .info-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1.5rem;
-    }
-
-    .info-card h3 {
-        font-size: 1rem;
-        font-weight: 600;
-        margin: 0 0 1rem;
-        color: var(--text);
-    }
-
-    .info-list {
+    .btn-action {
         display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .info-item {
-        display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--border);
+        justify-content: center;
+        gap: 8px;
+        padding: 14px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        text-decoration: none;
+        transition: all 0.2s;
     }
 
-    .info-item:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
+    .btn-deposit {
+        background: rgba(255,255,255,0.95);
+        color: #1e40af;
     }
 
-    .info-label {
-        font-size: 0.85rem;
-        color: var(--text-muted);
+    .btn-deposit:active {
+        background: white;
+        transform: scale(0.98);
     }
 
-    .info-value {
-        font-size: 0.9rem;
-        font-weight: 500;
-        color: var(--text);
+    .btn-withdraw {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
     }
 
-    /* Payment Methods */
-    .payment-methods {
+    .btn-withdraw:active {
+        background: rgba(255,255,255,0.3);
+    }
+
+    /* Quick Actions */
+    .quick-actions-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
+        gap: 12px;
+        margin-bottom: 20px;
     }
 
-    .payment-method {
+    .action-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 16px;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        background: var(--bg);
-        border-radius: var(--radius);
+        gap: 8px;
+        text-decoration: none;
+        color: #475569;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s;
     }
 
-    .pm-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: var(--radius-sm);
+    .action-card:active {
+        background: #f8fafc;
+        transform: scale(0.98);
+    }
+
+    .action-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
-    .payment-method span {
-        font-size: 0.9rem;
+    .action-icon.blue {
+        background: #eff6ff;
+        color: #3b82f6;
+    }
+
+    .action-icon.green {
+        background: #f0fdf4;
+        color: #22c55e;
+    }
+
+    /* Section Card */
+    .section-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .section-header h2 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+    }
+
+    .section-title-sm {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin: 0 0 16px 0;
+    }
+
+    .link-see-all {
+        font-size: 0.875rem;
+        color: #3b82f6;
         font-weight: 500;
+        text-decoration: none;
     }
 
     /* Transactions List */
-    .transactions-list {
+    .transactions-list-compact {
         display: flex;
         flex-direction: column;
     }
 
-    .transaction-item {
-        display: grid;
-        grid-template-columns: auto 1fr auto auto;
-        gap: 1rem;
+    .transaction-row {
+        display: flex;
         align-items: center;
-        padding: 1rem;
-        border-bottom: 1px solid var(--border);
-        transition: background 0.2s;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f5f9;
     }
 
-    .transaction-item:hover {
-        background: var(--bg);
-    }
-
-    .transaction-item:last-child {
+    .transaction-row:last-child {
         border-bottom: none;
     }
 
-    .transaction-icon {
+    .transaction-icon-sm {
         width: 40px;
         height: 40px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--bg);
-        color: var(--text-muted);
+        background: #f1f5f9;
+        color: #64748b;
+        flex-shrink: 0;
     }
 
-    .transaction-item.credit .transaction-icon {
+    .transaction-row.credit .transaction-icon-sm {
         background: #dcfce7;
-        color: #166534;
+        color: #16a34a;
     }
 
-    .transaction-item.debit .transaction-icon {
+    .transaction-row.debit .transaction-icon-sm {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .transaction-info-sm {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .transaction-type-sm {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .transaction-desc-sm {
+        font-size: 0.8rem;
+        color: #64748b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .transaction-date-sm {
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+
+    .transaction-amount-sm {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+    }
+
+    .transaction-amount-sm .amount {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .transaction-amount-sm .amount.positive {
+        color: #16a34a;
+    }
+
+    .transaction-amount-sm .amount.negative {
+        color: #dc2626;
+    }
+
+    .status-badge {
+        font-size: 0.6875rem;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+
+    .status-badge.pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-badge.failed {
         background: #fee2e2;
         color: #991b1b;
     }
 
-    .transaction-item.payment .transaction-icon {
-        background: #dbeafe;
-        color: #1e40af;
-    }
-
-    .transaction-info {
+    /* Info List */
+    .info-list-compact {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
     }
 
-    .transaction-type {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--text);
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.9375rem;
     }
 
-    .transaction-desc {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 200px;
+    .info-row:last-child {
+        border-bottom: none;
     }
 
-    .transaction-date {
+    .info-row span:first-child {
+        color: #64748b;
+    }
+
+    .badge-status {
+        padding: 4px 12px;
+        border-radius: 20px;
         font-size: 0.75rem;
-        color: var(--text-muted);
-    }
-
-    .transaction-amount {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 0.25rem;
-    }
-
-    .transaction-amount .amount {
-        font-size: 1rem;
         font-weight: 600;
     }
 
-    .transaction-amount .amount.positive {
-        color: #059669;
+    .badge-status.active {
+        background: #dcfce7;
+        color: #166534;
     }
 
-    .transaction-amount .amount.negative {
-        color: #dc2626;
+    .badge-status.suspended {
+        background: #fef3c7;
+        color: #92400e;
     }
 
-    .transaction-amount .fee {
-        font-size: 0.75rem;
-        color: var(--text-muted);
+    /* Empty State */
+    .empty-state-sm {
+        text-align: center;
+        padding: 24px;
+        color: #94a3b8;
     }
 
-    /* Modal */
-    .modal {
+    .empty-state-sm p {
+        margin: 0 0 12px 0;
+    }
+
+    /* Toast */
+    .toast {
         position: fixed;
-        inset: 0;
-        z-index: 1000;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #0f172a;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 50px;
         display: flex;
         align-items: center;
-        justify-content: center;
-    }
-
-    .modal-overlay {
-        position: absolute;
-        inset: 0;
-        background: rgba(0,0,0,0.5);
-    }
-
-    .modal-content {
-        position: relative;
-        background: var(--surface);
-        border-radius: var(--radius-lg);
-        width: 90%;
-        max-width: 500px;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-    }
-
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .modal-header h3 {
-        margin: 0;
-        font-size: 1.25rem;
-    }
-
-    .btn-close {
-        background: none;
-        border: none;
-        color: var(--text-muted);
-        cursor: pointer;
-        padding: 0.25rem;
-    }
-
-    .btn-close:hover {
-        color: var(--text);
-    }
-
-    #depositForm {
-        padding: 1.5rem;
-    }
-
-    .payment-options {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
-    }
-
-    .payment-option {
-        cursor: pointer;
-    }
-
-    .payment-option input {
-        display: none;
-    }
-
-    .option-content {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        border: 2px solid var(--border);
-        border-radius: var(--radius);
-        transition: all 0.2s;
-    }
-
-    .payment-option input:checked + .option-content {
-        border-color: var(--primary);
-        background: #eff6ff;
-    }
-
-    .option-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-    }
-
-    .option-label {
-        font-size: 0.9rem;
+        gap: 8px;
+        font-size: 0.875rem;
         font-weight: 500;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
+        z-index: 1000;
+        animation: slideUp 0.3s ease-out;
     }
 
-    .fee-preview {
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1rem;
-        margin: 1.5rem 0;
-        display: none;
-    }
-
-    .fee-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.5rem 0;
-        font-size: 0.9rem;
-    }
-
-    .fee-row.total {
-        border-top: 1px solid var(--border);
-        margin-top: 0.5rem;
-        padding-top: 0.75rem;
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-
-    .modal-actions {
-        display: flex;
-        gap: 0.75rem;
-    }
-
-    .btn-block {
-        flex: 1;
-    }
-
-    @media (max-width: 640px) {
-        .transaction-item {
-            grid-template-columns: auto 1fr auto;
-            grid-template-rows: auto auto;
-        }
-
-        .transaction-status {
-            grid-column: 3;
-            grid-row: 1 / 3;
-        }
-
-        .balance-stats {
-            gap: 1rem;
-        }
-
-        .payment-options {
-            grid-template-columns: 1fr;
-        }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 </style>
 @endsection

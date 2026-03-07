@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#1e40af">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="BHDM">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'BHDM')</title>
+    <title>@yield('title', 'Espace Client - BHDM')</title>
 
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <link rel="apple-touch-icon" href="{{ asset('icons/icon-192x192.png') }}">
@@ -21,13 +21,630 @@
     <link rel="stylesheet" href="{{ asset('css/transitions.css') }}">
 
     @yield('styles')
+    
+    <style>
+        /* Design System Professionnel */
+        :root {
+            --primary-600: #1e40af;
+            --primary-500: #3b82f6;
+            --primary-50: #eff6ff;
+            --success-500: #10b981;
+            --warning-500: #f59e0b;
+            --danger-500: #ef4444;
+            --gray-900: #0f172a;
+            --gray-800: #1e293b;
+            --gray-700: #334155;
+            --gray-600: #475569;
+            --gray-500: #64748b;
+            --gray-400: #94a3b8;
+            --gray-300: #cbd5e1;
+            --gray-200: #e2e8f0;
+            --gray-100: #f1f5f9;
+            --gray-50: #f8fafc;
+            --radius: 16px;
+            --radius-sm: 12px;
+            --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+            --shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
+            --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1);
+        }
+
+        /* Header Premium - Simplifié */
+        .mobile-header {
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-500) 100%);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .mobile-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            height: 56px;
+        }
+
+        .brand-logo {
+            height: 32px;
+            width: auto;
+            filter: brightness(0) invert(1);
+            object-fit: contain;
+        }
+
+        .mobile-header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo-fallback {
+            display: none;
+            width: 32px;
+            height: 32px;
+            background: white;
+            border-radius: 8px;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-600);
+            font-weight: 800;
+            font-size: 1.125rem;
+        }
+
+        .mobile-header-title {
+            color: rgba(255,255,255,0.95);
+            font-weight: 600;
+            font-size: 1.125rem;
+            letter-spacing: -0.025em;
+        }
+
+        /* Bouton Déconnexion Unique - Style Premium */
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-logout-header {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-logout-header:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .btn-logout-header:active {
+            background: rgba(255,255,255,0.25);
+            transform: scale(0.98);
+        }
+
+        .btn-logout-header svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2;
+        }
+
+        .logout-label {
+            display: none;
+        }
+
+        @media (min-width: 380px) {
+            .logout-label {
+                display: inline;
+            }
+        }
+
+        /* Carte Portefeuille Premium */
+        .wallet-card {
+            background: linear-gradient(145deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
+            border-radius: 20px;
+            padding: 24px;
+            margin: 16px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px -10px rgba(30, 64, 175, 0.4);
+        }
+
+        .wallet-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .wallet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .wallet-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            opacity: 0.85;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+
+        .wallet-balance {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .wallet-currency {
+            font-size: 1.125rem;
+            font-weight: 600;
+            opacity: 0.9;
+            margin-left: 4px;
+        }
+
+        .wallet-icon {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 14px;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .wallet-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .wallet-stat {
+            text-align: left;
+        }
+
+        .wallet-stat-value {
+            font-size: 1.125rem;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .wallet-stat-label {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Alertes Professionnelles */
+        .alert-premium {
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin: 12px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border-left: 4px solid;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .alert-premium.error {
+            background: #fef2f2;
+            border-color: var(--danger-500);
+            color: #991b1b;
+        }
+
+        .alert-premium.warning {
+            background: #fffbeb;
+            border-color: var(--warning-500);
+            color: #92400e;
+        }
+
+        .alert-premium.info {
+            background: #eff6ff;
+            border-color: var(--primary-500);
+            color: #1e40af;
+        }
+
+        .alert-icon {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alert-premium.error .alert-icon { background: #fee2e2; color: var(--danger-500); }
+        .alert-premium.warning .alert-icon { background: #fef3c7; color: var(--warning-500); }
+        .alert-premium.info .alert-icon { background: #dbeafe; color: var(--primary-500); }
+
+        .alert-content h4 {
+            font-weight: 600;
+            font-size: 0.9375rem;
+            margin-bottom: 4px;
+        }
+
+        .alert-content p {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .alert-action {
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-decoration: none;
+        }
+
+        /* Navigation Optimisée */
+        .mobile-nav {
+            background: white;
+            border-top: 1px solid var(--gray-200);
+            padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+        }
+
+        .mobile-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 4px;
+            color: var(--gray-400);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-nav-item.active {
+            color: var(--primary-600);
+        }
+
+        .mobile-nav-item svg {
+            width: 24px;
+            height: 24px;
+            stroke-width: 2;
+            transition: transform 0.2s;
+        }
+
+        .mobile-nav-item:active svg {
+            transform: scale(0.9);
+        }
+
+        .mobile-nav-item.nav-item-primary {
+            position: relative;
+            top: -16px;
+            color: var(--primary-600);
+        }
+
+        .nav-icon-bg {
+            background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+            color: white;
+            margin-bottom: 4px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .mobile-nav-item.nav-item-primary:active .nav-icon-bg {
+            transform: scale(0.95);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        /* Modal Premium */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 32px 24px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            position: relative;
+            z-index: 1;
+            animation: modalSlideUp 0.3s ease-out;
+        }
+
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-icon-danger {
+            background: #fef2f2;
+            color: var(--danger-500);
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .modal-text {
+            color: var(--gray-600);
+            font-size: 0.9375rem;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .btn-secondary:active {
+            background: var(--gray-200);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626, var(--danger-500));
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Offline Banner */
+        .offline-banner {
+            background: var(--gray-900);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+            z-index: 99;
+        }
+
+        .offline-banner.hidden {
+            display: none;
+        }
+
+        /* Page Transition */
+        .page-transition {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .page-transition.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .transition-spinner {
+            width: 50px;
+            height: 50px;
+        }
+
+        /* PWA Prompts */
+        .pwa-prompt-ios {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: none;
+            padding: 20px;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .pwa-prompt-content-ios {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 360px;
+            margin: 0 auto;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            position: relative;
+        }
+
+        .pwa-prompt-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--gray-400);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .pwa-prompt-close:active {
+            background: var(--gray-100);
+        }
+
+        /* Main Content */
+        .main-content {
+            min-height: calc(100vh - 56px);
+            padding-bottom: 80px;
+        }
+
+        .page-content {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+        }
+
+        .page-content.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Alertes système */
+        .alert {
+            margin: 16px;
+            padding: 16px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9375rem;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-close {
+            margin-left: auto;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.6;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alert-close:active {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
-    <!-- Page Transition Overlay -->
+    <!-- Page Transition -->
     <div id="page-transition" class="page-transition">
         <div class="transition-spinner">
             <svg viewBox="0 0 50 50">
-                <circle cx="25" cy="25" r="20" fill="none" stroke="#2563eb" stroke-width="4" stroke-linecap="round">
+                <circle cx="25" cy="25" r="20" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round">
                     <animate attributeName="stroke-dasharray" values="1,150;90,150;90,150" dur="1.5s" repeatCount="indefinite"/>
                     <animate attributeName="stroke-dashoffset" values="0;-35;-124" dur="1.5s" repeatCount="indefinite"/>
                 </circle>
@@ -40,24 +657,23 @@
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"/>
         </svg>
-        <span>Hors ligne - Mode limité</span>
+        <span>Connexion interrompue - Mode hors ligne</span>
     </div>
 
-    <!-- Header Mobile -->
+    <!-- Header Professionnel - Simplifié -->
     <header class="mobile-header">
         <div class="mobile-header-content">
             <div class="mobile-header-brand">
-                <div class="header-logo">BHDM</div>
-                <span class="mobile-header-title">@yield('header-title', 'Tableau de bord')</span>
+                <img src="{{ asset('images/logo.png') }}" alt="BHDM" class="brand-logo" onerror="this.style.display='none'; document.querySelector('.header-logo-fallback').style.display='flex'">
+                <div class="header-logo-fallback">B</div>
+                <span class="mobile-header-title">@yield('header-title', 'Mon Espace')</span>
             </div>
 
             <div class="header-actions">
-                @yield('header-action')
-
                 @auth
-                    <!-- Bouton Déconnexion -->
+                    <!-- Bouton Déconnexion Unique -->
                     <button type="button" class="btn-logout-header" id="btn-logout-trigger" title="Se déconnecter">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
                         <span class="logout-label">Sortir</span>
@@ -76,7 +692,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
                     <span>{{ session('success') }}</span>
-                    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+                    <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
                 </div>
             @endif
 
@@ -86,36 +702,101 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                     <span>{{ session('error') }}</span>
-                    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+                    <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
                 </div>
+            @endif
+
+            <!-- Vue du Portefeuille - Intégration données réelles -->
+            @if(request()->routeIs('client.dashboard') && isset($financialSummary))
+                <div class="wallet-card">
+                    <div class="wallet-header">
+                        <div>
+                            <div class="wallet-label">Solde disponible</div>
+                            <div class="wallet-balance">
+                                {{ $financialSummary['formatted_balance'] }}
+                            </div>
+                        </div>
+                        <div class="wallet-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="wallet-stats">
+                        <div class="wallet-stat">
+                            <span class="wallet-stat-value">{{ $stats['active_requests'] ?? 0 }}</span>
+                            <span class="wallet-stat-label">Demandes actives</span>
+                        </div>
+                        <div class="wallet-stat">
+                            <span class="wallet-stat-value">{{ $stats['success_rate']['value'] ?? 0 }}%</span>
+                            <span class="wallet-stat-label">Taux de succès</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alertes dynamiques -->
+                @if(isset($alerts) && count($alerts) > 0)
+                    @foreach($alerts as $alert)
+                        <div class="alert-premium {{ $alert['type'] }}">
+                            <div class="alert-icon">
+                                @switch($alert['icon'])
+                                    @case('document')
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        @break
+                                    @case('draft')
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        @break
+                                    @case('notification')
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                        @break
+                                    @default
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                @endswitch
+                            </div>
+                            <div class="alert-content">
+                                <h4>{{ $alert['title'] }}</h4>
+                                <p>{{ $alert['message'] }}</p>
+                                <a href="{{ $alert['action_url'] }}" class="alert-action">
+                                    {{ $alert['action_text'] }}
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                </a>
+                            </div>
+                        </div>
+                    @endforeach
+                @endif
             @endif
 
             @yield('content')
         </div>
     </main>
 
-    <!-- Navigation Mobile -->
+    <!-- Navigation Mobile Professionnelle -->
     @auth
         @if(!auth()->user()->is_admin && !auth()->user()->is_moderator)
             <nav class="mobile-nav">
                 <a href="{{ route('client.dashboard') }}" class="mobile-nav-item {{ request()->routeIs('client.dashboard') ? 'active' : '' }}">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     <span>Accueil</span>
                 </a>
-                <a href="{{ route('client.financements.index') }}" class="mobile-nav-item {{ request()->routeIs('client.financements.*') ? 'active' : '' }}">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Financements</span>
+                
+                <a href="{{ route('client.wallet.show') }}" class="mobile-nav-item {{ request()->routeIs('client.wallet.show') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    <span>Portefeuille</span>
                 </a>
+
                 <a href="{{ route('client.requests.create') }}" class="mobile-nav-item nav-item-primary">
                     <div class="nav-icon-bg">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
                     </div>
-                    <span>Demander</span>
+                    <span>Nouveau</span>
                 </a>
-                <a href="{{ route('client.requests.index') }}" class="mobile-nav-item {{ request()->routeIs('client.requests.*') ? 'active' : '' }}">
+
+                <a href="{{ route('client.requests.index') }}" class="mobile-nav-item {{ request()->routeIs('client.requests.*') && !request()->routeIs('client.requests.create') ? 'active' : '' }}">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-                    <span>Mes demandes</span>
+                    <span>Demandes</span>
                 </a>
+
                 <a href="{{ route('client.profile') }}" class="mobile-nav-item {{ request()->routeIs('client.profile') ? 'active' : '' }}">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     <span>Profil</span>
@@ -125,26 +806,26 @@
     @endauth
 
     <!-- Modal Déconnexion -->
-    <div id="logout-modal" class="modal" style="display: none;">
+    <div id="logout-modal" class="modal">
         <div class="modal-overlay"></div>
-        <div class="modal-content modal-small">
-            <div class="modal-icon modal-icon-danger">
+        <div class="modal-content">
+            <div class="modal-icon-danger">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="32" height="32">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                 </svg>
             </div>
 
-            <h3 class="modal-title">Se déconnecter ?</h3>
-            <p class="modal-text">Vous allez être redirigé vers la page de connexion.</p>
+            <h3 class="modal-title">Déconnexion sécurisée</h3>
+            <p class="modal-text">Vous allez être déconnecté de votre espace client. Voulez-vous continuer ?</p>
 
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" id="btn-cancel-logout">
-                    Annuler
+                    Rester connecté
                 </button>
                 <form action="{{ route('logout') }}" method="POST" id="logout-form" style="margin: 0; flex: 1;">
                     @csrf
-                    <button type="submit" class="btn btn-danger" id="btn-confirm-logout" style="width: 100%;">
-                        <span class="btn-text">Déconnexion</span>
+                    <button type="submit" class="btn btn-danger" id="btn-confirm-logout">
+                        <span class="btn-text">Me déconnecter</span>
                         <span class="btn-loader" style="display: none;">
                             <svg class="spinner" fill="none" viewBox="0 0 24 24" width="16" height="16">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/>
@@ -160,105 +841,55 @@
     </div>
 
     <!-- PWA Prompt iOS -->
-    <div id="ios-prompt" class="pwa-prompt-ios" style="display: none;">
+    <div id="ios-prompt" class="pwa-prompt-ios">
         <div class="pwa-prompt-content-ios">
-            <button class="pwa-prompt-close" id="ios-prompt-close">×</button>
-            <div class="pwa-prompt-icon">
-                <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold;">B</div>
+            <button class="pwa-prompt-close" id="ios-prompt-close">&times;</button>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="width: 64px; height: 64px; background: linear-gradient(135deg, var(--primary-600), var(--primary-500)); border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 28px; font-weight: 800; margin-bottom: 16px;">B</div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--gray-900); margin-bottom: 8px;">Installer BHDM</h3>
+                <p style="font-size: 0.875rem; color: var(--gray-500);">Accédez rapidement à votre portefeuille</p>
             </div>
-            <h3 class="pwa-prompt-title">Installer BHDM</h3>
-            <p class="pwa-prompt-subtitle">Accédez rapidement à vos financements</p>
-
-            <div class="ios-steps">
-                <div class="ios-step">
-                    <span class="step-num">1</span>
-                    <span>Appuyez sur <strong>Partager</strong></span>
-                    <svg style="display: inline-block; vertical-align: middle; margin-left: 4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
-                    </svg>
+            <div style="background: var(--gray-100); border-radius: 12px; padding: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="background: var(--primary-500); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 600;">1</span>
+                    <span style="font-size: 0.9375rem; color: var(--gray-700);">Appuyez sur <strong>Partager</strong></span>
+                    <svg style="margin-left: auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
                 </div>
-                <div class="ios-step">
-                    <span class="step-num">2</span>
-                    <span>Puis <strong>"Sur l'écran d'accueil"</strong></span>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="background: var(--primary-500); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 600;">2</span>
+                    <span style="font-size: 0.9375rem; color: var(--gray-700);">Sélectionnez <strong>"Sur l'écran d'accueil"</strong></span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- PWA Prompt Android -->
-    <div id="android-prompt" class="pwa-prompt-android" style="display: none;">
-        <div class="pwa-prompt-content-android">
-            <div class="pwa-prompt-info">
-                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: bold;">B</div>
-                <div>
-                    <div style="font-weight: 700; color: #1f2937;">Installer BHDM</div>
-                    <div style="font-size: 0.875rem; color: #6b7280;">Application web progressive</div>
-                </div>
-            </div>
-            <div class="pwa-prompt-actions-android">
-                <button class="btn-pwa-dismiss" id="android-prompt-dismiss">Plus tard</button>
-                <button class="btn-pwa-install" id="android-prompt-install">Installer</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts INLINE - Définis avant @yield('scripts') -->
+    <!-- Scripts -->
     <script>
-        // ============================================
-        // VARIABLES GLOBALES
-        // ============================================
+        // Variables globales
         let deferredPrompt = null;
         let isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         let isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-        // ============================================
-        // FONCTIONS MODAL DÉCONNEXION
-        // ============================================
+        // Modal Déconnexion
         function openLogoutModal() {
-            console.log('Opening logout modal');
             const modal = document.getElementById('logout-modal');
-            if (!modal) {
-                console.error('Modal not found');
-                return;
-            }
-
+            if (!modal) return;
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
-
-            // Animation
-            const content = modal.querySelector('.modal-content');
-            if (content) {
-                content.style.animation = 'none';
-                setTimeout(() => {
-                    content.style.animation = 'modalSlideUp 0.3s ease';
-                }, 10);
-            }
         }
 
         function closeLogoutModal() {
             const modal = document.getElementById('logout-modal');
             if (!modal) return;
-
-            const content = modal.querySelector('.modal-content');
-            if (content) {
-                content.style.animation = 'modalSlideDown 0.3s ease';
-            }
-
-            setTimeout(() => {
-                modal.style.display = 'none';
-                document.body.style.overflow = '';
-            }, 280);
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
         }
 
-        // ============================================
-        // FONCTIONS PWA PROMPTS
-        // ============================================
+        // PWA Prompts
         function showIosPrompt() {
             const prompt = document.getElementById('ios-prompt');
             if (prompt && !isStandalone && !localStorage.getItem('iosPromptDismissed')) {
-                setTimeout(() => {
-                    prompt.style.display = 'flex';
-                }, 2000);
+                setTimeout(() => prompt.style.display = 'flex', 2000);
             }
         }
 
@@ -273,9 +904,7 @@
         function showAndroidPrompt() {
             const prompt = document.getElementById('android-prompt');
             if (prompt && deferredPrompt && !localStorage.getItem('androidPromptDismissed')) {
-                setTimeout(() => {
-                    prompt.style.display = 'block';
-                }, 3000);
+                setTimeout(() => prompt.style.display = 'block', 3000);
             }
         }
 
@@ -288,68 +917,42 @@
         }
 
         async function installPWA() {
-            if (!deferredPrompt) {
-                alert('Installation non disponible');
-                return;
-            }
-
+            if (!deferredPrompt) return;
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-
-            if (outcome === 'accepted') {
-                console.log('PWA installed');
-            }
-
+            if (outcome === 'accepted') console.log('PWA installée');
             deferredPrompt = null;
             hideAndroidPrompt();
         }
 
-        // ============================================
-        // TRANSITIONS DE PAGE
-        // ============================================
-        function navigateWithTransition(url, direction = 'left') {
+        // Transitions
+        function navigateWithTransition(url) {
             const transition = document.getElementById('page-transition');
             const pageContent = document.getElementById('page-content');
-
             if (transition) transition.classList.add('active');
-
             if (pageContent) {
+                pageContent.classList.remove('loaded');
                 pageContent.style.opacity = '0';
-                pageContent.style.transform = direction === 'left' ? 'translateX(-20px)' : 'translateX(20px)';
-                pageContent.style.transition = 'all 0.3s ease';
+                pageContent.style.transform = 'translateX(-20px)';
             }
-
-            setTimeout(() => {
-                window.location.href = url;
-            }, 300);
+            setTimeout(() => window.location.href = url, 300);
         }
 
-        // ============================================
-        // INITIALISATION AU CHARGEMENT
-        // ============================================
+        // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM Loaded - Initializing...');
-
-            // 1. Masquer le loader de transition
+            // Masquer loader
             setTimeout(() => {
                 const transition = document.getElementById('page-transition');
                 if (transition) transition.classList.remove('active');
             }, 300);
 
-            // 2. Animer l'entrée du contenu
+            // Animer contenu
             const pageContent = document.getElementById('page-content');
             if (pageContent) {
-                pageContent.style.opacity = '0';
-                pageContent.style.transform = 'translateY(20px)';
-
-                setTimeout(() => {
-                    pageContent.style.transition = 'all 0.4s ease';
-                    pageContent.style.opacity = '1';
-                    pageContent.style.transform = 'translateY(0)';
-                }, 100);
+                setTimeout(() => pageContent.classList.add('loaded'), 100);
             }
 
-            // 3. BOUTON DÉCONNEXION - Event Listener
+            // Bouton déconnexion
             const logoutTrigger = document.getElementById('btn-logout-trigger');
             if (logoutTrigger) {
                 logoutTrigger.addEventListener('click', function(e) {
@@ -357,50 +960,34 @@
                     e.stopPropagation();
                     openLogoutModal();
                 });
-                console.log('Logout button listener attached');
-            } else {
-                console.error('Logout trigger button not found');
             }
 
-            // 4. FERMETURE MODAL
+            // Fermeture modal
             const cancelBtn = document.getElementById('btn-cancel-logout');
             const modalOverlay = document.querySelector('.modal-overlay');
+            if (cancelBtn) cancelBtn.addEventListener('click', closeLogoutModal);
+            if (modalOverlay) modalOverlay.addEventListener('click', closeLogoutModal);
 
-            if (cancelBtn) {
-                cancelBtn.addEventListener('click', closeLogoutModal);
-            }
-
-            if (modalOverlay) {
-                modalOverlay.addEventListener('click', closeLogoutModal);
-            }
-
-            // Fermer avec Escape
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeLogoutModal();
-                }
+                if (e.key === 'Escape') closeLogoutModal();
             });
 
-            // 5. SOUMISSION FORMULAIRE DÉCONNEXION
+            // Soumission formulaire
             const logoutForm = document.getElementById('logout-form');
             const confirmBtn = document.getElementById('btn-confirm-logout');
-
             if (logoutForm && confirmBtn) {
-                logoutForm.addEventListener('submit', function(e) {
+                logoutForm.addEventListener('submit', function() {
+                    confirmBtn.disabled = true;
                     const btnText = confirmBtn.querySelector('.btn-text');
                     const btnLoader = confirmBtn.querySelector('.btn-loader');
-
-                    confirmBtn.disabled = true;
                     if (btnText) btnText.style.display = 'none';
                     if (btnLoader) btnLoader.style.display = 'inline-flex';
-
-                    // Afficher transition
                     const transition = document.getElementById('page-transition');
                     if (transition) transition.classList.add('active');
                 });
             }
 
-            // 6. LIENS AVEC TRANSITION
+            // Navigation transitions
             document.querySelectorAll('.mobile-nav-item').forEach(link => {
                 link.addEventListener('click', function(e) {
                     const href = this.getAttribute('href');
@@ -411,56 +998,37 @@
                 });
             });
 
-            // 7. PWA - Capturer beforeinstallprompt
+            // PWA Events
             window.addEventListener('beforeinstallprompt', (e) => {
-                console.log('beforeinstallprompt captured');
                 e.preventDefault();
                 deferredPrompt = e;
                 showAndroidPrompt();
             });
 
-            // 8. Afficher prompt iOS si applicable
-            if (isIos && !isStandalone) {
-                showIosPrompt();
-            }
+            if (isIos && !isStandalone) showIosPrompt();
 
-            // 9. Boutons PWA
             const iosClose = document.getElementById('ios-prompt-close');
-            const androidDismiss = document.getElementById('android-prompt-dismiss');
-            const androidInstall = document.getElementById('android-prompt-install');
-
             if (iosClose) iosClose.addEventListener('click', hideIosPrompt);
-            if (androidDismiss) androidDismiss.addEventListener('click', hideAndroidPrompt);
-            if (androidInstall) androidInstall.addEventListener('click', installPWA);
 
-            // 10. Détection hors ligne
+            // Offline detection
             const offlineBanner = document.getElementById('offline-banner');
-
             function updateOnlineStatus() {
-                if (navigator.onLine) {
-                    if (offlineBanner) offlineBanner.classList.add('hidden');
-                } else {
-                    if (offlineBanner) offlineBanner.classList.remove('hidden');
+                if (offlineBanner) {
+                    navigator.onLine ? offlineBanner.classList.add('hidden') : offlineBanner.classList.remove('hidden');
                 }
             }
-
             window.addEventListener('online', updateOnlineStatus);
             window.addEventListener('offline', updateOnlineStatus);
             updateOnlineStatus();
-
-            console.log('Initialization complete');
         });
 
-        // Masquer prompts si déjà installé
         window.addEventListener('appinstalled', () => {
-            console.log('PWA was installed');
             deferredPrompt = null;
             hideIosPrompt();
             hideAndroidPrompt();
         });
     </script>
 
-    <!-- Scripts additionnels -->
     <script src="{{ asset('js/app.js') }}"></script>
     @yield('scripts')
 </body>
