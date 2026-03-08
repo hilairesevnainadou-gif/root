@@ -48,6 +48,9 @@ class DocumentController extends Controller
     /**
      * 🔥 UPLOAD - Met à jour un DocumentUser existant (pas de création)
      */
+    /**
+     * 🔥 UPLOAD - Met à jour un DocumentUser existant
+     */
     public function store(UploadDocumentRequest $request): JsonResponse
     {
         $fundingRequest = FundingRequest::findOrFail($request->funding_request_id);
@@ -56,27 +59,28 @@ class DocumentController extends Controller
         if ($fundingRequest->user_id !== auth()->id()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Non autorisé.'
+                'message' => 'Non autorisé.',
             ], 403);
         }
 
         if ($fundingRequest->status !== 'draft') {
             return response()->json([
                 'success' => false,
-                'message' => 'Impossible d\'ajouter des documents après soumission.'
+                'message' => 'Impossible d\'ajouter des documents après soumission.',
             ], 403);
         }
 
-        // 🔥 RÉCUPÉRER LE DocumentUser EXISTANT (créé lors de la création de la demande)
-        $documentUser = DocumentUser::where('funding_request_id', $request->funding_request_id)
-            ->where('typedoc_id', $request->typedoc_id)
+        // 🔥 RÉCUPÉRER LE DocumentUser EXISTANT par document_user_id ET typedoc_id
+        $documentUser = DocumentUser::where('id', $request->document_user_id)
+            ->where('funding_request_id', $request->funding_request_id)
+            ->where('typedoc_id', $request->typedoc_id) // Vérification supplémentaire
             ->where('user_id', auth()->id())
             ->first();
 
-        if (!$documentUser) {
+        if (! $documentUser) {
             return response()->json([
                 'success' => false,
-                'message' => 'Type de document invalide pour cette demande.'
+                'message' => 'Document non trouvé pour cette demande.',
             ], 422);
         }
 
@@ -87,17 +91,16 @@ class DocumentController extends Controller
 
         // Stocker le nouveau fichier
         $file = $request->file('document');
-        $directory = 'documents/' . auth()->id() . '/' . $fundingRequest->id;
+        $directory = 'documents/'.auth()->id().'/'.$fundingRequest->id;
         $path = $file->store($directory, 'public');
 
-        // 🔥 MISE À JOUR (pas de création)
+        //  MISE À JOUR
         $documentUser->update([
             'file_path' => $path,
             'file_name' => $file->getClientOriginalName(),
             'file_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
-            'status' => 'pending', // Remet à pending si rejeté précédemment
-
+            'status' => 'pending',
         ]);
 
         return response()->json([
@@ -107,7 +110,7 @@ class DocumentController extends Controller
                 'id' => $documentUser->id,
                 'file_name' => $documentUser->file_name,
                 'status' => $documentUser->status,
-            ]
+            ],
         ]);
     }
 
@@ -118,7 +121,7 @@ class DocumentController extends Controller
     {
         $this->authorize('view', $document);
 
-        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
+        if (! $document->file_path || ! Storage::disk('public')->exists($document->file_path)) {
             abort(404, 'Fichier non trouvé');
         }
 
@@ -127,7 +130,7 @@ class DocumentController extends Controller
             200,
             [
                 'Content-Type' => $document->file_type,
-                'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
+                'Content-Disposition' => 'inline; filename="'.$document->file_name.'"',
             ]
         );
     }
@@ -139,7 +142,7 @@ class DocumentController extends Controller
     {
         $this->authorize('view', $document);
 
-        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
+        if (! $document->file_path || ! Storage::disk('public')->exists($document->file_path)) {
             abort(404, 'Fichier non trouvé');
         }
 
@@ -148,7 +151,7 @@ class DocumentController extends Controller
             200,
             [
                 'Content-Type' => $document->file_type,
-                'Content-Disposition' => 'attachment; filename="' . $document->file_name . '"',
+                'Content-Disposition' => 'attachment; filename="'.$document->file_name.'"',
             ]
         );
     }
