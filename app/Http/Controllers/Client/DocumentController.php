@@ -32,12 +32,10 @@ class DocumentController extends Controller
      */
     public function required(FundingRequest $fundingRequest): View
     {
-        // Vérifier que la demande appartient à l'utilisateur
         if ($fundingRequest->user_id !== auth()->id()) {
             abort(403);
         }
 
-        // Charger les documents avec leur type (déjà créés lors du store FundingRequest)
         $documents = DocumentUser::with('typeDoc')
             ->where('funding_request_id', $fundingRequest->id)
             ->get();
@@ -46,10 +44,8 @@ class DocumentController extends Controller
     }
 
     /**
-     * 🔥 UPLOAD - Met à jour un DocumentUser existant (pas de création)
-     */
-    /**
      * 🔥 UPLOAD - Met à jour un DocumentUser existant
+     * Permis si status: draft, submitted, under_review, pending_committee
      */
     public function store(UploadDocumentRequest $request): JsonResponse
     {
@@ -59,42 +55,45 @@ class DocumentController extends Controller
         if ($fundingRequest->user_id !== auth()->id()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Non autorisé.',
+                'message' => 'Non autorisé.'
             ], 403);
         }
 
-        if ($fundingRequest->status !== 'draft') {
+        // 🔥 STATUTS PERMIS pour l'upload
+        $allowedStatuses = ['draft', 'submitted', 'under_review', 'pending_committee'];
+
+        if (!in_array($fundingRequest->status, $allowedStatuses)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Impossible d\'ajouter des documents après soumission.',
+                'message' => 'Impossible de modifier les documents à ce stade.'
             ], 403);
         }
 
-        // 🔥 RÉCUPÉRER LE DocumentUser EXISTANT par document_user_id ET typedoc_id
+        // Récupérer le DocumentUser
         $documentUser = DocumentUser::where('id', $request->document_user_id)
             ->where('funding_request_id', $request->funding_request_id)
-            ->where('typedoc_id', $request->typedoc_id) // Vérification supplémentaire
+            ->where('typedoc_id', $request->typedoc_id)
             ->where('user_id', auth()->id())
             ->first();
 
-        if (! $documentUser) {
+        if (!$documentUser) {
             return response()->json([
                 'success' => false,
-                'message' => 'Document non trouvé pour cette demande.',
+                'message' => 'Document non trouvé.'
             ], 422);
         }
 
-        // Supprimer l'ancien fichier s'il existe
+        // Supprimer l'ancien fichier
         if ($documentUser->file_path && Storage::disk('public')->exists($documentUser->file_path)) {
             Storage::disk('public')->delete($documentUser->file_path);
         }
 
         // Stocker le nouveau fichier
         $file = $request->file('document');
-        $directory = 'documents/'.auth()->id().'/'.$fundingRequest->id;
+        $directory = 'documents/' . auth()->id() . '/' . $fundingRequest->id;
         $path = $file->store($directory, 'public');
 
-        //  MISE À JOUR
+        // Mise à jour
         $documentUser->update([
             'file_path' => $path,
             'file_name' => $file->getClientOriginalName(),
@@ -103,6 +102,9 @@ class DocumentController extends Controller
             'status' => 'pending',
         ]);
 
+        // 🔥 VÉRIFIER SI TOUS LES DOCUMENTS SONT COMPLÉTÉS
+        $this->checkAndUpdateFundingRequestStatus($fundingRequest);
+
         return response()->json([
             'success' => true,
             'message' => 'Document uploadé avec succès.',
@@ -110,18 +112,40 @@ class DocumentController extends Controller
                 'id' => $documentUser->id,
                 'file_name' => $documentUser->file_name,
                 'status' => $documentUser->status,
-            ],
+            ]
         ]);
     }
 
     /**
-     * Voir/Télécharger un document (inline)
+     * 🔥 Vérifie si tous les documents sont uploadés et met à jour le statut
+     */
+    private function checkAndUpdateFundingRequestStatus(FundingRequest $fundingRequest): void
+    {
+        // Compter les documents
+        $totalDocs = DocumentUser::where('funding_request_id', $fundingRequest->id)->count();
+        $filledDocs = DocumentUser::where('funding_request_id', $fundingRequest->id)
+            ->whereNotNull('file_path')
+            ->count();
+
+        // Si tous les documents sont présents et statut permet la transition
+        if ($totalDocs > 0 && $totalDocs === $filledDocs) {
+            if (in_array($fundingRequest->status, ['draft', 'submitted'])) {
+                $fundingRequest->update([
+                    'status' => 'under_review',
+                    'reviewed_at' => now(), // Date de soumission
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Voir un document (inline)
      */
     public function show(DocumentUser $document): Response
     {
         $this->authorize('view', $document);
 
-        if (! $document->file_path || ! Storage::disk('public')->exists($document->file_path)) {
+        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
             abort(404, 'Fichier non trouvé');
         }
 
@@ -130,7 +154,7 @@ class DocumentController extends Controller
             200,
             [
                 'Content-Type' => $document->file_type,
-                'Content-Disposition' => 'inline; filename="'.$document->file_name.'"',
+                'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
             ]
         );
     }
@@ -142,7 +166,7 @@ class DocumentController extends Controller
     {
         $this->authorize('view', $document);
 
-        if (! $document->file_path || ! Storage::disk('public')->exists($document->file_path)) {
+        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
             abort(404, 'Fichier non trouvé');
         }
 
@@ -151,20 +175,24 @@ class DocumentController extends Controller
             200,
             [
                 'Content-Type' => $document->file_type,
-                'Content-Disposition' => 'attachment; filename="'.$document->file_name.'"',
+                'Content-Disposition' => 'attachment; filename="' . $document->file_name . '"',
             ]
         );
     }
 
     /**
-     * Supprimer un document (remet à vide, ne supprime pas l'entrée)
+     * Supprimer un document (remet à vide)
      */
     public function destroy(DocumentUser $document): RedirectResponse
     {
         $this->authorize('delete', $document);
 
-        if ($document->status !== 'pending') {
-            return back()->with('error', 'Impossible de supprimer un document déjà traité.');
+        // 🔥 Même vérification de statut que pour l'upload
+        $fundingRequest = $document->fundingRequest;
+        $allowedStatuses = ['draft', 'submitted', 'under_review', 'pending_committee'];
+
+        if (!in_array($fundingRequest->status, $allowedStatuses)) {
+            return back()->with('error', 'Impossible de supprimer un document à ce stade.');
         }
 
         // Supprimer le fichier
@@ -172,7 +200,7 @@ class DocumentController extends Controller
             Storage::disk('public')->delete($document->file_path);
         }
 
-        // 🔥 REMET À VIDE (ne supprime pas l'entrée)
+        // Remet à vide
         $document->update([
             'file_path' => null,
             'file_name' => null,

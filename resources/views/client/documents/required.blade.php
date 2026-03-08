@@ -5,24 +5,60 @@
 
 @section('content')
 
+@php
+    // 🔥 STATUTS qui permettent l'upload/modification
+    $canUpload = in_array($fundingRequest->status, ['draft', 'submitted', 'under_review', 'pending_committee']);
+
+    $emptyDocs = $documents->whereNull('file_path');
+    $filledDocs = $documents->whereNotNull('file_path');
+    $progressPercent = $documents->count() > 0
+        ? round(($filledDocs->count() / $documents->count()) * 100)
+        : 0;
+
+    $allCompleted = $emptyDocs->count() === 0;
+@endphp
+
 <div class="dashboard-container" style="padding-bottom: 100px;">
 
-    {{-- Header de succès --}}
-    <div class="card-premium" style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); border-color: #86efac; margin-bottom: 1rem;">
+    {{-- Header avec statut --}}
+    <div class="card-premium" style="background: {{ $allCompleted ? 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)' : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' }}; border-color: {{ $allCompleted ? '#86efac' : '#fcd34d' }}; margin-bottom: 1rem;">
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <div style="width: 48px; height: 48px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #16a34a; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+            <div style="width: 48px; height: 48px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: {{ $allCompleted ? '#16a34a' : '#d97706' }}; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                @if($allCompleted)
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                @else
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                @endif
             </div>
             <div>
-                <h2 style="font-size: 1.125rem; font-weight: 700; color: #166534; margin: 0;">Paiement confirmé !</h2>
-                <p style="margin: 0; color: #166534; font-size: 0.9375rem;">
+                <h2 style="font-size: 1.125rem; font-weight: 700; color: {{ $allCompleted ? '#166534' : '#92400e' }}; margin: 0;">
+                    @if($allCompleted)
+                        Dossier complet !
+                    @else
+                        Documents en cours
+                    @endif
+                </h2>
+                <p style="margin: 0; color: {{ $allCompleted ? '#166534' : '#92400e' }}; font-size: 0.9375rem;">
                     Demande <span style="font-family: monospace; background: rgba(255,255,255,0.6); padding: 0.125rem 0.5rem; border-radius: 4px; font-weight: 600;">{{ $fundingRequest->request_number }}</span>
+                    • Statut: <strong>{{ __('status.' . $fundingRequest->status) }}</strong>
                 </p>
             </div>
         </div>
     </div>
+
+    {{-- Message si plus modifiable --}}
+    @if(!$canUpload)
+    <div class="card-premium" style="background: #fee2e2; border-color: #fecaca; margin-bottom: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; color: #991b1b;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+            <p style="margin: 0; font-size: 0.875rem;">
+                Les documents ne peuvent plus être modifiés car la demande est en <strong>{{ __('status.' . $fundingRequest->status) }}</strong>.
+            </p>
+        </div>
+    </div>
+    @endif
 
     {{-- Récapitulatif --}}
     <div class="card-premium" style="margin-bottom: 1rem;">
@@ -60,14 +96,6 @@
             </svg>
             <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0;">Documents requis</h3>
         </div>
-
-        @php
-            $emptyDocs = $documents->whereNull('file_path');
-            $filledDocs = $documents->whereNotNull('file_path');
-            $progressPercent = $documents->count() > 0
-                ? round(($filledDocs->count() / $documents->count()) * 100)
-                : 0;
-        @endphp
 
         {{-- Barre de progression --}}
         <div style="margin-bottom: 1.5rem;">
@@ -112,13 +140,14 @@
                         <p style="font-size: 0.8125rem; color: #64748b; margin: 0;">{{ $doc->typeDoc->description ?? 'PDF, JPG, PNG (max 10MB)' }}</p>
                     </div>
 
-                    {{-- Upload --}}
+                    {{-- Upload (conditionné par $canUpload) --}}
                     <div style="flex-shrink: 0;">
+                        @if($canUpload)
                         <form action="{{ route('client.documents.store') }}" method="POST" enctype="multipart/form-data" class="upload-form" data-doc-id="{{ $doc->id }}">
                             @csrf
                             <input type="hidden" name="document_user_id" value="{{ $doc->id }}">
                             <input type="hidden" name="funding_request_id" value="{{ $fundingRequest->id }}">
-                            <input type="hidden" name="typedoc_id" value="{{ $doc->typedoc_id }}"> {{-- 🔥 AJOUTÉ --}}
+                            <input type="hidden" name="typedoc_id" value="{{ $doc->typedoc_id }}">
 
                             <label class="btn-action" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; color: #2563eb; font-size: 0.875rem; font-weight: 600; cursor: pointer;">
                                 <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="handleFileSelect(this, {{ $doc->id }})" style="display: none;">
@@ -128,7 +157,6 @@
                                 <span id="bu-text-{{ $doc->id }}">Choisir</span>
                             </label>
 
-                            {{-- Preview --}}
                             <div id="preview-{{ $doc->id }}" style="display: none; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
                                 <span id="fp-name-{{ $doc->id }}" style="font-size: 0.75rem; color: #166534; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
                                 <button type="button" onclick="clearFile({{ $doc->id }})" style="width: 20px; height: 20px; border: none; background: #fee2e2; color: #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
@@ -136,11 +164,13 @@
                                 </button>
                             </div>
 
-                            {{-- Bouton confirmer --}}
                             <button type="submit" id="submit-{{ $doc->id }}" style="display: none; margin-top: 0.5rem; padding: 0.625rem 1.25rem; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer;">
                                 Confirmer
                             </button>
                         </form>
+                        @else
+                        <span style="font-size: 0.75rem; color: #94a3b8; font-style: italic;">Verrouillé</span>
+                        @endif
                     </div>
                 </div>
                 @endforeach
@@ -172,7 +202,7 @@
                         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
                             <h4 style="font-size: 0.9375rem; font-weight: 600; color: #0f172a; margin: 0;">{{ $doc->typeDoc->name }}</h4>
                             <span style="font-size: 0.625rem; font-weight: 700; padding: 0.125rem 0.5rem; border-radius: 9999px; text-transform: uppercase; background: #dcfce7; color: #166534;">
-                                {{ $doc->status === 'verified' ? '✓ Vérifié' : '⏳ En attente' }}
+                                {{ $doc->status === 'verified' ? '✓ Vérifié' : '⏳ En attente de validation' }}
                             </span>
                         </div>
                         <p style="font-size: 0.8125rem; color: #16a34a; margin: 0;">
@@ -190,12 +220,13 @@
                             Voir
                         </a>
 
+                        @if($canUpload)
                         {{-- Remplacer --}}
                         <form action="{{ route('client.documents.store') }}" method="POST" enctype="multipart/form-data" style="display: inline;">
                             @csrf
                             <input type="hidden" name="document_user_id" value="{{ $doc->id }}">
                             <input type="hidden" name="funding_request_id" value="{{ $fundingRequest->id }}">
-                            <input type="hidden" name="typedoc_id" value="{{ $doc->typedoc_id }}"> {{-- 🔥 AJOUTÉ --}}
+                            <input type="hidden" name="typedoc_id" value="{{ $doc->typedoc_id }}">
 
                             <label class="btn-action" style="display: inline-flex; align-items: center; padding: 0.5rem; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; color: #2563eb; cursor: pointer;" title="Remplacer">
                                 <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="this.form.submit()" style="display: none;">
@@ -215,6 +246,7 @@
                                 </svg>
                             </button>
                         </form>
+                        @endif
                     </div>
                 </div>
                 @endforeach
@@ -224,15 +256,27 @@
 
         {{-- Footer --}}
         <div style="margin-top: 1.5rem; padding: 1rem; background: #f8fafc; border-radius: 10px;">
-            @if($emptyDocs->count() === 0)
+            @if($allCompleted)
                 <div style="text-align: center;">
                     <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #dcfce7, #bbf7d0); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #16a34a; margin: 0 auto 1rem;">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="32" height="32">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
-                    <h4 style="font-size: 1.125rem; font-weight: 700; color: #166534; margin: 0 0 0.5rem;">Dossier complet !</h4>
-                    <p style="color: #64748b; margin: 0 0 1rem;">Tous les documents ont été fournis.</p>
+                    <h4 style="font-size: 1.125rem; font-weight: 700; color: #166534; margin: 0 0 0.5rem;">
+                        @if(in_array($fundingRequest->status, ['under_review', 'pending_committee']))
+                            Dossier en cours d'examen !
+                        @else
+                            Dossier complet !
+                        @endif
+                    </h4>
+                    <p style="color: #64748b; margin: 0 0 1rem;">
+                        @if(in_array($fundingRequest->status, ['under_review', 'pending_committee']))
+                            Votre demande est actuellement étudiée par notre équipe.
+                        @else
+                            Tous les documents ont été fournis.
+                        @endif
+                    </p>
                     <a href="{{ route('client.requests.show', $fundingRequest) }}" class="btn-premium" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.5rem; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; border-radius: 10px; font-weight: 600; text-decoration: none;">
                         Voir ma demande
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -243,7 +287,13 @@
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" style="flex-shrink: 0; margin-top: 0.125rem;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <p style="margin: 0;">Votre demande ne sera traitée qu'après réception de tous les documents obligatoires.</p>
+                    <p style="margin: 0;">
+                        @if($canUpload)
+                            Votre demande ne sera traitée qu'après réception de tous les documents obligatoires.
+                        @else
+                            Documents incomplets. Contactez l'administration pour plus d'informations.
+                        @endif
+                    </p>
                 </div>
             @endif
         </div>
