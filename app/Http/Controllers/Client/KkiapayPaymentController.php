@@ -107,11 +107,9 @@ class KkiapayPaymentController extends Controller
     /**
      * Initialiser un dépôt wallet
      */
-    public function initializeWalletDeposit(): JsonResponse
+  public function initializeWalletDeposit(): JsonResponse
 {
-    $amount = request()->input('amount', 0);           // Montant à créditer
-    $totalAmount = request()->input('total_amount', $amount);  // Total à payer
-    $fee = request()->input('fee_amount', 0);          // Frais
+    $amount = request()->input('amount', 0);  // Montant à créditer (sans frais)
 
     if ($amount <= 0) {
         return response()->json(['success' => false, 'message' => 'Montant invalide'], 400);
@@ -119,29 +117,29 @@ class KkiapayPaymentController extends Controller
 
     $wallet = $this->getOrCreateWallet();
 
-    // Créer transaction de dépôt - le montant de la transaction est le total à payer
+    // Créer transaction de dépôt
     $transaction = Transaction::create([
         'wallet_id'          => $wallet->id,
         'funding_request_id' => null,
         'transaction_id'     => 'WLT-DEP-' . strtoupper(uniqid()) . '-' . time(),
         'type'               => 'deposit',
-        'amount'             => $amount,        // Montant crédité
-        'fee'                => $fee,          // Frais
-        'total_amount'       => $totalAmount,  // Total payé
+        'amount'             => $amount,        // Montant qui sera crédité
+        'fee'                => 0,              // Les frais sont gérés par Kkiapay
+        'total_amount'       => $amount,        // Total payé (Kkiapay ajoute ses frais)
         'payment_method'     => 'kkiapay',
         'status'             => 'pending',
         'description'        => "Dépôt wallet - " . number_format($amount, 0, ',', ' ') . " FCFA",
         'metadata'           => [
             'type'                   => 'wallet_deposit',
-            'amount_credited'          => $amount,
-            'fee_amount'             => $fee,
-            'total_paid'             => $totalAmount,
+            'amount_credited'        => $amount,
             'user_id'                => auth()->id(),
             'kkiapay_initialized_at' => now()->toIso8601String(),
         ],
     ]);
 
-    return $this->buildInitializeResponse($transaction, $totalAmount, null); // Envoyer total à Kkiapay
+    // IMPORTANT: Envoyer seulement le montant à Kkiapay
+    // Kkiapay ajoutera automatiquement ses frais de 1.9%
+    return $this->buildInitializeResponse($transaction, $amount, null);
 }
     /**
      * Récupérer ou créer le wallet

@@ -22,9 +22,9 @@
         <div class="amount-section">
             <div class="amount-input-wrapper">
                 <span class="input-prefix">FCFA</span>
-                <input type="number"
-                       id="amountInput"
-                       class="amount-field"
+                <input type="number" 
+                       id="amountInput" 
+                       class="amount-field" 
                        placeholder="0"
                        min="1000"
                        max="1000000"
@@ -61,6 +61,7 @@
                 <span>Total à débiter</span>
                 <strong id="calcTotal">0 FCFA</strong>
             </div>
+            <p class="fee-note">💡 Les frais sont ajoutés automatiquement par le processeur de paiement</p>
         </div>
 
         <button type="button" class="btn btn-primary btn-block" id="btnContinue" disabled onclick="goToStep2()">
@@ -91,7 +92,7 @@
                 </div>
                 <div class="summary-title">Créditer mon portefeuille</div>
             </div>
-
+            
             <div class="summary-details">
                 <div class="summary-line">
                     <span>Montant crédité</span>
@@ -168,7 +169,7 @@
             </div>
             <h2>Dépôt réussi !</h2>
             <p>Votre portefeuille a été crédité</p>
-
+            
             <div class="success-details">
                 <div class="detail-line">
                     <span>Montant crédité</span>
@@ -202,8 +203,8 @@
 <script src="https://cdn.kkiapay.me/k.js"></script>
 <script>
 let currentAmount = 0;      // Montant saisi par l'utilisateur (crédité)
-let currentFee = 0;         // Frais 1.9%
-let currentTotal = 0;       // Total à débiter (montant + frais)
+let currentFee = 0;         // Frais 1.9% (calculé pour info)
+let currentTotal = 0;       // Total estimé (montant + frais)
 let transactionData = null;
 let kkiapayOpen = false;
 
@@ -215,19 +216,19 @@ const config = {
 
 document.addEventListener('DOMContentLoaded', function() {
     setupListeners();
-
+    
     if (typeof addSuccessListener === 'function') {
         addSuccessListener(onKkiapaySuccess);
         addFailedListener(onKkiapayFailed);
     }
-
+    
     // Cacher la modale Kkiapay au départ
     document.getElementById('kkiapayZone').style.display = 'none';
 });
 
 function setupListeners() {
     const input = document.getElementById('amountInput');
-
+    
     input.addEventListener('input', function() {
         calculate(this.value);
     });
@@ -237,7 +238,7 @@ function setupListeners() {
             const amount = this.dataset.amount;
             input.value = amount;
             calculate(amount);
-
+            
             document.querySelectorAll('.amount-chip').forEach(c => c.classList.remove('active'));
             this.classList.add('active');
         });
@@ -247,7 +248,7 @@ function setupListeners() {
 function calculate(value) {
     const amount = parseInt(value) || 0;
     const btn = document.getElementById('btnContinue');
-
+    
     if (amount < 1000 || amount > 1000000) {
         document.getElementById('feeCalc').style.display = 'none';
         btn.disabled = true;
@@ -256,16 +257,16 @@ function calculate(value) {
 
     // Montant saisi = ce qui sera crédité
     currentAmount = amount;
-    // Frais 1.9% sur le montant
+    // Frais 1.9% sur le montant (pour info seulement)
     currentFee = Math.round(amount * 0.019);
-    // Total à débiter = montant + frais
+    // Total estimé (montant + frais) - Kkiapay ajoutera ses frais
     currentTotal = amount + currentFee;
 
     document.getElementById('calcAmount').textContent = currentAmount.toLocaleString('fr-FR') + ' FCFA';
     document.getElementById('calcFee').textContent = currentFee.toLocaleString('fr-FR') + ' FCFA';
     document.getElementById('calcTotal').textContent = currentTotal.toLocaleString('fr-FR') + ' FCFA';
     document.getElementById('feeCalc').style.display = 'block';
-
+    
     btn.disabled = false;
 }
 
@@ -278,7 +279,7 @@ function goToStep2() {
 
     document.getElementById('step1').style.display = 'none';
     document.getElementById('step2').style.display = 'block';
-
+    
     // Scroll en haut
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -297,13 +298,13 @@ function closeKkiapay() {
 async function initiateKkiapay() {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
     const btn = document.getElementById('btnPay');
-
+    
     btn.classList.add('loading');
     btn.disabled = true;
-
+    
     try {
-        // CORRECTION: Envoyer le montant total à payer (avec frais)
-        // Mais stocker le montant crédité séparément
+        // CORRECTION: Envoyer seulement le montant à créditer (sans les frais)
+        // Kkiapay ajoutera automatiquement ses frais de 1.9%
         const response = await fetch('{{ route('client.wallet.deposit') }}', {
             method: 'POST',
             headers: {
@@ -312,15 +313,13 @@ async function initiateKkiapay() {
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
-                amount: currentAmount,           // Montant à créditer
-                total_amount: currentTotal,      // Total à payer (avec frais)
-                fee_amount: currentFee,            // Frais
+                amount: currentAmount,           // Montant à créditer (sans frais)
                 payment_method: 'kkiapay'
             })
         });
 
         const data = await response.json();
-
+        
         if (!data.success) {
             throw new Error(data.message || 'Erreur lors de la création');
         }
@@ -331,20 +330,21 @@ async function initiateKkiapay() {
         document.getElementById('kkiapayZone').style.display = 'flex';
         kkiapayOpen = true;
 
-        // IMPORTANT: Envoyer le TOTAL à Kkiapay (ce que l'utilisateur doit payer)
+        // IMPORTANT: Envoyer seulement le MONTANT à créditer à Kkiapay
+        // Kkiapay calculera et ajoutera ses propres frais de 1.9%
         openKkiapayWidget({
-            amount: currentTotal,  // Le total avec frais
+            amount: currentAmount,  // Seulement le montant à créditer !
             key: config.publicKey,
             sandbox: config.sandbox,
             data: JSON.stringify({
                 transaction_id: transactionData.transaction_id,
                 type: 'wallet_deposit',
-                amount_credited: currentAmount,
-                fee: currentFee
+                amount_credited: currentAmount
             }),
             theme: '#1e40af',
-            name: 'BHDM - Dépôt',
-            callback: '{{ url('/payment/callback') }}',
+            name: 'BHDM',
+            // CORRECTION: Utiliser le bon callback URL pour le webhook
+            callback: 'https://bdhml.novatechbenin.com/webhook/kkiapay/wallet',
             position: 'center'
         });
 
@@ -358,9 +358,9 @@ async function initiateKkiapay() {
 
 async function onKkiapaySuccess(response) {
     console.log('Paiement réussi:', response);
-
+    
     const kkiapayId = response.transactionId;
-
+    
     if (!transactionData) {
         alert('Erreur interne: transaction non trouvée');
         return;
@@ -377,10 +377,10 @@ async function onKkiapaySuccess(response) {
     let verified = false;
     let attempts = 0;
     const maxAttempts = 30;
-
+    
     while (!verified && attempts < maxAttempts) {
         attempts++;
-
+        
         try {
             const verifyRes = await fetch('{{ route('client.payment.verify') }}', {
                 method: 'POST',
@@ -403,7 +403,7 @@ async function onKkiapaySuccess(response) {
                 verified = true;
                 return;
             }
-
+            
             if (result.status === 'failed') {
                 alert('Le paiement a échoué: ' + (result.message || 'Erreur'));
                 document.getElementById('stepProcessing').style.display = 'none';
@@ -414,11 +414,11 @@ async function onKkiapaySuccess(response) {
         } catch (error) {
             console.error('Erreur vérification:', error);
         }
-
+        
         // Attendre avant retry (délai croissant)
         await new Promise(r => setTimeout(r, Math.min(1000 + (attempts * 200), 3000)));
     }
-
+    
     // Si on arrive ici sans succès, rediriger vers le wallet
     if (!verified) {
         window.location.href = '{{ route('client.wallet.show') }}?pending=1';
@@ -428,12 +428,12 @@ async function onKkiapaySuccess(response) {
 function showSuccess(data) {
     document.getElementById('stepProcessing').style.display = 'none';
     document.getElementById('stepSuccess').style.display = 'block';
-
+    
     document.getElementById('successAmount').textContent = currentAmount.toLocaleString('fr-FR') + ' FCFA';
     document.getElementById('successFee').textContent = currentFee.toLocaleString('fr-FR') + ' FCFA';
     document.getElementById('successBalance').textContent = (data.new_balance || 0).toLocaleString('fr-FR') + ' FCFA';
     document.getElementById('successRef').textContent = transactionData?.transaction_id || '-';
-
+    
     // Scroll en haut
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -441,11 +441,11 @@ function showSuccess(data) {
 function onKkiapayFailed(response) {
     console.error('Échec:', response);
     closeKkiapay();
-
+    
     const btn = document.getElementById('btnPay');
     btn.classList.remove('loading');
     btn.disabled = false;
-
+    
     // Ne pas afficher d'alerte si c'est juste une fermeture
     if (response && response.transactionId) {
         alert('Le paiement a été annulé ou a échoué. Veuillez réessayer.');
@@ -656,6 +656,13 @@ function onKkiapayFailed(response) {
         height: 1px;
         background: #7dd3fc;
         margin: 8px 0;
+    }
+
+    .fee-note {
+        font-size: 0.8125rem;
+        color: #64748b;
+        margin: 12px 0 0 0;
+        font-style: italic;
     }
 
     /* Payment Summary Box */
@@ -1004,21 +1011,21 @@ function onKkiapayFailed(response) {
         .deposit-container {
             padding: 12px;
         }
-
+        
         .deposit-card {
             padding: 20px;
             border-radius: 20px;
         }
-
+        
         .amount-field {
             font-size: 2rem;
             padding: 20px 16px 20px 70px;
         }
-
+        
         .quick-amounts {
             gap: 8px;
         }
-
+        
         .amount-chip {
             padding: 8px 14px;
             font-size: 0.875rem;
