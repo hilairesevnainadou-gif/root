@@ -107,40 +107,42 @@ class KkiapayPaymentController extends Controller
     /**
      * Initialiser un dépôt wallet
      */
-    private function initializeWalletDeposit(): JsonResponse
-    {
-        $amount = request()->input('amount', 0);
+    public function initializeWalletDeposit(): JsonResponse
+{
+    $amount = request()->input('amount', 0);           // Montant à créditer
+    $totalAmount = request()->input('total_amount', $amount);  // Total à payer
+    $fee = request()->input('fee_amount', 0);          // Frais
 
-        if ($amount <= 0) {
-            return response()->json(['success' => false, 'message' => 'Montant invalide'], 400);
-        }
-
-        $wallet = $this->getOrCreateWallet();
-
-        // Créer transaction de dépôt avec ID spécifique wallet
-        $transactionId = 'WLT-DEP-' . strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 10));
-
-        $transaction = Transaction::create([
-            'wallet_id'          => $wallet->id,
-            'funding_request_id' => null,
-            'transaction_id'     => $transactionId,
-            'type'               => 'deposit',
-            'amount'             => $amount,
-            'fee'                => 0,
-            'total_amount'       => $amount,
-            'payment_method'     => 'kkiapay',
-            'status'             => 'pending',
-            'description'        => "Dépôt wallet",
-            'metadata'           => [
-                'type'                   => 'wallet_deposit',
-                'user_id'                => auth()->id(),
-                'kkiapay_initialized_at' => now()->toIso8601String(),
-            ],
-        ]);
-
-        return $this->buildInitializeResponse($transaction, $amount, null);
+    if ($amount <= 0) {
+        return response()->json(['success' => false, 'message' => 'Montant invalide'], 400);
     }
 
+    $wallet = $this->getOrCreateWallet();
+
+    // Créer transaction de dépôt - le montant de la transaction est le total à payer
+    $transaction = Transaction::create([
+        'wallet_id'          => $wallet->id,
+        'funding_request_id' => null,
+        'transaction_id'     => 'WLT-DEP-' . strtoupper(uniqid()) . '-' . time(),
+        'type'               => 'deposit',
+        'amount'             => $amount,        // Montant crédité
+        'fee'                => $fee,          // Frais
+        'total_amount'       => $totalAmount,  // Total payé
+        'payment_method'     => 'kkiapay',
+        'status'             => 'pending',
+        'description'        => "Dépôt wallet - " . number_format($amount, 0, ',', ' ') . " FCFA",
+        'metadata'           => [
+            'type'                   => 'wallet_deposit',
+            'amount_credited'          => $amount,
+            'fee_amount'             => $fee,
+            'total_paid'             => $totalAmount,
+            'user_id'                => auth()->id(),
+            'kkiapay_initialized_at' => now()->toIso8601String(),
+        ],
+    ]);
+
+    return $this->buildInitializeResponse($transaction, $totalAmount, null); // Envoyer total à Kkiapay
+}
     /**
      * Récupérer ou créer le wallet
      */
