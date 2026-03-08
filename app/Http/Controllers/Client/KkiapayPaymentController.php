@@ -110,7 +110,7 @@ class KkiapayPaymentController extends Controller
     private function initializeWalletDeposit(): JsonResponse
     {
         $amount = request()->input('amount', 0);
-        
+
         if ($amount <= 0) {
             return response()->json(['success' => false, 'message' => 'Montant invalide'], 400);
         }
@@ -435,7 +435,7 @@ class KkiapayPaymentController extends Controller
         // Vérification signature
         if ($this->webhookSecret) {
             $receivedSecret = $request->header('x-kkiapay-secret');
-            
+
             Log::channel('kkiapay')->info('Vérification signature', [
                 'received' => $receivedSecret,
                 'expected' => $this->webhookSecret,
@@ -596,10 +596,10 @@ class KkiapayPaymentController extends Controller
      * Traiter webhook dépôt wallet
      */
     private function processWebhookWalletDeposit(
-        Transaction $transaction, 
-        bool $isSuccess, 
-        ?string $event, 
-        float $amount, 
+        Transaction $transaction,
+        bool $isSuccess,
+        ?string $event,
+        float $amount,
         float $fees,
         string $transactionId,
         ?string $method,
@@ -734,13 +734,13 @@ class KkiapayPaymentController extends Controller
 
         // Utiliser initialize() au lieu de la logique inline
         $response = $this->initialize($fundingRequest);
-        
+
         if (!$response->getData()->success) {
             return back()->with('error', $response->getData()->message ?? 'Erreur');
         }
 
         $config = $response->getData()->kkiapay_config;
-        
+
         return redirect()->away('https://widget.kkiapay.me/payment?' . http_build_query([
             'api_key'      => $config->key,
             'amount'       => $config->amount,

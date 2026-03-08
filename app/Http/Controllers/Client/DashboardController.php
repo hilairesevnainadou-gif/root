@@ -168,7 +168,7 @@ class DashboardController extends Controller
             });
     }
 
-    
+
    /**
  * Résumé financier
  */
@@ -338,7 +338,7 @@ private function getFinancialSummary($user): array
         foreach ($requestsWithMissingDocs as $request) {
             $missingCount = $request->missingDocuments()->count();
             $totalCount = $request->totalRequiredDocumentsCount();
-            
+
             $actions[] = [
                 'priority' => 'high',
                 'title' => 'Documents manquants',
@@ -409,8 +409,8 @@ private function getFinancialSummary($user): array
                 ->get()
                 ->map(fn($t) => [
                     'type' => 'transaction',
-                    'icon' => $t->type === 'credit' ? 'arrow-down' : 'arrow-up',
-                    'title' => $t->type === 'credit' ? 'Dépôt' : 'Retrait',
+                    'icon' => $t->type === 'credit' ? 'arrow-down' : ($t->type === 'debit' ? 'arrow-up' : 'credit-card'),
+                    'title' => $t->type === 'credit' ? 'Dépôt' : ($t->type === 'debit' ? 'Retrait' : 'Paiement'),
                     'description' => $t->description ?? 'Transaction',
                     'amount' => $t->amount,
                     'amount_formatted' => $this->formatAmount($t->amount),
