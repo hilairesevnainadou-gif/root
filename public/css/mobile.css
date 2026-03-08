@@ -1,6 +1,7 @@
 /* ============================================
    Mobile Specific Styles & Animations
    ============================================ */
+
 /* Header Actions */
 .header-actions {
     display: flex;
@@ -44,10 +45,14 @@
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 10000;
-    display: flex;
+    display: none; /* Hidden by default */
     align-items: center;
     justify-content: center;
     padding: 1rem;
+}
+
+.ios-prompt.active {
+    display: flex;
 }
 
 .ios-prompt-content {
@@ -122,7 +127,12 @@
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     z-index: 9999;
+    display: none; /* Hidden by default */
     animation: slideUp 0.3s ease;
+}
+
+.pwa-prompt.active {
+    display: block;
 }
 
 .pwa-prompt-content {
@@ -194,6 +204,7 @@
         width: 400px;
     }
 }
+
 /* Pull to refresh indicator */
 .pull-refresh {
   position: fixed;
@@ -375,7 +386,6 @@
   gap: 1rem;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
   padding: 0.5rem 1rem;
   margin: 0 -1rem;
 }

@@ -12,6 +12,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   z-index: 10000;
   display: none; /* Hidden by default */
@@ -358,7 +359,9 @@
   }
 
   /* Prevent callout menu */
-  -webkit-touch-callout: none;
+  * {
+    -webkit-touch-callout: none;
+  }
 }
 
 /* ============================================
@@ -441,6 +444,7 @@
   align-items: center;
   gap: 1rem;
   z-index: 10002;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 

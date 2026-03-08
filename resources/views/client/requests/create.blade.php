@@ -4,7 +4,7 @@
 @section('header-title', 'Nouvelle demande')
 
 @section('header-action')
-<a href="{{ route('client.requests.index') }}" class="btn-back">
+<a href="{{ route('client.requests.index') }}" class="btn-back" data-transition="slide-right">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
     </svg>
@@ -15,97 +15,124 @@
 
 <div class="request-create">
 
-    {{-- ÉTAPE 1 : Liste des financements --}}
-    <div class="card" id="step-selection">
-        <div class="card-header">
-            <h2 class="section-title">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                1. Choisissez votre type de financement
-            </h2>
+    {{-- Indicateur d'étapes --}}
+    <div class="stepper">
+        <div class="stepper-track">
+            <div class="stepper-progress" id="stepper-progress" style="width: 0%"></div>
+        </div>
+        <div class="stepper-steps">
+            <div class="step active" data-step="1">
+                <div class="step-bubble">
+                    <span class="step-number">1</span>
+                    <svg class="step-check" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <span class="step-label">Type de financement</span>
+            </div>
+            <div class="step" data-step="2">
+                <div class="step-bubble">
+                    <span class="step-number">2</span>
+                    <svg class="step-check" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <span class="step-label">Détails</span>
+            </div>
+        </div>
+    </div>
+
+    {{-- ÉTAPE 1 : Sélection du financement --}}
+    <div class="step-panel active" id="step-1">
+        <div class="step-intro">
+            <h2 class="step-title">Choisissez votre financement</h2>
+            <p class="step-desc">Sélectionnez l'offre qui correspond à vos besoins</p>
         </div>
 
-        <p class="text-muted mb-4">Sélectionnez l'offre qui correspond à vos besoins</p>
-
-        <div class="financement-list">
+        <div class="financement-grid">
             @forelse($availableTypes as $financement)
-            <div class="financement-card {{ $preselectedType && $preselectedType->id == $financement->id ? 'selected' : '' }}"
-                onclick="selectFinancement({{ $financement->id }})"
-                data-id="{{ $financement->id }}"
-                data-name="{{ $financement->name }}"
-                data-type="{{ $financement->typeusers }}"
-                data-variable="{{ $financement->is_variable_amount ? '1' : '0' }}"
-                data-max-daily="{{ $financement->max_daily_amount }}"
-                data-daily-gain="{{ $financement->daily_gain }}"
-                data-amount="{{ $financement->amount }}"
-                data-duration="{{ $financement->duration_months }}"
-                data-reg-fee="{{ $financement->registration_fee }}">
+            <div class="financement-card"
+                 onclick="selectFinancement({{ $financement->id }})"
+                 data-id="{{ $financement->id }}"
+                 data-name="{{ $financement->name }}"
+                 data-type="{{ $financement->typeusers }}"
+                 data-variable="{{ $financement->is_variable_amount ? '1' : '0' }}"
+                 data-max-daily="{{ $financement->max_daily_amount }}"
+                 data-daily-gain="{{ $financement->daily_gain }}"
+                 data-amount="{{ $financement->amount }}"
+                 data-duration="{{ $financement->duration_months }}"
+                 data-reg-fee="{{ $financement->registration_fee }}">
 
-                <div class="financement-radio">
-                    <div class="radio-circle {{ $preselectedType && $preselectedType->id == $financement->id ? 'checked' : '' }}">
-                        @if($preselectedType && $preselectedType->id == $financement->id)
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                        </svg>
-                        @endif
+                <div class="fc-selector">
+                    <div class="fc-radio">
+                        <div class="radio-inner"></div>
                     </div>
                 </div>
 
-                <div class="financement-icon">
-                    @if($financement->typeusers === 'entreprise')
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    @else
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    @endif
-                </div>
+                <div class="fc-content">
+                    <div class="fc-header">
+                        <div class="fc-icon-wrapper {{ $financement->typeusers }}">
+                            @if($financement->typeusers === 'entreprise')
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            @else
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            @endif
+                        </div>
 
-                <div class="financement-body">
-                    <div class="financement-header-row">
-                        <h3 class="financement-name">{{ $financement->name }}</h3>
-                        <span class="financement-badge badge-{{ $financement->typeusers }}">
-                            {{ $financement->typeusers === 'entreprise' ? 'Entreprise' : 'Particulier' }}
-                        </span>
+                        <div class="fc-badges">
+                            <span class="badge-type {{ $financement->typeusers }}">
+                                {{ $financement->typeusers === 'entreprise' ? 'Entreprise' : 'Particulier' }}
+                            </span>
+                        </div>
                     </div>
-                    <p class="financement-desc">{{ Str::limit($financement->description, 100) }}</p>
 
-                    <div class="financement-tags">
+                    <h3 class="fc-name">{{ $financement->name }}</h3>
+                    <p class="fc-description">{{ Str::limit($financement->description, 90) }}</p>
+
+                    <div class="fc-stats">
                         @if($financement->is_variable_amount && $financement->max_daily_amount)
-                        <span class="tag tag-primary">
-                            Jusqu'à {{ number_format($financement->max_daily_amount, 0, ',', ' ') }} FCFA/jour
-                        </span>
-                        <span class="tag">Montant libre</span>
-                        @elseif($financement->daily_gain && $financement->amount)
-                        <span class="tag tag-success">
-                            {{ number_format($financement->daily_gain, 0, ',', ' ') }} FCFA/jour
-                        </span>
-                        <span class="tag">
-                            Total {{ number_format($financement->amount, 0, ',', ' ') }} FCFA
-                        </span>
+                        <div class="stat-item highlight">
+                            <span class="stat-value">~{{ number_format($financement->max_daily_amount, 0, ',', ' ') }} F</span>
+                            <span class="stat-label">/jour max</span>
+                        </div>
+                        @elseif($financement->daily_gain)
+                        <div class="stat-item highlight">
+                            <span class="stat-value">{{ number_format($financement->daily_gain, 0, ',', ' ') }} F</span>
+                            <span class="stat-label">/jour</span>
+                        </div>
                         @endif
 
                         @if($financement->duration_months)
-                        <span class="tag">{{ $financement->duration_months }} mois</span>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ $financement->duration_months }}</span>
+                            <span class="stat-label">mois</span>
+                        </div>
                         @endif
 
-                        <span class="tag">
-                            Frais {{ number_format($financement->registration_fee, 0, ',', ' ') }} FCFA
-                        </span>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ number_format($financement->registration_fee, 0, ',', ' ') }} F</span>
+                            <span class="stat-label">frais</span>
+                        </div>
                     </div>
+                </div>
+
+                <div class="fc-arrow">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
                 </div>
             </div>
             @empty
             <div class="empty-state">
                 <div class="empty-icon">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="64" height="64">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
                             d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
@@ -116,99 +143,89 @@
         </div>
     </div>
 
-    {{-- ÉTAPE 2 : Formulaire --}}
-    <div class="card" id="step-form" style="{{ $preselectedType ? '' : 'display: none;' }}">
-        <div class="card-header">
-            <h2 class="section-title">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+    {{-- ÉTAPE 2 : Formulaire de détails --}}
+    <div class="step-panel" id="step-2">
+        {{-- Récapitulatif du choix --}}
+        <div class="choice-summary" id="choice-summary">
+            <button type="button" class="cs-back" onclick="goToStep(1)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
-                2. Détails de votre demande
-            </h2>
+            </button>
+            <div class="cs-content">
+                <div class="cs-icon" id="cs-icon"></div>
+                <div class="cs-info">
+                    <span class="cs-label">Votre choix</span>
+                    <span class="cs-name" id="cs-name">-</span>
+                    <span class="cs-badge" id="cs-badge">-</span>
+                </div>
+            </div>
         </div>
 
         <form id="requestForm" class="request-form" onsubmit="return false;">
             @csrf
-            <input type="hidden" name="typefinancement_id" id="selected_type_id"
-                value="{{ $preselectedType ? $preselectedType->id : '' }}">
-            <input type="hidden" name="financement_type" id="financement_type"
-                value="{{ $preselectedType ? $preselectedType->typeusers : '' }}">
+            <input type="hidden" name="typefinancement_id" id="selected_type_id">
+            <input type="hidden" name="financement_type" id="financement_type">
+            <input type="hidden" name="amount_requested" id="amount_requested_hidden" value="">
+            <input type="hidden" name="duration" id="duration_input">
 
-            {{-- Résumé du financement --}}
-            <div class="selected-financement" id="selected-summary">
-                @if($preselectedType)
-                <div class="sf-icon">
-                    @if($preselectedType->typeusers === 'entreprise')
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    @else
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    @endif
-                </div>
-                <div class="sf-info">
-                    <span class="sf-label">Financement sélectionné</span>
-                    <span class="sf-name">{{ $preselectedType->name }}</span>
-                    <span class="sf-type-badge badge-{{ $preselectedType->typeusers }}">
-                        {{ $preselectedType->typeusers === 'entreprise' ? 'Entreprise' : 'Particulier' }}
-                    </span>
-                </div>
-                @endif
-            </div>
-
-            {{-- SECTION ENTREPRISE : Sélection ou ajout --}}
-            <div class="form-group company-section" id="company-section" style="display: none;">
-                <label class="form-label">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    Entreprise concernée <span class="text-danger">*</span>
-                </label>
-
-                {{-- Liste des entreprises existantes --}}
-                <div id="existing-companies" class="companies-list">
-                    <p class="text-muted mb-2">Sélectionnez une entreprise :</p>
-                    <div class="companies-grid" id="companies-grid">
-                        {{-- Injecté par JS --}}
+            {{-- SECTION ENTREPRISE - Uniquement si type entreprise --}}
+            <div class="section-company" id="company-section" style="display: none;">
+                <div class="section-header">
+                    <div class="sh-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
+                    <div class="sh-text">
+                        <h3>Entreprise concernée</h3>
+                        <p>Sélectionnez une entreprise existante ou créez-en une nouvelle</p>
                     </div>
                 </div>
 
-                {{-- Option ajouter nouvelle entreprise --}}
-                <div class="add-company-option">
-                    <button type="button" class="btn btn-outline btn-sm" onclick="toggleNewCompanyForm()">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Ajouter une nouvelle entreprise
-                    </button>
+                {{-- Liste des entreprises existantes --}}
+                <div class="companies-container" id="existing-companies">
+                    <div class="companies-list" id="companies-grid"></div>
                 </div>
 
+                <div class="divider-or">
+                    <span>ou</span>
+                </div>
+
+                <button type="button" class="btn-create-company" id="btn-toggle-company" onclick="toggleNewCompanyForm()">
+                    <span class="bcc-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </span>
+                    <span class="bcc-text" id="toggle-company-text">Créer une nouvelle entreprise</span>
+                    <svg class="bcc-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
                 {{-- Formulaire nouvelle entreprise --}}
-                <div id="new-company-form" class="new-company-form" style="display: none;">
-                    <div class="ncf-header">
+                <div class="new-company-panel" id="new-company-form" style="display: none;">
+                    <div class="ncp-header">
                         <h4>Nouvelle entreprise</h4>
-                        <button type="button" class="btn-close" onclick="toggleNewCompanyForm()">
+                        <button type="button" class="ncp-close" onclick="toggleNewCompanyForm()">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-col">
+                    <div class="form-grid cols-2">
+                        <div class="form-group">
                             <label class="form-label">Nom de l'entreprise <span class="text-danger">*</span></label>
-                            <input type="text" name="new_company[name]" id="new_company_name" class="form-control"
+                            <input type="text" name="new_company[name]" id="new_company_name" class="form-control company-field"
                                 placeholder="Ex: Ma Société SARL">
                         </div>
-                        <div class="form-col">
+
+                        <div class="form-group">
                             <label class="form-label">Type d'entreprise <span class="text-danger">*</span></label>
-                            <select name="new_company[company_type]" id="new_company_type" class="form-control">
+                            <select name="new_company[company_type]" id="new_company_type" class="form-control company-field">
                                 <option value="">Choisir...</option>
                                 <option value="SARL">SARL</option>
                                 <option value="SA">SA</option>
@@ -218,25 +235,22 @@
                                 <option value="Autre">Autre</option>
                             </select>
                         </div>
-                    </div>
 
-                    <div class="form-row">
-                        <div class="form-col">
+                        <div class="form-group">
                             <label class="form-label">Secteur d'activité <span class="text-danger">*</span></label>
-                            <input type="text" name="new_company[sector]" id="new_company_sector" class="form-control"
-                                placeholder="Ex: Agriculture, Commerce, IT...">
+                            <input type="text" name="new_company[sector]" id="new_company_sector" class="form-control company-field"
+                                placeholder="Ex: Agriculture, Commerce...">
                         </div>
-                        <div class="form-col">
+
+                        <div class="form-group">
                             <label class="form-label">Votre poste <span class="text-danger">*</span></label>
-                            <input type="text" name="new_company[job_title]" id="new_company_job" class="form-control"
+                            <input type="text" name="new_company[job_title]" id="new_company_job" class="form-control company-field"
                                 placeholder="Ex: Directeur Général">
                         </div>
-                    </div>
 
-                    <div class="form-row">
-                        <div class="form-col">
+                        <div class="form-group">
                             <label class="form-label">Nombre d'employés</label>
-                            <select name="new_company[employees_count]" id="new_company_employees" class="form-control">
+                            <select name="new_company[employees_count]" id="new_company_employees" class="form-control company-field">
                                 <option value="">Choisir...</option>
                                 <option value="1">1 (Auto-entrepreneur)</option>
                                 <option value="2-5">2 à 5</option>
@@ -246,151 +260,161 @@
                                 <option value="200+">Plus de 200</option>
                             </select>
                         </div>
-                        <div class="form-col">
+
+                        <div class="form-group">
                             <label class="form-label">Chiffre d'affaires annuel (FCFA)</label>
                             <input type="number" name="new_company[annual_turnover]" id="new_company_turnover"
-                                class="form-control" placeholder="Ex: 50000000" min="0" step="100000">
+                                class="form-control company-field" placeholder="Ex: 50000000" min="0" step="100000">
                         </div>
                     </div>
-
-                    <input type="hidden" name="company_id" id="selected_company_id" value="">
                 </div>
+
+                <input type="hidden" name="company_id" id="selected_company_id" value="">
             </div>
 
             {{-- MONTANT --}}
-            <div class="form-group" id="amount-section">
-                <label class="form-label" id="amount-label">
-                    @if($preselectedType && $preselectedType->is_variable_amount)
-                    Montant quotidien souhaité
-                    <span class="text-muted">(Max {{ number_format($preselectedType->max_daily_amount, 0, ',', ' ') }} FCFA/jour)</span>
-                    @elseif($preselectedType)
+            <div class="form-section">
+                <div class="section-title-sm">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                     Montant du financement
-                    @else
-                    Montant
-                    @endif
-                </label>
+                </div>
 
-                <div id="variable-amount-input"
-                    style="{{ $preselectedType && $preselectedType->is_variable_amount ? '' : 'display: none;' }}">
-                    <div class="amount-input-wrapper">
-                        <input type="number" name="amount_requested" id="amount_requested" class="form-control"
-                            placeholder="Ex: 50000" min="1000" step="1000" value="{{ old('amount_requested') }}">
-                        <span class="amount-currency">FCFA/jour</span>
+                <div class="amount-container" id="variable-amount-input" style="display: none;">
+                    <div class="amount-field">
+                        <input type="number" id="amount_requested_variable" class="form-control form-control-xl"
+                            placeholder="50000" min="1000" step="1000" oninput="updateVariableAmount(this.value)">
+                        <span class="amount-suffix">FCFA / jour</span>
                     </div>
+                    <div class="amount-limit" id="amount-hint"></div>
 
-                    <div class="amount-preview">
-                        <div class="ap-row">
-                            <span>Montant quotidien:</span>
-                            <strong id="daily-display">0 FCFA</strong>
+                    <div class="calculation-preview">
+                        <div class="calc-row">
+                            <span>Montant quotidien</span>
+                            <strong id="preview-daily">0 FCFA</strong>
                         </div>
-                        <div class="ap-row">
-                            <span>Durée:</span>
-                            <span id="duration-display">-</span>
+                        <div class="calc-row">
+                            <span>Durée</span>
+                            <span id="preview-duration">-</span>
                         </div>
-                        <div class="ap-row ap-total">
-                            <span>Total estimé:</span>
-                            <strong id="total-estimated">0 FCFA</strong>
+                        <div class="calc-row total">
+                            <span>Total estimé</span>
+                            <strong id="preview-total">0 FCFA</strong>
                         </div>
                     </div>
                 </div>
 
-                <div id="fixed-amount-display"
-                    style="{{ $preselectedType && !$preselectedType->is_variable_amount ? '' : 'display: none;' }}">
-                    <div class="fixed-amount">
-                        <span class="fa-value" id="fixed-amount-value">
-                            {{ $preselectedType ? number_format($preselectedType->amount, 0, ',', ' ') . ' FCFA' : '-' }}
-                        </span>
-                        <span class="fa-detail" id="fixed-amount-detail">
-                            @if($preselectedType && !$preselectedType->is_variable_amount)
-                            {{ number_format($preselectedType->daily_gain, 0, ',', ' ') }} FCFA × {{ $preselectedType->duration_months * 30 }} jours
-                            @endif
-                        </span>
+                <div class="amount-container" id="fixed-amount-display" style="display: none;">
+                    <div class="fixed-amount-box">
+                        <div class="fab-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="fab-content">
+                            <div class="fab-amount" id="fixed-amount-value">-</div>
+                            <div class="fab-detail" id="fixed-amount-detail">-</div>
+                        </div>
                     </div>
-                    <input type="hidden" name="amount_requested" id="fixed_amount_input"
-                        value="{{ $preselectedType && !$preselectedType->is_variable_amount ? $preselectedType->amount : '' }}">
                 </div>
             </div>
 
             {{-- DURÉE --}}
-            <div class="form-group">
-                <label class="form-label">Durée du financement</label>
-                <div class="fixed-duration">
-                    <span class="fd-value" id="duration-value">
-                        {{ $preselectedType ? $preselectedType->duration_months . ' mois' : '-' }}
-                    </span>
-                    <span class="fd-detail" id="duration-detail">
-                        {{ $preselectedType ? 'Soit ' . ($preselectedType->duration_months * 30) . ' jours' : '' }}
-                    </span>
+            <div class="form-section">
+                <div class="section-title-sm">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Durée
                 </div>
-                <input type="hidden" name="duration" id="duration_input"
-                    value="{{ $preselectedType ? $preselectedType->duration_months : '' }}">
+                <div class="duration-box">
+                    <span class="db-main" id="duration-value">-</span>
+                    <span class="db-sub" id="duration-detail">-</span>
+                </div>
             </div>
 
-            {{-- TITRE --}}
-            <div class="form-group">
-                <label class="form-label" for="title">Titre de la demande <span class="text-danger">*</span></label>
-                <input type="text" name="title" id="title" class="form-control"
-                    placeholder="Ex: Financement pour mon projet agricole" value="{{ old('title') }}" maxlength="100"
-                    required>
-            </div>
+            {{-- INFORMATIONS DEMANDE --}}
+            <div class="form-section">
+                <div class="section-title-sm">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Informations de la demande
+                </div>
 
-            {{-- DESCRIPTION --}}
-            <div class="form-group">
-                <label class="form-label" for="description">Description du projet <span class="text-muted">(optionnel)</span></label>
-                <textarea name="description" id="description" class="form-control" rows="3" maxlength="500"
-                    placeholder="Décrivez brièvement l'objet de votre demande...">{{ old('description') }}</textarea>
-                <small class="char-count"><span id="desc-count">0</span>/500</small>
+                <div class="form-group">
+                    <label class="form-label" for="title">Titre de la demande <span class="text-danger">*</span></label>
+                    <input type="text" name="title" id="title" class="form-control"
+                        placeholder="Ex: Financement pour mon projet agricole" maxlength="100" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="description">Description du projet <span class="text-muted">(optionnel)</span></label>
+                    <textarea name="description" id="description" class="form-control" rows="3" maxlength="500"
+                        placeholder="Décrivez brièvement l'objet de votre demande..."></textarea>
+                    <div class="char-count"><span id="desc-count">0</span> / 500 caractères</div>
+                </div>
             </div>
 
             {{-- RÉCAPITULATIF FRAIS --}}
-            <div class="fees-summary">
-                <h4 class="fs-title">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+            <div class="fees-summary-card">
+                <div class="fsc-header">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z" />
                     </svg>
-                    Frais d'inscription à payer
-                </h4>
-                <div class="fs-row">
-                    <span>Frais d'inscription</span>
-                    <span id="reg-fee-display">
-                        {{ $preselectedType ? number_format($preselectedType->registration_fee, 0, ',', ' ') . ' FCFA' : '-' }}
-                    </span>
+                    <span>Récapitulatif des frais</span>
                 </div>
-                <div class="fs-row fs-total">
-                    <span>Total à payer maintenant</span>
-                    <span class="fs-total-value" id="total-fee-display">
-                        {{ $preselectedType ? number_format($preselectedType->registration_fee, 0, ',', ' ') . ' FCFA' : '-' }}
-                    </span>
+                <div class="fsc-body">
+                    <div class="fsc-row">
+                        <span>Frais d'inscription</span>
+                        <span id="reg-fee-display">-</span>
+                    </div>
+                    <div class="fsc-row total">
+                        <span>Total à payer maintenant</span>
+                        <strong id="total-fee-display">-</strong>
+                    </div>
                 </div>
             </div>
 
             {{-- ZONE DE PAIEMENT --}}
-            <div id="payment-section" style="display: none;">
-                <div class="payment-loading" id="payment-loading">
-                    <div class="spinner"></div>
-                    <p>Préparation du paiement...</p>
+            <div class="payment-zone" id="payment-section" style="display: none;">
+                <div class="pz-loading" id="payment-loading">
+                    <div class="spinner-dual"></div>
+                    <p>Préparation du paiement sécurisé...</p>
                 </div>
                 <div id="kkiapay-widget-container" style="display: none;"></div>
-                <div id="payment-polling" style="display: none; text-align: center; padding: 2rem;">
-                    <div class="spinner"></div>
-                    <p>Confirmation du paiement en cours...</p>
-                    <small class="text-muted">Veuillez patienter, cela peut prendre quelques secondes</small>
+                <div class="pz-loading" id="payment-polling" style="display: none;">
+                    <div class="spinner-dual"></div>
+                    <p>Vérification du paiement...</p>
+                    <small>Veuillez patienter quelques instants</small>
                 </div>
             </div>
 
             {{-- ACTIONS --}}
             <div class="form-actions" id="form-actions">
-                <button type="button" class="btn btn-primary btn-block btn-lg" id="submitBtn" onclick="preparePayment()"
-                    {{ $preselectedType ? '' : 'disabled' }}>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z" />
-                    </svg>
-                    Procéder au paiement
+                <button type="button" class="btn-submit" id="submitBtn" onclick="preparePayment()" disabled>
+                    <span class="btn-text">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z" />
+                        </svg>
+                        Procéder au paiement
+                    </span>
+                    <span class="btn-spinner">
+                        <div class="spinner-dual small"></div>
+                    </span>
                 </button>
-                <p class="form-note">
-                    Vous serez redirigé vers Kkiapay pour effectuer le paiement sécurisé.
+                <p class="security-note">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Paiement 100% sécurisé via Kkiapay
                 </p>
             </div>
         </form>
@@ -404,21 +428,19 @@
 <script src="https://cdn.kkiapay.me/k.js"></script>
 
 <script>
-// Données injectées par le contrôleur
+// Données injectées
 const financements = @json($availableTypes->keyBy('id'));
 const userCompanies = @json($userCompanies ?? []);
-let currentSelection = {{ $preselectedType ? $preselectedType->id : 'null' }};
+let currentStep = 1;
+let currentSelection = null;
+let selectedCompanyId = null;
+let isProcessing = false;
 let currentFundingRequestId = null;
 let currentTransaction = null;
-let isProcessing = false;
-let selectedCompanyId = null;
+let currentAmount = 0;
 
 document.addEventListener('DOMContentLoaded', function () {
     setupEventListeners();
-
-    @if($preselectedType)
-        updateFormForSelection({{ $preselectedType->id }});
-    @endif
 
     if (typeof addSuccessListener === 'function') {
         addSuccessListener(onKkiapaySuccess);
@@ -426,17 +448,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-function getCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.content
-        || document.querySelector('input[name="_token"]')?.value;
-}
-
 function setupEventListeners() {
-    const amountInput = document.getElementById('amount_requested');
-    if (amountInput) {
-        amountInput.addEventListener('input', calculateTotals);
-    }
-
     const descInput = document.getElementById('description');
     if (descInput) {
         descInput.addEventListener('input', function() {
@@ -445,105 +457,205 @@ function setupEventListeners() {
     }
 }
 
-function calculateTotals() {
-    const daily = parseInt(this.value) || 0;
-    const duration = parseInt(document.getElementById('duration_input')?.value) || 6;
-    const total = daily * duration * 30;
+// Navigation entre étapes
+function goToStep(step) {
+    if (step === 2 && !currentSelection) return;
 
-    document.getElementById('daily-display').textContent = daily.toLocaleString('fr-FR') + ' FCFA';
-    document.getElementById('total-estimated').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+    const currentPanel = document.querySelector('.step-panel.active');
+    const nextPanel = document.getElementById(`step-${step}`);
+    const isForward = step > currentStep;
+
+    currentStep = step;
+    updateStepper(step);
+
+    currentPanel.classList.add(isForward ? 'exit-to-left' : 'exit-to-right');
+
+    setTimeout(() => {
+        currentPanel.classList.remove('active', 'exit-to-left', 'exit-to-right');
+        nextPanel.classList.add('active', isForward ? 'enter-from-right' : 'enter-from-left');
+
+        setTimeout(() => {
+            nextPanel.classList.remove('enter-from-right', 'enter-from-left');
+        }, 400);
+    }, 300);
 }
 
+function updateStepper(step) {
+    const progress = document.getElementById('stepper-progress');
+    const steps = document.querySelectorAll('.step');
+
+    progress.style.width = step === 1 ? '0%' : '100%';
+
+    steps.forEach((s, index) => {
+        const stepNum = index + 1;
+        s.classList.remove('active', 'completed');
+
+        if (stepNum === step) {
+            s.classList.add('active');
+        } else if (stepNum < step) {
+            s.classList.add('completed');
+        }
+    });
+}
+
+// Sélection financement
 function selectFinancement(id) {
     currentSelection = id;
-    updateFormForSelection(id);
-}
-
-function updateFormForSelection(id) {
     const fin = financements[id];
     if (!fin) return;
 
-    // UI sélection carte
     document.querySelectorAll('.financement-card').forEach(card => {
         card.classList.remove('selected');
-        const r = card.querySelector('.radio-circle');
-        if (r) { r.classList.remove('checked'); r.innerHTML = ''; }
     });
 
     const selectedCard = document.querySelector(`[data-id="${id}"]`);
     if (selectedCard) {
         selectedCard.classList.add('selected');
-        const r = selectedCard.querySelector('.radio-circle');
-        if (r) {
-            r.classList.add('checked');
-            r.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
-        }
     }
 
-    // Mettre à jour champs cachés
-    document.getElementById('selected_type_id').value = id;
-    document.getElementById('financement_type').value = fin.typeusers;
-    document.getElementById('step-form').style.display = 'block';
+    prepareStep2(fin);
 
-    // Afficher/masquer section entreprise
-    toggleCompanySection(fin.typeusers);
-
-    // Mise à jour des sections
-    updateSummary(fin);
-    updateAmountSection(fin);
-    updateDurationSection(fin);
-    updateFeesSection(fin);
-
-    document.getElementById('submitBtn').disabled = false;
+    setTimeout(() => {
+        goToStep(2);
+    }, 350);
 }
 
-function toggleCompanySection(type) {
-    const companySection = document.getElementById('company-section');
+function prepareStep2(fin) {
+    // Champs cachés
+    document.getElementById('selected_type_id').value = fin.id;
+    document.getElementById('financement_type').value = fin.typeusers;
+    document.getElementById('duration_input').value = fin.duration_months;
 
-    if (type === 'entreprise') {
+    // Récapitulatif
+    const isEnt = fin.typeusers === 'entreprise';
+    document.getElementById('cs-name').textContent = fin.name;
+    document.getElementById('cs-badge').textContent = isEnt ? 'Entreprise' : 'Particulier';
+    document.getElementById('cs-badge').className = `cs-badge ${fin.typeusers}`;
+
+    document.getElementById('cs-icon').innerHTML = isEnt
+        ? `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>`
+        : `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+
+    // Section entreprise - IMPORTANT: Vider les champs si particulier
+    const companySection = document.getElementById('company-section');
+    if (isEnt) {
         companySection.style.display = 'block';
         renderCompaniesList();
-        // Réinitialiser la sélection d'entreprise
         selectedCompanyId = null;
         document.getElementById('selected_company_id').value = '';
     } else {
         companySection.style.display = 'none';
-        // Vider le formulaire entreprise
-        document.getElementById('new-company-form').style.display = 'none';
-        selectedCompanyId = null;
+        // IMPORTANT: Vider les champs entreprise pour ne pas les envoyer
+        clearCompanyFields();
     }
+
+    // Montant
+    const isVariable = fin.is_variable_amount == 1;
+    const varInput = document.getElementById('variable-amount-input');
+    const fixedDisplay = document.getElementById('fixed-amount-display');
+    const hiddenAmount = document.getElementById('amount_requested_hidden');
+
+    if (isVariable) {
+        varInput.style.display = 'block';
+        fixedDisplay.style.display = 'none';
+
+        const inputVar = document.getElementById('amount_requested_variable');
+        inputVar.value = '';
+        inputVar.max = fin.max_daily_amount;
+
+        document.getElementById('amount-hint').textContent =
+            `Maximum: ${parseInt(fin.max_daily_amount).toLocaleString('fr-FR')} FCFA/jour • Minimum: 1,000 FCFA`;
+
+        updateVariableAmount(0);
+
+    } else {
+        varInput.style.display = 'none';
+        fixedDisplay.style.display = 'block';
+
+        const fixedAmount = parseInt(fin.amount);
+        currentAmount = fixedAmount;
+        hiddenAmount.value = fixedAmount;
+
+        document.getElementById('fixed-amount-value').textContent =
+            `${fixedAmount.toLocaleString('fr-FR')} FCFA`;
+        document.getElementById('fixed-amount-detail').textContent =
+            `${parseInt(fin.daily_gain).toLocaleString('fr-FR')} FCFA × ${fin.duration_months * 30} jours`;
+    }
+
+    // Durée
+    document.getElementById('duration-value').textContent = `${fin.duration_months} mois`;
+    document.getElementById('duration-detail').textContent = `${fin.duration_months * 30} jours`;
+    document.getElementById('preview-duration').textContent =
+        `${fin.duration_months} mois (${fin.duration_months * 30} jours)`;
+
+    // Frais
+    const regFee = parseInt(fin.registration_fee);
+    document.getElementById('reg-fee-display').textContent =
+        `${regFee.toLocaleString('fr-FR')} FCFA`;
+    document.getElementById('total-fee-display').textContent =
+        `${regFee.toLocaleString('fr-FR')} FCFA`;
+
+    document.getElementById('submitBtn').disabled = false;
 }
 
+// NOUVELLE FONCTION: Vider les champs entreprise
+function clearCompanyFields() {
+    // Vider company_id
+    document.getElementById('selected_company_id').value = '';
+
+    // Vider tous les champs new_company
+    const companyFields = document.querySelectorAll('.company-field');
+    companyFields.forEach(field => {
+        field.value = '';
+    });
+
+    // Masquer le formulaire nouvelle entreprise
+    document.getElementById('new-company-form').style.display = 'none';
+    document.getElementById('toggle-company-text').textContent = 'Créer une nouvelle entreprise';
+}
+
+// Mise à jour montant variable
+function updateVariableAmount(value) {
+    const daily = parseInt(value) || 0;
+    currentAmount = daily;
+
+    const fin = financements[currentSelection];
+    if (!fin) return;
+
+    const duration = fin.duration_months;
+    const total = daily * duration * 30;
+
+    document.getElementById('preview-daily').textContent =
+        `${daily.toLocaleString('fr-FR')} FCFA`;
+    document.getElementById('preview-total').textContent =
+        `${total.toLocaleString('fr-FR')} FCFA`;
+
+    document.getElementById('amount_requested_hidden').value = daily;
+}
+
+// Gestion entreprises
 function renderCompaniesList() {
     const grid = document.getElementById('companies-grid');
 
     if (userCompanies.length === 0) {
         grid.innerHTML = `
-            <div class="no-companies">
+            <div class="no-companies-message">
                 <p>Vous n'avez aucune entreprise enregistrée.</p>
-                <button type="button" class="btn btn-primary btn-sm" onclick="toggleNewCompanyForm()">
-                    Créer votre première entreprise
-                </button>
             </div>
         `;
-        document.getElementById('existing-companies').style.display = 'block';
         return;
     }
 
     grid.innerHTML = userCompanies.map(company => `
-        <div class="company-card ${selectedCompanyId == company.id ? 'selected' : ''}"
-             onclick="selectCompany(${company.id})"
-             data-company-id="${company.id}">
-            <div class="company-radio">
-                <div class="radio-circle ${selectedCompanyId == company.id ? 'checked' : ''}">
-                    ${selectedCompanyId == company.id ? '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : ''}
-                </div>
+        <div class="company-select-card ${selectedCompanyId == company.id ? 'selected' : ''}"
+             onclick="selectCompany(${company.id})">
+            <div class="csc-radio">
+                <div class="radio-inner ${selectedCompanyId == company.id ? 'checked' : ''}"></div>
             </div>
-            <div class="company-info">
-                <h4 class="company-name">${escapeHtml(company.company_name)}</h4>
-                <span class="company-type">${escapeHtml(company.company_type)}</span>
-                <p class="company-sector">${escapeHtml(company.sector)}</p>
-                <span class="company-poste">${escapeHtml(company.job_title)}</span>
+            <div class="csc-info">
+                <div class="csc-name">${escapeHtml(company.company_name)}</div>
+                <div class="csc-meta">${escapeHtml(company.company_type)} • ${escapeHtml(company.sector)}</div>
+                <div class="csc-poste">${escapeHtml(company.job_title)}</div>
             </div>
         </div>
     `).join('');
@@ -553,131 +665,207 @@ function selectCompany(id) {
     selectedCompanyId = id;
     document.getElementById('selected_company_id').value = id;
 
-    // Masquer le formulaire nouvelle entreprise si ouvert
-    document.getElementById('new-company-form').style.display = 'none';
+    // Vider les champs nouvelle entreprise car on sélectionne une existante
+    const companyFields = document.querySelectorAll('.company-field');
+    companyFields.forEach(field => {
+        field.value = '';
+    });
 
-    // Mettre à jour l'UI
+    document.getElementById('new-company-form').style.display = 'none';
+    document.getElementById('toggle-company-text').textContent = 'Créer une nouvelle entreprise';
+
     renderCompaniesList();
 }
 
 function toggleNewCompanyForm() {
     const form = document.getElementById('new-company-form');
     const isVisible = form.style.display === 'block';
+    const btnText = document.getElementById('toggle-company-text');
 
     if (isVisible) {
         form.style.display = 'none';
-        // Si on ferme le formulaire, on remet la sélection précédente si elle existe
-        if (selectedCompanyId) {
-            document.getElementById('selected_company_id').value = selectedCompanyId;
-        }
+        btnText.textContent = 'Créer une nouvelle entreprise';
+        // Ne pas vider les champs, l'utilisateur pourrait vouloir les garder
     } else {
         form.style.display = 'block';
+        form.classList.add('animate-in');
         // Désélectionner l'entreprise existante
         selectedCompanyId = null;
         document.getElementById('selected_company_id').value = '';
+        btnText.textContent = 'Annuler la création';
         renderCompaniesList();
 
-        // Scroll vers le formulaire
-        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setTimeout(() => {
+            form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
     }
 }
 
-function updateSummary(fin) {
-    const isEntreprise = fin.typeusers === 'entreprise';
-    const iconSvg = isEntreprise
-        ? `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-               d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-           </svg>`
-        : `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-               d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-           </svg>`;
+// Validation
+function validateForm(fin) {
+    const token = getCsrfToken();
+    if (!token) {
+        alert('Erreur de sécurité. Rechargez la page.');
+        return false;
+    }
 
-    document.getElementById('selected-summary').innerHTML = `
-        <div class="sf-icon">${iconSvg}</div>
-        <div class="sf-info">
-            <span class="sf-label">Financement sélectionné</span>
-            <span class="sf-name">${escapeHtml(fin.name)}</span>
-            <span class="sf-type-badge badge-${fin.typeusers}">
-                ${isEntreprise ? 'Entreprise' : 'Particulier'}
-            </span>
-        </div>`;
-}
-
-function updateAmountSection(fin) {
-    const isVariable = fin.is_variable_amount == 1;
-    const amountLabel = document.getElementById('amount-label');
-    const varInput = document.getElementById('variable-amount-input');
-    const fixedDisplay = document.getElementById('fixed-amount-display');
-
-    if (isVariable) {
-        amountLabel.innerHTML = `Montant quotidien souhaité <span class="text-muted">(Max ${parseInt(fin.max_daily_amount).toLocaleString('fr-FR')} FCFA/jour)</span>`;
-        varInput.style.display = 'block';
-        fixedDisplay.style.display = 'none';
-
-        const inp = document.getElementById('amount_requested');
-        inp.max = fin.max_daily_amount;
-        inp.value = '';
-        inp.required = true;
+    // Vérifier montant
+    if (fin.is_variable_amount == 1) {
+        const amount = parseInt(document.getElementById('amount_requested_hidden').value);
+        if (!amount || amount < 1000) {
+            alert('Veuillez saisir un montant valide (minimum 1,000 FCFA/jour)');
+            document.getElementById('amount_requested_variable').focus();
+            return false;
+        }
+        if (amount > fin.max_daily_amount) {
+            alert(`Le montant maximum est de ${fin.max_daily_amount.toLocaleString('fr-FR')} FCFA/jour`);
+            return false;
+        }
     } else {
-        amountLabel.innerHTML = 'Montant du financement';
-        varInput.style.display = 'none';
-        fixedDisplay.style.display = 'block';
-
-        document.getElementById('fixed-amount-value').textContent = `${parseInt(fin.amount).toLocaleString('fr-FR')} FCFA`;
-        document.getElementById('fixed-amount-detail').textContent = `${parseInt(fin.daily_gain).toLocaleString('fr-FR')} FCFA × ${fin.duration_months * 30} jours`;
-        document.getElementById('fixed_amount_input').value = fin.amount;
-        document.getElementById('amount_requested').required = false;
+        const fixedAmount = parseInt(document.getElementById('amount_requested_hidden').value);
+        if (!fixedAmount || fixedAmount <= 0) {
+            alert('Erreur: montant non défini. Veuillez recharger la page.');
+            return false;
+        }
     }
+
+    // Vérifier titre
+    const title = document.getElementById('title')?.value.trim();
+    if (!title) {
+        alert('Veuillez saisir un titre pour votre demande');
+        document.getElementById('title').focus();
+        return false;
+    }
+
+    // Vérifier entreprise UNIQUEMENT si type entreprise
+    if (fin.typeusers === 'entreprise') {
+        const companyId = document.getElementById('selected_company_id')?.value;
+        const newName = document.getElementById('new_company_name')?.value.trim();
+
+        if (!companyId && !newName) {
+            alert('Veuillez sélectionner une entreprise existante ou en créer une nouvelle');
+            return false;
+        }
+
+        if (!companyId && newName) {
+            const requiredFields = [
+                { id: 'new_company_type', name: 'Type d\'entreprise' },
+                { id: 'new_company_sector', name: 'Secteur d\'activité' },
+                { id: 'new_company_job', name: 'Votre poste' }
+            ];
+
+            for (const field of requiredFields) {
+                const el = document.getElementById(field.id);
+                if (!el || !el.value.trim()) {
+                    alert(`Veuillez remplir le champ: ${field.name}`);
+                    el?.focus();
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
-function updateDurationSection(fin) {
-    document.getElementById('duration-value').textContent = `${fin.duration_months} mois`;
-    document.getElementById('duration-detail').textContent = `Soit ${fin.duration_months * 30} jours`;
-    document.getElementById('duration_input').value = fin.duration_months;
-    document.getElementById('duration-display').textContent = `${fin.duration_months} mois (${fin.duration_months * 30} jours)`;
-}
-
-function updateFeesSection(fin) {
-    const regFee = parseInt(fin.registration_fee);
-    const formatted = regFee.toLocaleString('fr-FR') + ' FCFA';
-    document.getElementById('reg-fee-display').textContent = formatted;
-    document.getElementById('total-fee-display').textContent = formatted;
-}
-
+// CORRECTION PRINCIPALE: Construire FormData manuellement pour contrôler les champs envoyés
 async function preparePayment() {
     if (isProcessing) return;
-    isProcessing = true;
 
-    const csrfToken = getCsrfToken();
-    const typeId = document.getElementById('selected_type_id')?.value;
-    const fin = financements[typeId];
-    const financementType = document.getElementById('financement_type')?.value;
+    const fin = financements[currentSelection];
+    if (!validateForm(fin)) return;
 
-    // Validations de base
-    if (!validateForm(fin, financementType)) {
-        isProcessing = false;
+    const finalAmount = document.getElementById('amount_requested_hidden').value;
+    if (!finalAmount || finalAmount <= 0) {
+        alert('Erreur: le montant est invalide');
         return;
     }
 
-    try {
-        showLoading();
+    isProcessing = true;
+    const btn = document.getElementById('submitBtn');
+    btn.classList.add('loading');
+    btn.disabled = true;
 
-        // Étape 1: Créer la demande
-        const formData = new FormData(document.getElementById('requestForm'));
+    const csrfToken = getCsrfToken();
+
+    try {
+        // CORRECTION: Construire FormData manuellement pour ne pas envoyer les champs vides
+        const formData = new FormData();
+        formData.append('_token', csrfToken);
+        formData.append('typefinancement_id', document.getElementById('selected_type_id').value);
+        formData.append('financement_type', document.getElementById('financement_type').value);
+        formData.append('amount_requested', document.getElementById('amount_requested_hidden').value);
+        formData.append('duration', document.getElementById('duration_input').value);
+        formData.append('title', document.getElementById('title').value);
+
+        const description = document.getElementById('description').value;
+        if (description) {
+            formData.append('description', description);
+        }
+
+        // CORRECTION: N'envoyer les champs entreprise QUE si c'est un type entreprise
+        if (fin.typeusers === 'entreprise') {
+            const companyId = document.getElementById('selected_company_id').value;
+
+            if (companyId) {
+                // Entreprise existante
+                formData.append('company_id', companyId);
+            } else {
+                // Nouvelle entreprise - n'envoyer QUE si on a un nom
+                const newName = document.getElementById('new_company_name').value.trim();
+                if (newName) {
+                    formData.append('new_company[name]', newName);
+                    formData.append('new_company[company_type]', document.getElementById('new_company_type').value);
+                    formData.append('new_company[sector]', document.getElementById('new_company_sector').value);
+                    formData.append('new_company[job_title]', document.getElementById('new_company_job').value);
+
+                    const employees = document.getElementById('new_company_employees').value;
+                    if (employees) {
+                        formData.append('new_company[employees_count]', employees);
+                    }
+
+                    const turnover = document.getElementById('new_company_turnover').value;
+                    if (turnover) {
+                        formData.append('new_company[annual_turnover]', turnover);
+                    }
+                }
+            }
+        }
+        // Si c'est un particulier, on n'envoie PAS company_id ni new_company
+
+        // Debug
+        console.log('FormData contents (filtré):');
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+        }
+
         const storeRes = await fetch('{{ route("client.requests.store") }}', {
             method: 'POST',
             body: formData,
-            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            }
         });
 
         const storeData = await storeRes.json();
-        if (!storeData.success) throw new Error(storeData.message);
+
+        if (!storeRes.ok) {
+            if (storeData.errors) {
+                const errorMessages = Object.entries(storeData.errors)
+                    .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
+                    .join('\n');
+                throw new Error(errorMessages);
+            }
+            throw new Error(storeData.message || 'Erreur lors de la création');
+        }
+
+        if (!storeData.success) {
+            throw new Error(storeData.message || 'Erreur inconnue');
+        }
 
         currentFundingRequestId = storeData.funding_request_id;
 
-        // Étape 2: Initialiser paiement
         const initRes = await fetch(`/requests/${currentFundingRequestId}/payment/initialize`, {
             method: 'POST',
             headers: {
@@ -688,11 +876,16 @@ async function preparePayment() {
         });
 
         const initData = await initRes.json();
-        if (!initData.success) throw new Error(initData.message);
+
+        if (!initRes.ok || !initData.success) {
+            throw new Error(initData.message || 'Erreur initialisation paiement');
+        }
 
         currentTransaction = initData.transaction;
 
-        // Étape 3: Ouvrir widget Kkiapay
+        document.getElementById('form-actions').style.display = 'none';
+        document.getElementById('payment-section').style.display = 'block';
+
         openKkiapayWidget({
             amount: initData.kkiapay_config.amount,
             key: initData.kkiapay_config.key,
@@ -704,83 +897,20 @@ async function preparePayment() {
 
     } catch (error) {
         console.error('Payment error:', error);
-        alert(error.message || 'Erreur lors de la préparation du paiement');
-        hideLoading();
+        alert(error.message || 'Une erreur est survenue');
+
+        btn.classList.remove('loading');
+        btn.disabled = false;
         isProcessing = false;
     }
 }
 
-function validateForm(fin, financementType) {
-    const csrfToken = getCsrfToken();
-    if (!csrfToken) { alert('Erreur CSRF'); return false; }
-
-    // Validation montant
-    if (fin.is_variable_amount == 1) {
-        const amount = parseInt(document.getElementById('amount_requested')?.value);
-        if (!amount || amount < 1000) { alert('Montant minimum: 1 000 FCFA/jour'); return false; }
-        if (amount > fin.max_daily_amount) { alert(`Montant maximum: ${fin.max_daily_amount} FCFA`); return false; }
-    }
-
-    // Validation titre
-    const title = document.getElementById('title')?.value.trim();
-    if (!title) { alert('Veuillez saisir un titre'); return false; }
-
-    // Validation entreprise si type entreprise
-    if (financementType === 'entreprise') {
-        const companyId = document.getElementById('selected_company_id')?.value;
-        const newCompanyName = document.getElementById('new_company_name')?.value.trim();
-
-        // Soit une entreprise existante sélectionnée, soit un nouveau formulaire rempli
-        if (!companyId && !newCompanyName) {
-            alert('Veuillez sélectionner une entreprise ou en créer une nouvelle');
-            return false;
-        }
-
-        // Si nouveau formulaire, vérifier les champs requis
-        if (!companyId && newCompanyName) {
-            const requiredFields = ['new_company_type', 'new_company_sector', 'new_company_job'];
-            for (const fieldId of requiredFields) {
-                const field = document.getElementById(fieldId);
-                if (!field || !field.value.trim()) {
-                    alert('Veuillez remplir tous les champs obligatoires de la nouvelle entreprise');
-                    field?.focus();
-                    return false;
-                }
-            }
-        }
-    }
-
-    return true;
-}
-
-function showLoading() {
-    document.getElementById('form-actions').style.display = 'none';
-    document.getElementById('payment-section').style.display = 'block';
-}
-
-function hideLoading() {
-    document.getElementById('form-actions').style.display = 'block';
-    document.getElementById('payment-section').style.display = 'none';
-}
-
+// Callbacks Kkiapay
 async function onKkiapaySuccess(response) {
-    console.log('=== KKIAPAY SUCCESS ===', response);
+    console.log('Kkiapay success:', response);
 
-    const transactionId = response.transactionId;
-
-    if (!currentFundingRequestId || !currentTransaction) {
-        alert('Erreur interne. Référence: ' + transactionId);
-        return;
-    }
-
-    const paymentSection = document.getElementById('payment-section');
-    paymentSection.innerHTML = `
-        <div class="payment-loading">
-            <div class="spinner"></div>
-            <p>Vérification du paiement...</p>
-            <small id="verify-status">Connexion à Kkiapay...</small>
-        </div>
-    `;
+    document.getElementById('payment-loading').style.display = 'none';
+    document.getElementById('payment-polling').style.display = 'block';
 
     const maxAttempts = 20;
     let attempt = 0;
@@ -788,8 +918,6 @@ async function onKkiapaySuccess(response) {
     while (attempt < maxAttempts) {
         attempt++;
         const delay = Math.min(1000 * Math.pow(1.2, attempt), 5000);
-
-        console.log(`🔄 Polling attempt ${attempt}/${maxAttempts}, delay: ${delay}ms`);
 
         try {
             const verifyRes = await fetch('/payment/verify', {
@@ -800,63 +928,75 @@ async function onKkiapaySuccess(response) {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    transactionId: transactionId,
+                    transactionId: response.transactionId,
                     funding_request_id: currentFundingRequestId,
                     internal_transaction_id: currentTransaction.transaction_id,
                 }),
             });
 
             const data = await verifyRes.json();
-            console.log('Verify response:', data);
-
-            const statusEl = document.getElementById('verify-status');
-            if (statusEl) {
-                statusEl.textContent = `Tentative ${attempt}/${maxAttempts}...`;
-            }
 
             if (data.status === 'paid') {
-                console.log('✅ Payment confirmed!');
-                paymentSection.innerHTML = `
-                    <div class="payment-success">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                        </svg>
-                        <p>Paiement confirmé !</p>
-                        <small>Redirection...</small>
-                    </div>
-                `;
-                window.location.href = data.redirect_url;
+                showPaymentSuccess();
+                setTimeout(() => {
+                    window.location.href = data.redirect_url || '/my-requests';
+                }, 1500);
                 return;
             }
 
             if (data.status === 'failed') {
-                alert('Paiement échoué: ' + (data.message || 'Erreur inconnue'));
-                hideLoading();
+                alert('Paiement échoué: ' + (data.message || 'Erreur de transaction'));
+                resetPaymentUI();
                 return;
             }
 
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise(r => setTimeout(r, delay));
 
         } catch (err) {
             console.error('Polling error:', err);
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(r => setTimeout(r, 2000));
         }
     }
 
-    console.warn('Max polling attempts reached');
-    alert('Votre paiement est en cours de traitement. Vous serez notifié par email.');
-    window.location.href = `/my-requests`;
+    alert('Votre paiement est en cours de traitement. Vous recevrez une confirmation par email.');
+    window.location.href = '/my-requests';
 }
 
 function onKkiapayFailed(response) {
     console.error('Kkiapay failed:', response);
-    alert('Le paiement a été annulé ou a échoué.');
-    hideLoading();
+    alert('Le paiement a été annulé ou a échoué. Veuillez réessayer.');
+    resetPaymentUI();
+}
+
+function resetPaymentUI() {
+    document.getElementById('payment-section').style.display = 'none';
+    document.getElementById('form-actions').style.display = 'block';
+    const btn = document.getElementById('submitBtn');
+    btn.classList.remove('loading');
+    btn.disabled = false;
     isProcessing = false;
 }
 
+function showPaymentSuccess() {
+    document.getElementById('payment-polling').innerHTML = `
+        <div class="success-check">
+            <svg viewBox="0 0 52 52" class="checkmark">
+                <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+        </div>
+        <p class="success-message">Paiement confirmé !</p>
+        <small>Redirection en cours...</small>
+    `;
+}
+
+// Utilitaires
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content;
+}
+
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
@@ -865,713 +1005,1305 @@ function escapeHtml(text) {
 @endsection
 
 @section('styles')
+
+@section('styles')
 <style>
-    .request-create {
-        max-width: 800px;
-        margin: 0 auto;
+/* ============================================
+   STEPPER - Indicateur d'étapes moderne
+   ============================================ */
+.stepper {
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.stepper-track {
+    height: 3px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.stepper-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    border-radius: 2px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stepper-steps {
+    display: flex;
+    justify-content: space-between;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    position: relative;
+}
+
+.step-bubble {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.step-number {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #64748b;
+    transition: all 0.3s ease;
+}
+
+.step-check {
+    position: absolute;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.step-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-bubble {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    transform: scale(1.1);
+}
+
+.step.active .step-number {
+    color: white;
+}
+
+.step.active .step-label {
+    color: #2563eb;
+    font-weight: 700;
+}
+
+.step.completed .step-bubble {
+    background: #10b981;
+}
+
+.step.completed .step-number {
+    opacity: 0;
+}
+
+.step.completed .step-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.step.completed .step-label {
+    color: #10b981;
+}
+
+/* ============================================
+   PANELS & TRANSITIONS
+   ============================================ */
+.step-panel {
+    display: none;
+    padding: 1.5rem;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.step-panel.active {
+    display: block;
+}
+
+/* Animations de transition */
+@keyframes enterFromRight {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes enterFromLeft {
+    from { opacity: 0; transform: translateX(-40px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes exitToLeft {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(-40px); }
+}
+
+@keyframes exitToRight {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(40px); }
+}
+
+.enter-from-right { animation: enterFromRight 0.4s ease forwards; }
+.enter-from-left { animation: enterFromLeft 0.4s ease forwards; }
+.exit-to-left { animation: exitToLeft 0.3s ease forwards; }
+.exit-to-right { animation: exitToRight 0.3s ease forwards; }
+
+/* ============================================
+   ÉTAPE 1 - LISTE FINANCEMENTS
+   ============================================ */
+.step-intro {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.step-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+}
+
+.step-desc {
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+.financement-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.financement-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.financement-card:hover {
+    border-color: #bfdbfe;
+    box-shadow: 0 8px 30px -5px rgba(37, 99, 235, 0.15);
+    transform: translateY(-2px);
+}
+
+.financement-card.selected {
+    border-color: #2563eb;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+}
+
+.fc-selector {
+    flex-shrink: 0;
+}
+
+.fc-radio {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #cbd5e1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.radio-inner {
+    width: 10px;
+    height: 10px;
+    background: #2563eb;
+    border-radius: 50%;
+    transform: scale(0);
+    transition: transform 0.2s ease;
+}
+
+.financement-card:hover .fc-radio,
+.financement-card.selected .fc-radio {
+    border-color: #2563eb;
+}
+
+.financement-card.selected .radio-inner {
+    transform: scale(1);
+}
+
+.fc-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.fc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.fc-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.fc-icon-wrapper.entreprise {
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+}
+
+.fc-icon-wrapper.particulier {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+}
+
+.badge-type {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+}
+
+.badge-type.entreprise {
+    background: #fce7f3;
+    color: #9d174d;
+}
+
+.badge-type.particulier {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.fc-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.375rem;
+}
+
+.fc-description {
+    font-size: 0.8125rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+}
+
+.fc-stats {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    background: #f8fafc;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.stat-item.highlight {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.stat-value {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.stat-item.highlight .stat-value {
+    color: #2563eb;
+}
+
+.stat-label {
+    font-size: 0.625rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+.fc-arrow {
+    color: #cbd5e1;
+    transition: all 0.2s;
+}
+
+.financement-card:hover .fc-arrow {
+    color: #2563eb;
+    transform: translateX(4px);
+}
+
+/* ============================================
+   ÉTAPE 2 - RÉCAPITULATIF CHOIX
+   ============================================ */
+.choice-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 1px solid #bfdbfe;
+    border-radius: 14px;
+    padding: 0.875rem;
+    margin-bottom: 1.5rem;
+}
+
+.cs-back {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563eb;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.cs-back:hover {
+    background: #2563eb;
+    color: white;
+}
+
+.cs-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.cs-icon {
+    width: 40px;
+    height: 40px;
+    background: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563eb;
+    flex-shrink: 0;
+}
+
+.cs-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+}
+
+.cs-label {
+    font-size: 0.6875rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.cs-name {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cs-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    width: fit-content;
+    text-transform: uppercase;
+}
+
+.cs-badge.entreprise {
+    background: #fce7f3;
+    color: #9d174d;
+}
+
+.cs-badge.particulier {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+/* ============================================
+   SECTION ENTREPRISE - DESIGN SPÉCIAL
+   ============================================ */
+.section-company {
+    background: linear-gradient(180deg, #fdf2f8 0%, #ffffff 100%);
+    border: 2px solid #fbcfe8;
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #fbcfe8;
+}
+
+.sh-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.sh-text h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #831843;
+    margin-bottom: 0.25rem;
+}
+
+.sh-text p {
+    font-size: 0.8125rem;
+    color: #9d174d;
+    line-height: 1.5;
+}
+
+.companies-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    margin-bottom: 1rem;
+}
+
+.company-select-card {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    background: white;
+    border: 2px solid #fbcfe8;
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.company-select-card:hover {
+    border-color: #f472b6;
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.1);
+}
+
+.company-select-card.selected {
+    border-color: #ec4899;
+    background: #fdf2f8;
+}
+
+.csc-radio {
+    flex-shrink: 0;
+}
+
+.csc-radio .radio-inner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #fbcfe8;
+    border-radius: 50%;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.csc-radio .radio-inner.checked {
+    border-color: #ec4899;
+    background: #ec4899;
+}
+
+.csc-radio .radio-inner.checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+}
+
+.csc-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.csc-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+}
+
+.csc-meta {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.csc-poste {
+    font-size: 0.6875rem;
+    color: #9d174d;
+    font-weight: 500;
+    background: #fce7f3;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.divider-or {
+    display: flex;
+    align-items: center;
+    margin: 1rem 0;
+    color: #9d174d;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.divider-or::before,
+.divider-or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #fbcfe8;
+}
+
+.divider-or span {
+    padding: 0 0.75rem;
+}
+
+.btn-create-company {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: white;
+    border: 2px dashed #fbcfe8;
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #9d174d;
+}
+
+.btn-create-company:hover {
+    border-color: #ec4899;
+    background: #fdf2f8;
+}
+
+.bcc-icon {
+    width: 36px;
+    height: 36px;
+    background: #fce7f3;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.bcc-text {
+    flex: 1;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: left;
+}
+
+.bcc-arrow {
+    transition: transform 0.2s;
+}
+
+.btn-create-company[aria-expanded="true"] .bcc-arrow {
+    transform: rotate(180deg);
+}
+
+.new-company-panel {
+    margin-top: 1rem;
+    background: white;
+    border: 2px solid #ec4899;
+    border-radius: 12px;
+    padding: 1.25rem;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.ncp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #fbcfe8;
+}
+
+.ncp-header h4 {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #831843;
+}
+
+.ncp-close {
+    background: none;
+    border: none;
+    color: #9d174d;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.ncp-close:hover {
+    background: #fce7f3;
+}
+
+/* ============================================
+   FORMULAIRES GÉNÉRAUX
+   ============================================ */
+.form-section {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.section-title-sm {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.section-title-sm svg {
+    color: #6b7280;
+}
+
+.form-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.form-grid.cols-2 {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.form-group {
+    margin-bottom: 0;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.375rem;
+}
+
+.text-danger {
+    color: #dc2626;
+}
+
+.text-muted {
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    background: white;
+    color: #111827;
+    font-size: 0.9375rem;
+    transition: all 0.2s;
+}
+
+.form-control:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
+}
+
+.form-control-xl {
+    font-size: 1.25rem;
+    padding: 1rem;
+    font-weight: 600;
+}
+
+select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg fill='none' stroke='%236b7280' viewBox='0 0 24 24' width='16' height='16'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.5rem;
+}
+
+/* Montant */
+.amount-container {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.amount-field {
+    position: relative;
+}
+
+.amount-suffix {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6b7280;
+    pointer-events: none;
+}
+
+.amount-limit {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.375rem;
+}
+
+.calculation-preview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 0.75rem;
+}
+
+.calc-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: center;
+}
+
+.calc-row span {
+    font-size: 0.6875rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.calc-row strong {
+    font-size: 0.9375rem;
+    color: #111827;
+    font-weight: 700;
+}
+
+.calc-row.total strong {
+    color: #2563eb;
+    font-size: 1rem;
+}
+
+/* Montant fixe */
+.fixed-amount-box {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border: 1px solid #86efac;
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.fab-icon {
+    width: 52px;
+    height: 52px;
+    background: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #22c55e;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.1);
+}
+
+.fab-content {
+    flex: 1;
+}
+
+.fab-amount {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: #166534;
+}
+
+.fab-detail {
+    font-size: 0.8125rem;
+    color: #15803d;
+    margin-top: 0.25rem;
+}
+
+/* Durée */
+.duration-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.db-main {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.db-sub {
+    font-size: 0.8125rem;
+    color: #6b7280;
+}
+
+/* Compteur caractères */
+.char-count {
+    text-align: right;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.25rem;
+}
+
+/* ============================================
+   RÉCAPITULATIF FRAIS
+   ============================================ */
+.fees-summary-card {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+}
+
+.fsc-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #374151;
+}
+
+.fsc-header svg {
+    color: #6b7280;
+}
+
+.fsc-body {
+    padding: 1rem 1.25rem;
+}
+
+.fsc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    font-size: 0.9375rem;
+}
+
+.fsc-row span:first-child {
+    color: #6b7280;
+}
+
+.fsc-row span:last-child {
+    color: #111827;
+    font-weight: 500;
+}
+
+.fsc-row.total {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+}
+
+.fsc-row.total span:first-child {
+    color: #374151;
+    font-weight: 700;
+}
+
+.fsc-row.total strong {
+    font-size: 1.25rem;
+    color: #2563eb;
+}
+
+/* ============================================
+   BOUTON & PAIEMENT
+   ============================================ */
+.form-actions {
+    margin-top: 1.5rem;
+}
+
+.btn-submit {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+}
+
+.btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-text,
+.btn-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: opacity 0.2s;
+}
+
+.btn-spinner {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+}
+
+.btn-submit.loading .btn-text {
+    opacity: 0;
+}
+
+.btn-submit.loading .btn-spinner {
+    opacity: 1;
+}
+
+.security-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.75rem;
+}
+
+.security-note svg {
+    color: #22c55e;
+}
+
+/* Zone paiement */
+.payment-zone {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 2rem;
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+.pz-loading {
+    color: #6b7280;
+}
+
+.pz-loading p {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.pz-loading small {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* Spinner */
+.spinner-dual {
+    width: 40px;
+    height: 40px;
+    position: relative;
+}
+
+.spinner-dual.small {
+    width: 24px;
+    height: 24px;
+}
+
+.spinner-dual::before,
+.spinner-dual::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid transparent;
+}
+
+.spinner-dual::before {
+    border-top-color: #2563eb;
+    border-right-color: #2563eb;
+    animation: spin 1s linear infinite;
+}
+
+.spinner-dual::after {
+    border-bottom-color: #bfdbfe;
+    border-left-color: #bfdbfe;
+    animation: spin 1.5s linear infinite reverse;
+}
+
+.spinner-dual.small::before,
+.spinner-dual.small::after {
+    border-width: 2px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Success */
+.success-check {
+    margin-bottom: 1rem;
+}
+
+.checkmark {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: block;
+    stroke-width: 2;
+    stroke: #fff;
+    stroke-miterlimit: 10;
+    margin: 0 auto;
+    box-shadow: inset 0px 0px 0px #22c55e;
+    animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+}
+
+.checkmark-circle {
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    stroke-width: 2;
+    stroke-miterlimit: 10;
+    stroke: #22c55e;
+    fill: none;
+    animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark-check {
+    transform-origin: 50% 50%;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+@keyframes stroke {
+    100% { stroke-dashoffset: 0; }
+}
+
+@keyframes scale {
+    0%, 100% { transform: none; }
+    50% { transform: scale3d(1.1, 1.1, 1); }
+}
+
+@keyframes fill {
+    100% { box-shadow: inset 0px 0px 0px 30px #22c55e; }
+}
+
+.success-message {
+    color: #15803d;
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+/* ============================================
+   ÉTAT VIDE
+   ============================================ */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #9ca3af;
+}
+
+.empty-icon {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    color: #374151;
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    font-size: 0.875rem;
+}
+
+.no-companies-message {
+    text-align: center;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 10px;
+    color: #9d174d;
+    font-size: 0.875rem;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (min-width: 640px) {
+    .stepper {
+        padding: 2rem;
     }
 
-    .btn-back {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 36px;
-        height: 36px;
-        background: var(--bg);
-        border-radius: var(--radius-sm);
-        color: var(--text);
-        text-decoration: none;
-        border: 1px solid var(--border);
-        transition: all 0.2s;
+    .step-panel {
+        padding: 2rem;
     }
 
-    .btn-back:hover {
-        background: var(--border);
-        color: var(--primary);
+    .financement-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    .stepper {
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        border-bottom-color: #334155;
     }
 
-    .section-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0;
+    .step-bubble {
+        background: #334155;
     }
 
-    .financement-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
+    .step-number {
+        color: #94a3b8;
+    }
+
+    .step-label {
+        color: #94a3b8;
     }
 
     .financement-card {
-        display: flex;
-        align-items: center;
-        gap: 0.875rem;
-        background: var(--surface);
-        border: 2px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1.25rem;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .financement-card:hover {
-        border-color: var(--primary);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
-        transform: translateY(-2px);
+        background: #1e293b;
+        border-color: #334155;
     }
 
     .financement-card.selected {
-        border-color: var(--primary);
-        background: #eff6ff;
-    }
-
-    .financement-header-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
-        margin-bottom: 0.35rem;
-    }
-
-    .financement-badge {
-        font-size: 0.7rem;
-        font-weight: 600;
-        padding: 0.25rem 0.6rem;
-        border-radius: 9999px;
-        text-transform: uppercase;
-        letter-spacing: 0.025em;
-    }
-
-    .badge-particulier {
-        background: #dbeafe;
-        color: #1e40af;
-        border: 1px solid #3b82f6;
-    }
-
-    .badge-entreprise {
-        background: #fce7f3;
-        color: #9d174d;
-        border: 1px solid #ec4899;
-    }
-
-    .financement-radio {
-        flex-shrink: 0;
-    }
-
-    .radio-circle {
-        width: 20px;
-        height: 20px;
-        border: 2px solid var(--border);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-    }
-
-    .financement-card:hover .radio-circle,
-    .radio-circle.checked {
-        border-color: var(--primary);
-        background: var(--primary);
-        color: white;
-    }
-
-    .financement-icon {
-        width: 46px;
-        height: 46px;
-        background: white;
-        border-radius: var(--radius-sm);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--primary);
-        flex-shrink: 0;
-    }
-
-    .financement-body {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .financement-name {
-        font-size: 1rem;
-        font-weight: 600;
-        margin: 0;
-        color: var(--text);
-    }
-
-    .financement-desc {
-        font-size: 0.85rem;
-        color: var(--text-muted);
-        margin: 0 0 0.75rem;
-        line-height: 1.5;
-    }
-
-    .financement-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.35rem;
-    }
-
-    .tag {
-        font-size: 0.7rem;
-        font-weight: 500;
-        background: var(--bg);
-        color: var(--text-muted);
-        border: 1px solid var(--border);
-        padding: 0.25rem 0.6rem;
-        border-radius: 9999px;
-    }
-
-    .tag-primary {
-        background: #dbeafe;
-        color: #1e40af;
+        background: linear-gradient(135deg, #1e3a8a, #1e40af);
         border-color: #3b82f6;
     }
 
-    .tag-success {
-        background: #dcfce7;
-        color: #166534;
-        border-color: #22c55e;
+    .fc-name {
+        color: #f8fafc;
     }
 
-    /* Section Entreprise */
-    .company-section {
-        background: #fdf2f8;
-        border: 1px solid #fbcfe8;
-        border-radius: var(--radius);
-        padding: 1.25rem;
+    .stat-value {
+        color: #f8fafc;
     }
 
-    .company-section .form-label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: #9d174d;
-        font-weight: 600;
+    .section-company {
+        background: linear-gradient(180deg, #4c1d3d 0%, #1e293b 100%);
+        border-color: #831843;
     }
 
-    .companies-list {
-        margin-bottom: 1rem;
+    .form-section {
+        background: #1e293b;
+        border-color: #334155;
     }
 
-    .companies-list > p {
-        font-size: 0.875rem;
-        color: var(--text-muted);
-    }
-
-    .companies-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 0.75rem;
-        margin-top: 0.5rem;
-    }
-
-    .company-card {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.75rem;
-        background: white;
-        border: 2px solid #fbcfe8;
-        border-radius: var(--radius-sm);
-        padding: 1rem;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .company-card:hover {
-        border-color: #ec4899;
-        box-shadow: 0 2px 8px rgba(236, 72, 153, 0.1);
-    }
-
-    .company-card.selected {
-        border-color: #ec4899;
-        background: #fce7f3;
-    }
-
-    .company-radio {
-        flex-shrink: 0;
-        margin-top: 0.125rem;
-    }
-
-    .company-info {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .company-name {
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0 0 0.25rem;
-    }
-
-    .company-type {
-        font-size: 0.75rem;
-        background: #fce7f3;
-        color: #9d174d;
-        padding: 0.125rem 0.5rem;
-        border-radius: 9999px;
-        font-weight: 500;
-    }
-
-    .company-sector {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        margin: 0.5rem 0 0.25rem;
-    }
-
-    .company-poste {
-        font-size: 0.75rem;
-        color: #9d174d;
-        font-weight: 500;
-    }
-
-    .no-companies {
-        text-align: center;
-        padding: 1.5rem;
-        background: white;
-        border-radius: var(--radius-sm);
-        border: 2px dashed #fbcfe8;
-    }
-
-    .no-companies p {
-        color: var(--text-muted);
-        margin-bottom: 1rem;
-    }
-
-    .add-company-option {
-        text-align: center;
-        padding-top: 0.5rem;
-        border-top: 1px solid #fbcfe8;
-    }
-
-    .new-company-form {
-        background: white;
-        border: 2px solid #ec4899;
-        border-radius: var(--radius);
-        padding: 1.25rem;
-        margin-top: 1rem;
-        animation: slideDown 0.3s ease-out;
-    }
-
-    .ncf-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid #fbcfe8;
-    }
-
-    .ncf-header h4 {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #9d174d;
-        margin: 0;
-    }
-
-    .btn-close {
-        background: none;
-        border: none;
-        color: #9d174d;
-        cursor: pointer;
-        padding: 0.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .btn-close:hover {
-        color: #be185d;
-    }
-
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
-
-    .form-col {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .form-col .form-label {
-        font-size: 0.8rem;
-        margin-bottom: 0.375rem;
-        color: var(--text);
-    }
-
-    .selected-financement {
-        display: flex;
-        align-items: center;
-        gap: 0.875rem;
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
-        border-radius: var(--radius);
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .sf-icon {
-        width: 40px;
-        height: 40px;
-        background: white;
-        border-radius: var(--radius-sm);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--primary);
-    }
-
-    .sf-info {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-
-    .sf-label {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-    }
-
-    .sf-name {
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--text);
-    }
-
-    .sf-type-badge {
-        font-size: 0.7rem;
-        font-weight: 600;
-        padding: 0.2rem 0.5rem;
-        border-radius: 9999px;
-        width: fit-content;
-    }
-
-    .form-group {
-        margin-bottom: 1.25rem;
-    }
-
-    .form-label {
-        display: block;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--text);
-        margin-bottom: 0.5rem;
-    }
-
-    .form-label .text-muted {
-        font-weight: 400;
-        color: var(--text-muted);
+    .section-title-sm {
+        color: #e2e8f0;
+        border-color: #334155;
     }
 
     .form-control {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        background: var(--surface);
-        color: var(--text);
-        font-size: 0.9rem;
-        transition: all 0.2s;
+        background: #0f172a;
+        border-color: #334155;
+        color: #f8fafc;
     }
 
-    .form-control:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        outline: none;
+    .calculation-preview,
+    .duration-box {
+        background: #0f172a;
     }
 
-    .btn-outline {
-        background: transparent;
-        border: 1px solid var(--border);
-        color: var(--text);
-        padding: 0.5rem 1rem;
-        border-radius: var(--radius);
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.875rem;
-        transition: all 0.2s;
+    .fees-summary-card {
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border-color: #334155;
     }
 
-    .btn-outline:hover {
-        border-color: var(--primary);
-        color: var(--primary);
-        background: #eff6ff;
+    .fsc-header {
+        background: #1e293b;
+        border-color: #334155;
     }
-
-    .amount-input-wrapper {
-        position: relative;
-    }
-
-    .amount-input-wrapper .form-control {
-        padding-right: 5.5rem;
-    }
-
-    .amount-currency {
-        position: absolute;
-        right: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--text-muted);
-    }
-
-    .amount-preview {
-        background: #f8fafc;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 0.875rem 1rem;
-        margin-top: 0.75rem;
-    }
-
-    .ap-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.875rem;
-        padding: 0.35rem 0;
-    }
-
-    .ap-row span:first-child {
-        color: var(--text-muted);
-    }
-
-    .ap-row strong {
-        color: var(--text);
-        font-weight: 600;
-    }
-
-    .ap-total {
-        border-top: 1px solid var(--border);
-        margin-top: 0.5rem;
-        padding-top: 0.5rem;
-    }
-
-    .ap-total strong {
-        color: var(--primary);
-        font-size: 1rem;
-    }
-
-    .fixed-amount {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        padding: 1rem;
-        background: #f0fdf4;
-        border: 1px solid #bbf7d0;
-        border-radius: var(--radius);
-    }
-
-    .fa-value {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #166534;
-    }
-
-    .fa-detail {
-        font-size: 0.8rem;
-        color: #15803d;
-    }
-
-    .fixed-duration {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        padding: 0.75rem 1rem;
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-    }
-
-    .fd-value {
-        font-size: 0.95rem;
-        font-weight: 500;
-        color: var(--text);
-    }
-
-    .fd-detail {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-    }
-
-    .char-count {
-        display: block;
-        text-align: right;
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-top: 0.25rem;
-    }
-
-    .fees-summary {
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1rem;
-        margin: 1.5rem 0;
-    }
-
-    .fs-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0 0 0.75rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .fs-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem 0;
-        font-size: 0.875rem;
-    }
-
-    .fs-row span:first-child {
-        color: var(--text-muted);
-    }
-
-    .fs-row span:last-child {
-        font-weight: 500;
-        color: var(--text);
-    }
-
-    .fs-total {
-        border-top: 1px solid var(--border);
-        margin-top: 0.5rem;
-        padding-top: 0.75rem;
-    }
-
-    .fs-total span:first-child {
-        font-weight: 600;
-        color: var(--text);
-    }
-
-    .fs-total-value {
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: var(--primary) !important;
-    }
-
-    .payment-loading, #payment-polling {
-        text-align: center;
-        padding: 2rem;
-        color: var(--text-muted);
-    }
-
-    .spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid var(--border);
-        border-top-color: var(--primary);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 1rem;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    #kkiapay-widget-container {
-        min-height: 400px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .form-actions {
-        margin-top: 1.5rem;
-    }
-
-    .btn-block {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .form-note {
-        text-align: center;
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-top: 0.75rem;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 2rem;
-    }
-
-    .empty-icon {
-        color: var(--text-muted);
-        margin-bottom: 1rem;
-    }
-
-    .empty-state h3 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0 0 0.5rem;
-    }
-
-    .empty-state p {
-        font-size: 0.875rem;
-        color: var(--text-muted);
-        margin: 0 0 1rem;
-    }
-
-    #step-form {
-        animation: slideDown 0.3s ease-out;
-    }
-
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @media (max-width: 640px) {
-        .financement-card {
-            padding: 1rem;
-        }
-
-        .financement-icon {
-            width: 40px;
-            height: 40px;
-        }
-
-        .form-row {
-            grid-template-columns: 1fr;
-        }
-
-        .companies-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+}
 </style>
 @endsection

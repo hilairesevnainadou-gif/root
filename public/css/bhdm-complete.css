@@ -1,0 +1,1293 @@
+/* ============================================
+   BHDM - CSS COMPLET AVEC ANIMATIONS
+   Version: 1.0.0
+   ============================================ */
+
+/* ============================================
+   1. VARIABLES & RESET
+   ============================================ */
+:root {
+    /* Couleurs principales */
+    --primary: #1e40af;
+    --primary-light: #3b82f6;
+    --primary-dark: #1e3a8a;
+
+    /* Couleurs de danger/déconnexion */
+    --danger: #dc2626;
+    --danger-light: #ef4444;
+    --danger-bg: #fee2e2;
+    --danger-border: #fca5a5;
+
+    /* Couleurs neutres */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-dark: #0f172a;
+    --bg-dark-secondary: #1e293b;
+
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-light: #94a3b8;
+
+    /* Espacements */
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+
+    /* Ombres */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+    --transition-spring: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    line-height: 1.5;
+    overflow-x: hidden;
+}
+
+/* ============================================
+   2. ANIMATIONS GLOBALES
+   ============================================ */
+
+/* Fade In Up */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Fade In Scale */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Slide In Left */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Slide In Right */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Slide In Up */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Pulse */
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+/* Shake */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Spin */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Bounce */
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Ripple */
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Float */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Glow */
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(59, 130, 246, 0.4); }
+}
+
+/* ============================================
+   3. TRANSITIONS DE PAGES
+   ============================================ */
+
+/* Overlay de transition */
+.page-transition {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-primary);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.page-transition.active {
+    display: flex;
+    opacity: 1;
+}
+
+.transition-spinner {
+    width: 50px;
+    height: 50px;
+    color: var(--primary);
+    animation: fadeInScale 0.3s ease;
+}
+
+/* Auth Transition (Connexion) */
+.auth-transition {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.auth-transition.active {
+    display: flex;
+    opacity: 1;
+}
+
+.auth-transition.fade-out {
+    opacity: 0;
+}
+
+.auth-transition-content {
+    text-align: center;
+    animation: fadeInUp 0.6s ease;
+}
+
+.auth-logo {
+    width: 80px;
+    height: 80px;
+    background: white;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    animation: float 3s ease-in-out infinite;
+}
+
+.auth-welcome {
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    opacity: 0.95;
+}
+
+.auth-loading-bar {
+    width: 200px;
+    height: 4px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.auth-loading-progress {
+    height: 100%;
+    background: white;
+    border-radius: 2px;
+    width: 0%;
+    animation: loadingProgress 2s ease-in-out forwards;
+}
+
+@keyframes loadingProgress {
+    0% { width: 0%; }
+    50% { width: 60%; }
+    100% { width: 100%; }
+}
+
+/* Classes de transition pour le body */
+body.transition-slide-left {
+    animation: slideOutLeft 0.4s ease forwards;
+}
+
+body.transition-slide-right {
+    animation: slideOutRight 0.4s ease forwards;
+}
+
+body.transition-slide-up {
+    animation: slideOutUp 0.4s ease forwards;
+}
+
+body.transition-scale-up {
+    animation: scaleOut 0.4s ease forwards;
+}
+
+body.transition-fade {
+    animation: fadeOut 0.4s ease forwards;
+}
+
+@keyframes slideOutLeft {
+    to { transform: translateX(-20px); opacity: 0; }
+}
+
+@keyframes slideOutRight {
+    to { transform: translateX(20px); opacity: 0; }
+}
+
+@keyframes slideOutUp {
+    to { transform: translateY(-20px); opacity: 0; }
+}
+
+@keyframes scaleOut {
+    to { transform: scale(0.95); opacity: 0; }
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; }
+}
+
+/* ============================================
+   4. HEADER & NAVIGATION
+   ============================================ */
+
+.mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-primary);
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    padding-top: calc(0.75rem + var(--safe-top));
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.mobile-header.header-scrolled {
+    box-shadow: var(--shadow-md);
+    background: rgba(255, 255, 255, 0.95);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+.mobile-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    animation: fadeInDown 0.5s ease;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mobile-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.header-logo-fallback {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 800;
+    font-size: 1.125rem;
+    flex-shrink: 0;
+    animation: fadeInScale 0.5s ease 0.1s both;
+}
+
+.mobile-header-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    animation: fadeInRight 0.5s ease 0.2s both;
+}
+
+@keyframes fadeInRight {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* ============================================
+   5. BOUTON DÉCONNEXION HEADER
+   ============================================ */
+
+.btn-logout-header {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: linear-gradient(135deg, var(--danger-bg) 0%, #fecaca 100%);
+    border: 1.5px solid var(--danger-border);
+    color: var(--danger);
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.05);
+    position: relative;
+    overflow: hidden;
+    animation: fadeInScale 0.4s ease 0.3s both;
+}
+
+.btn-logout-header:hover {
+    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+    border-color: #f87171;
+}
+
+.btn-logout-header:active {
+    transform: scale(0.96) translateY(0);
+}
+
+.btn-logout-header svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+}
+
+.btn-logout-header:hover svg {
+    transform: translateX(2px);
+}
+
+.logout-label {
+    display: inline;
+}
+
+/* Ripple effect */
+.btn-logout-header .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(220, 38, 38, 0.3);
+    transform: scale(0);
+    animation: ripple 0.6s ease-out;
+    pointer-events: none;
+}
+
+/* Responsive */
+@media (max-width: 380px) {
+    .btn-logout-header {
+        padding: 8px;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+    }
+
+    .logout-label {
+        display: none;
+    }
+
+    .btn-logout-header svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* ============================================
+   6. NAVIGATION MOBILE ANIMÉE
+   ============================================ */
+
+.mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-primary);
+    border-top: 1px solid #e2e8f0;
+    padding: 0.5rem 1rem calc(0.5rem + var(--safe-bottom));
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 90;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+    animation: slideInUp 0.5s ease 0.4s both;
+}
+
+.mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 0.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    flex: 1;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.mobile-nav-item:hover {
+    color: var(--primary);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.mobile-nav-item.active {
+    color: var(--primary);
+}
+
+/* Animation de l'icône */
+.nav-icon-wrapper {
+    position: relative;
+    padding: 8px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.mobile-nav-item.active .nav-icon-wrapper {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+    transform: translateY(-4px);
+}
+
+.mobile-nav-item svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 2;
+    transition: all 0.3s ease;
+}
+
+.mobile-nav-item.active svg {
+    stroke-width: 2.5;
+    filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+}
+
+/* Indicateur actif (point) */
+.mobile-nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    width: 4px;
+    height: 4px;
+    background: var(--primary);
+    border-radius: 50%;
+    animation: bounce 0.5s ease;
+}
+
+/* Bouton principal (+) */
+.nav-item-primary {
+    margin-top: -20px;
+}
+
+.nav-icon-bg {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+    transition: all 0.3s ease;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.nav-item-primary:hover .nav-icon-bg {
+    transform: scale(1.1) translateY(-4px);
+    box-shadow: 0 12px 30px rgba(59, 130, 246, 0.5);
+    animation: none;
+}
+
+.nav-item-primary:active .nav-icon-bg {
+    transform: scale(0.95);
+}
+
+.nav-icon-bg svg {
+    width: 28px;
+    height: 28px;
+}
+
+/* Anneau de pulse */
+.nav-pulse-ring {
+    position: absolute;
+    inset: -4px;
+    border: 2px solid var(--primary);
+    border-radius: 50%;
+    opacity: 0;
+    animation: pulseRing 2s ease-out infinite;
+}
+
+@keyframes pulseRing {
+    0% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(1.3);
+        opacity: 0;
+    }
+}
+
+/* Ripple sur les items */
+.mobile-nav-item .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(59, 130, 246, 0.2);
+    transform: scale(0);
+    animation: ripple 0.6s ease-out;
+    pointer-events: none;
+}
+
+/* ============================================
+   7. MODAL DÉCONNEXION PREMIUM
+   ============================================ */
+
+.modal-logout {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-logout.active {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-logout-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-logout-content {
+    position: relative;
+    background: var(--bg-primary);
+    border-radius: 24px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow:
+        var(--shadow-xl),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 1001;
+    animation: modalEnter 0.4s ease;
+}
+
+@keyframes modalEnter {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-logout.active .modal-logout-content {
+    transform: scale(1) translateY(0);
+}
+
+/* Icône animée */
+.modal-logout-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--danger-bg) 0%, #fecaca 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 10px 30px rgba(220, 38, 38, 0.25);
+    animation: iconPulse 2s ease-in-out infinite, iconFloat 3s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+    0%, 100% {
+        box-shadow: 0 10px 30px rgba(220, 38, 38, 0.25);
+    }
+    50% {
+        box-shadow: 0 15px 40px rgba(220, 38, 38, 0.35);
+    }
+}
+
+@keyframes iconFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.modal-logout-icon svg {
+    width: 40px;
+    height: 40px;
+    color: var(--danger);
+    stroke-width: 2;
+    animation: iconShake 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes iconShake {
+    from { transform: rotate(-5deg); }
+    to { transform: rotate(5deg); }
+}
+
+/* Titre et texte */
+.modal-logout-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    animation: fadeInUp 0.4s ease 0.1s both;
+}
+
+.modal-logout-text {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.75rem;
+    padding: 0 0.5rem;
+    animation: fadeInUp 0.4s ease 0.2s both;
+}
+
+/* Actions */
+.modal-logout-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    animation: fadeInUp 0.4s ease 0.3s both;
+}
+
+@media (min-width: 400px) {
+    .modal-logout-actions {
+        flex-direction: row;
+        gap: 1rem;
+    }
+}
+
+/* Boutons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: 12px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    text-decoration: none;
+    white-space: nowrap;
+    flex: 1;
+    min-height: 48px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1.5px solid #e2e8f0;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+    color: #334155;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-secondary:active {
+    transform: scale(0.98) translateY(0);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger) 0%, var(--danger-light) 100%);
+    color: white;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #b91c1c 0%, var(--danger) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.45);
+}
+
+.btn-danger:active {
+    transform: scale(0.98) translateY(0);
+}
+
+.btn-danger:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Loader dans le bouton */
+.btn-loader {
+    display: none;
+}
+
+.btn.loading .btn-text {
+    opacity: 0;
+}
+
+.btn.loading .btn-loader {
+    display: flex;
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+/* Ripple sur les boutons */
+.btn .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(0);
+    animation: ripple 0.6s ease-out;
+    pointer-events: none;
+}
+
+/* Animation de fermeture */
+.modal-logout.closing {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-logout.closing .modal-logout-content {
+    transform: scale(0.95) translateY(10px);
+    transition: transform 0.3s ease;
+}
+
+/* Shake sur erreur */
+.modal-logout-content.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* ============================================
+   8. CONTENU PRINCIPAL & ALERTES
+   ============================================ */
+
+.main-content {
+    min-height: calc(100vh - 60px - 80px);
+    padding-bottom: 100px;
+    animation: fadeIn 0.5s ease;
+}
+
+.page-content {
+    padding: 1rem;
+    animation: fadeInUp 0.5s ease 0.2s both;
+}
+
+/* Alertes animées */
+.alert {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    position: relative;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: all 0.4s ease;
+}
+
+.alert-enter {
+    opacity: 0;
+    transform: translateX(-20px);
+}
+
+.alert-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.alert-success {
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    color: #166534;
+}
+
+.alert-error {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+}
+
+.alert-dismissible {
+    padding-right: 3rem;
+}
+
+.alert-close {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: currentColor;
+    opacity: 0.5;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.alert-close:hover {
+    opacity: 1;
+    background: rgba(0,0,0,0.05);
+}
+
+/* ============================================
+   9. OFFLINE BANNER
+   ============================================ */
+
+.offline-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #f59e0b;
+    color: white;
+    padding: 0.5rem 1rem;
+    padding-top: calc(0.5rem + var(--safe-top));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    z-index: 200;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+}
+
+.offline-banner.show {
+    transform: translateY(0);
+}
+
+.offline-banner svg {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ============================================
+   10. IOS INSTALL PROMPT
+   ============================================ */
+
+.ios-prompt {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(150%);
+    z-index: 1000;
+    width: 90%;
+    max-width: 340px;
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ios-prompt.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.ios-prompt-content {
+    background: var(--bg-primary);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-xl);
+    position: relative;
+    animation: fadeInScale 0.4s ease;
+}
+
+.ios-prompt-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.ios-prompt-close:hover {
+    background: #f1f5f9;
+    color: var(--text-primary);
+}
+
+.ios-prompt-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.ios-app-icon {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    animation: float 3s ease-in-out infinite;
+}
+
+.ios-prompt-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.ios-prompt-header p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.ios-prompt-steps {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.ios-step {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.ios-step:last-child {
+    margin-bottom: 0;
+}
+
+.ios-step-number {
+    background: var(--primary);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.ios-step span {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    flex: 1;
+}
+
+.ios-step svg {
+    color: var(--text-secondary);
+    margin-left: auto;
+}
+
+/* ============================================
+   11. DARK MODE
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: #1e293b;
+        --bg-secondary: #0f172a;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+    }
+
+    .mobile-header {
+        background: var(--bg-primary);
+        border-bottom-color: #334155;
+    }
+
+    .mobile-header.header-scrolled {
+        background: rgba(30, 41, 59, 0.95);
+    }
+
+    .btn-logout-header {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: rgba(239, 68, 68, 0.25);
+        color: #f87171;
+    }
+
+    .btn-logout-header:hover {
+        background: rgba(239, 68, 68, 0.25);
+        border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    .mobile-nav {
+        background: var(--bg-primary);
+        border-top-color: #334155;
+    }
+
+    .mobile-nav-item:hover {
+        background: rgba(59, 130, 246, 0.1);
+    }
+
+    .mobile-nav-item.active .nav-icon-wrapper {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+    }
+
+    .modal-logout-backdrop {
+        background: rgba(0, 0, 0, 0.85);
+    }
+
+    .modal-logout-content {
+        background: var(--bg-primary);
+        box-shadow:
+            0 25px 50px -12px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    }
+
+    .modal-logout-icon {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.3));
+    }
+
+    .btn-secondary {
+        background: #334155;
+        color: #cbd5e1;
+        border-color: #475569;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+        color: #f1f5f9;
+    }
+
+    .ios-prompt-content {
+        background: var(--bg-primary);
+    }
+
+    .ios-prompt-steps {
+        background: var(--bg-secondary);
+    }
+
+    .alert-success {
+        background: rgba(34, 197, 94, 0.2);
+        border-color: rgba(34, 197, 94, 0.3);
+        color: #86efac;
+    }
+
+    .alert-error {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+    }
+}
+
+/* ============================================
+   12. UTILITAIRES & ACCESSIBILITÉ
+   ============================================ */
+
+.hidden {
+    display: none !important;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Focus visible */
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ============================================
+   13. RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (min-width: 768px) {
+    .mobile-nav {
+        display: none;
+    }
+
+    .main-content {
+        padding-bottom: 1rem;
+    }
+}
+
+/* Safe area pour les appareils modernes */
+@supports (padding: max(0px)) {
+    .mobile-header {
+        padding-top: max(0.75rem, var(--safe-top));
+    }
+
+    .mobile-nav {
+        padding-bottom: max(0.5rem, var(--safe-bottom));
+    }
+}

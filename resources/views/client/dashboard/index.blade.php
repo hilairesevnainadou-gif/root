@@ -19,14 +19,14 @@
 @endphp
 
 <div class="dashboard-mobile">
-    
+
     {{-- En-tête avec salutation --}}
     <div class="dashboard-header">
         <div class="user-greeting">
             <h1>{{ $greeting }}, <span class="user-name">{{ $user->first_name }}</span></h1>
             <p class="user-status">
                 @if($stats['active_requests'] > 0)
-                    <span class="status-badge pulse">{{ $stats['active_requests'] }}</span> 
+                    <span class="status-badge pulse">{{ $stats['active_requests'] }}</span>
                     demande{{ $stats['active_requests'] > 1 ? 's' : '' }} active{{ $stats['active_requests'] > 1 ? 's' : '' }}
                 @else
                     Prêt à démarrer ?
@@ -40,16 +40,33 @@
         </a>
     </div>
 
-    {{-- Carte Portefeuille Compacte (visible si pas dans le layout) --}}
-    @if(!isset($financialSummary))
-        <div class="wallet-mini">
-            <div class="wallet-mini-content">
-                <span class="wallet-mini-label">Solde disponible</span>
-                <span class="wallet-mini-value">--</span>
+    {{-- Carte Portefeuille --}}
+    @if(isset($financialSummary))
+        <div class="wallet-card-compact">
+            <div class="wallet-card-header">
+                <div class="wallet-info">
+                    <span class="wallet-label">Solde disponible</span>
+                    <span class="wallet-value">{{ $financialSummary['formatted_balance'] }}</span>
+                    @if(!$financialSummary['has_wallet'])
+                        <span class="wallet-status">Portefeuille non activé</span>
+                    @endif
+                </div>
+                <div class="wallet-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                </div>
             </div>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-            </svg>
+            <div class="wallet-stats-row">
+                <div class="wallet-stat-item">
+                    <span class="wallet-stat-value">{{ $stats['active_requests'] ?? 0 }}</span>
+                    <span class="wallet-stat-label">Demandes actives</span>
+                </div>
+                <div class="wallet-stat-item">
+                    <span class="wallet-stat-value">{{ $stats['success_rate']['value'] ?? 0 }}%</span>
+                    <span class="wallet-stat-label">Taux de succès</span>
+                </div>
+            </div>
         </div>
     @endif
 
@@ -63,7 +80,7 @@
             </div>
             <span>Portefeuille</span>
         </a>
-        
+
         <a href="{{ route('client.requests.index') }}" class="action-chip">
             <div class="action-icon action-green">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
@@ -101,6 +118,9 @@
                                 @case('notification')
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                                     @break
+                                @case('profile')
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    @break
                                 @default
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             @endswitch
@@ -129,10 +149,10 @@
                     </svg>
                 </div>
                 <div class="stat-tile-info">
-                    <span class="stat-tile-value">{{ $stats['total_requests']['value'] }}</span>
+                    <span class="stat-tile-value">{{ $stats['total_requests']['value'] ?? 0 }}</span>
                     <span class="stat-tile-label">Total demandes</span>
                 </div>
-                @if($stats['total_requests']['trend'] != 0)
+                @if(($stats['total_requests']['trend'] ?? 0) != 0)
                     <span class="stat-trend-mini {{ $stats['total_requests']['trend'] > 0 ? 'up' : 'down' }}">
                         {{ $stats['total_requests']['trend'] > 0 ? '+' : '' }}{{ $stats['total_requests']['trend'] }}%
                     </span>
@@ -146,7 +166,7 @@
                     </svg>
                 </div>
                 <div class="stat-tile-info">
-                    <span class="stat-tile-value">{{ $stats['total_funded']['formatted'] }}</span>
+                    <span class="stat-tile-value">{{ $stats['total_funded']['formatted'] ?? '0 FCFA' }}</span>
                     <span class="stat-tile-label">Financé</span>
                 </div>
             </div>
@@ -158,11 +178,16 @@
                     </svg>
                 </div>
                 <div class="stat-tile-info">
-                    <span class="stat-tile-value">{{ $stats['success_rate']['value'] }}%</span>
+                    <span class="stat-tile-value">{{ $stats['success_rate']['value'] ?? 0 }}%</span>
                     <span class="stat-tile-label">Taux réussite</span>
                 </div>
-                <span class="stat-badge {{ $stats['success_rate']['value'] >= 70 ? 'excellent' : ($stats['success_rate']['value'] >= 40 ? 'good' : 'low') }}">
-                    {{ $stats['success_rate']['label'] }}
+                @php
+                    $successRate = $stats['success_rate']['value'] ?? 0;
+                    $badgeClass = $successRate >= 70 ? 'excellent' : ($successRate >= 40 ? 'good' : 'low');
+                    $badgeText = $successRate >= 70 ? 'Excellent' : ($successRate >= 40 ? 'Bon' : 'À améliorer');
+                @endphp
+                <span class="stat-badge {{ $badgeClass }}">
+                    {{ $badgeText }}
                 </span>
             </div>
 
@@ -173,7 +198,7 @@
                     </svg>
                 </div>
                 <div class="stat-tile-info">
-                    <span class="stat-tile-value">{{ $stats['active_requests'] }}</span>
+                    <span class="stat-tile-value">{{ $stats['active_requests'] ?? 0 }}</span>
                     <span class="stat-tile-label">En cours</span>
                 </div>
             </div>
@@ -181,13 +206,13 @@
     </div>
 
     {{-- Demandes Actives --}}
-    @if($activeRequests->count() > 0)
+    @if(isset($activeRequests) && $activeRequests->count() > 0)
         <div class="requests-section">
             <div class="section-header-row">
                 <h2 class="section-title">Demandes en cours</h2>
                 <a href="{{ route('client.requests.index') }}" class="link-see-all">Voir tout</a>
             </div>
-            
+
             <div class="requests-list-mobile">
                 @foreach($activeRequests->take(3) as $request)
                     <div class="request-item-mobile">
@@ -196,10 +221,10 @@
                                 <span class="request-number">{{ $request->request_number }}</span>
                                 <span class="badge-status badge-{{ $request->status }}">{{ $request->progress_label }}</span>
                             </div>
-                            <h4 class="request-title-mobile">{{ Str::limit($request->title, 35) }}</h4>
+                            <h4 class="request-title-mobile">{{ \Illuminate\Support\Str::limit($request->title, 35) }}</h4>
                             <span class="request-type-tag">{{ $request->typeFinancement->name ?? 'Non défini' }}</span>
                         </div>
-                        
+
                         <div class="request-progress-compact">
                             <div class="progress-bar-mini">
                                 <div class="progress-fill-mini" style="width: {{ $request->progress }}%"></div>
@@ -222,7 +247,7 @@
     @endif
 
     {{-- Activités Récentes --}}
-    @if($recentActivities->count() > 0)
+    @if(isset($recentActivities) && $recentActivities->count() > 0)
         <div class="activities-section">
             <h2 class="section-title">Activités récentes</h2>
             <div class="activities-timeline">
@@ -264,41 +289,27 @@
 @section('styles')
 <style>
     /* ============================================
-       DESIGN SYSTEM - SUPPORT CLAIR & SOMBRE
+       DASHBOARD STYLES - CORRIGÉS
        ============================================ */
-    
-    /* Variables par défaut (Mode Clair) */
+
     :root {
-        color-scheme: light dark;
-        
-        /* Couleurs primaires */
         --primary-600: #1e40af;
         --primary-500: #3b82f6;
         --primary-100: #dbeafe;
         --primary-50: #eff6ff;
-        
-        /* Couleurs de succès */
         --success-600: #059669;
         --success-500: #10b981;
         --success-100: #d1fae5;
-        
-        /* Couleurs d'avertissement */
         --warning-600: #d97706;
         --warning-500: #f59e0b;
         --warning-100: #fef3c7;
-        
-        /* Couleurs de danger */
         --danger-600: #dc2626;
         --danger-500: #ef4444;
         --danger-100: #fee2e2;
-        
-        /* Couleurs violet/orange */
         --purple-500: #8b5cf6;
         --purple-100: #ede9fe;
         --orange-500: #f97316;
         --orange-100: #ffedd5;
-        
-        /* Échelle de gris - Mode Clair */
         --gray-900: #0f172a;
         --gray-800: #1e293b;
         --gray-700: #334155;
@@ -309,8 +320,6 @@
         --gray-200: #e2e8f0;
         --gray-100: #f1f5f9;
         --gray-50: #f8fafc;
-        
-        /* Couleurs de surface et texte */
         --bg-primary: #ffffff;
         --bg-secondary: #f8fafc;
         --bg-tertiary: #f1f5f9;
@@ -321,23 +330,15 @@
         --text-muted: #94a3b8;
         --border-color: #e2e8f0;
         --border-light: #f1f5f9;
-        
-        /* Ombres */
         --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
         --shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
         --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1);
-        
-        /* Rayons */
         --radius: 16px;
         --radius-sm: 12px;
     }
 
-    /* ============================================
-       MODE SOMBRE - Détection automatique
-       ============================================ */
     @media (prefers-color-scheme: dark) {
         :root {
-            /* Échelle de gris inversée pour le dark mode */
             --gray-900: #f8fafc;
             --gray-800: #f1f5f9;
             --gray-700: #e2e8f0;
@@ -348,8 +349,6 @@
             --gray-200: #334155;
             --gray-100: #1e293b;
             --gray-50: #0f172a;
-            
-            /* Couleurs de surface et texte - Dark */
             --bg-primary: #0f172a;
             --bg-secondary: #1e293b;
             --bg-tertiary: #334155;
@@ -360,48 +359,9 @@
             --text-muted: #64748b;
             --border-color: #334155;
             --border-light: #1e293b;
-            
-            /* Ombres adaptées */
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
         }
     }
 
-    /* ============================================
-       CLASSE MANUELLE (pour toggle JS)
-       ============================================ */
-    [data-theme="dark"] {
-        --gray-900: #f8fafc;
-        --gray-800: #f1f5f9;
-        --gray-700: #e2e8f0;
-        --gray-600: #cbd5e1;
-        --gray-500: #94a3b8;
-        --gray-400: #64748b;
-        --gray-300: #475569;
-        --gray-200: #334155;
-        --gray-100: #1e293b;
-        --gray-50: #0f172a;
-        
-        --bg-primary: #0f172a;
-        --bg-secondary: #1e293b;
-        --bg-tertiary: #334155;
-        --bg-elevated: #1e293b;
-        --text-primary: #f8fafc;
-        --text-secondary: #e2e8f0;
-        --text-tertiary: #cbd5e1;
-        --text-muted: #64748b;
-        --border-color: #334155;
-        --border-light: #1e293b;
-        
-        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-    }
-
-    /* ============================================
-       STYLES DE BASE
-       ============================================ */
     .dashboard-mobile {
         padding: 16px;
         padding-bottom: 100px;
@@ -474,48 +434,104 @@
         justify-content: center;
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         transition: transform 0.2s;
+        text-decoration: none;
     }
 
     .btn-quick-action:active {
         transform: scale(0.95);
     }
 
-    /* Wallet Mini (fallback) */
-    .wallet-mini {
-        background: linear-gradient(135deg, #1e293b, #334155);
+    /* Wallet Card Compact */
+    .wallet-card-compact {
+        background: linear-gradient(145deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 20px;
         color: white;
-        padding: 16px 20px;
-        border-radius: var(--radius-sm);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 40px -10px rgba(30, 64, 175, 0.4);
+    }
+
+    .wallet-card-compact::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .wallet-card-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        border: 1px solid var(--border-color);
+        align-items: flex-start;
+        margin-bottom: 16px;
+        position: relative;
+        z-index: 1;
     }
 
-    @media (prefers-color-scheme: dark) {
-        .wallet-mini {
-            background: linear-gradient(135deg, #334155, #475569);
-        }
+    .wallet-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        opacity: 0.85;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 4px;
+        display: block;
     }
 
-    [data-theme="dark"] .wallet-mini {
-        background: linear-gradient(135deg, #334155, #475569);
+    .wallet-value {
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        display: block;
     }
 
-    .wallet-mini-label {
+    .wallet-status {
+        font-size: 0.75rem;
+        opacity: 0.8;
+        margin-top: 4px;
+        display: block;
+    }
+
+    .wallet-icon {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .wallet-stats-row {
+        display: flex;
+        gap: 24px;
+        position: relative;
+        z-index: 1;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .wallet-stat-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .wallet-stat-value {
+        font-size: 1.125rem;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    .wallet-stat-label {
         font-size: 0.75rem;
         opacity: 0.8;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: #cbd5e1;
-    }
-
-    .wallet-mini-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        display: block;
-        color: white;
     }
 
     /* Quick Actions */
@@ -606,18 +622,9 @@
         border-left-width: 4px;
     }
 
-    .alert-card-mobile.alert-error { 
-        border-left-color: var(--danger-500); 
-        background: var(--bg-elevated);
-    }
-    .alert-card-mobile.alert-warning { 
-        border-left-color: var(--warning-500); 
-        background: var(--bg-elevated);
-    }
-    .alert-card-mobile.alert-info { 
-        border-left-color: var(--primary-500); 
-        background: var(--bg-elevated);
-    }
+    .alert-card-mobile.alert-error { border-left-color: var(--danger-500); }
+    .alert-card-mobile.alert-warning { border-left-color: var(--warning-500); }
+    .alert-card-mobile.alert-info { border-left-color: var(--primary-500); }
 
     .alert-mobile-icon {
         width: 40px;
@@ -637,10 +644,6 @@
         .alert-warning .alert-mobile-icon { background: rgba(245, 158, 11, 0.25); }
         .alert-info .alert-mobile-icon { background: rgba(59, 130, 246, 0.25); }
     }
-
-    [data-theme="dark"] .alert-error .alert-mobile-icon { background: rgba(239, 68, 68, 0.25); }
-    [data-theme="dark"] .alert-warning .alert-mobile-icon { background: rgba(245, 158, 11, 0.25); }
-    [data-theme="dark"] .alert-info .alert-mobile-icon { background: rgba(59, 130, 246, 0.25); }
 
     .alert-mobile-content h4 {
         font-size: 1rem;
@@ -734,35 +737,8 @@
         border-radius: 20px;
     }
 
-    .stat-trend-mini.up {
-        background: var(--success-100);
-        color: var(--success-600);
-    }
-
-    .stat-trend-mini.down {
-        background: var(--danger-100);
-        color: var(--danger-600);
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .stat-trend-mini.up {
-            background: rgba(16, 185, 129, 0.2);
-            color: #34d399;
-        }
-        .stat-trend-mini.down {
-            background: rgba(239, 68, 68, 0.2);
-            color: #f87171;
-        }
-    }
-
-    [data-theme="dark"] .stat-trend-mini.up {
-        background: rgba(16, 185, 129, 0.2);
-        color: #34d399;
-    }
-    [data-theme="dark"] .stat-trend-mini.down {
-        background: rgba(239, 68, 68, 0.2);
-        color: #f87171;
-    }
+    .stat-trend-mini.up { background: var(--success-100); color: var(--success-600); }
+    .stat-trend-mini.down { background: var(--danger-100); color: var(--danger-600); }
 
     .stat-badge {
         position: absolute;
@@ -778,16 +754,6 @@
     .stat-badge.excellent { background: var(--success-100); color: var(--success-600); }
     .stat-badge.good { background: var(--warning-100); color: var(--warning-600); }
     .stat-badge.low { background: var(--danger-100); color: var(--danger-600); }
-
-    @media (prefers-color-scheme: dark) {
-        .stat-badge.excellent { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-        .stat-badge.good { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-        .stat-badge.low { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-    }
-
-    [data-theme="dark"] .stat-badge.excellent { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-    [data-theme="dark"] .stat-badge.good { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-    [data-theme="dark"] .stat-badge.low { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
     /* Requests Section */
     .requests-section {
@@ -855,20 +821,6 @@
     .badge-pending_committee { background: var(--purple-100); color: #6d28d9; }
     .badge-approved { background: var(--success-100); color: var(--success-600); }
 
-    @media (prefers-color-scheme: dark) {
-        .badge-draft { background: rgba(51, 65, 85, 0.5); color: var(--text-secondary); }
-        .badge-submitted { background: rgba(30, 64, 175, 0.3); color: #60a5fa; }
-        .badge-under_review { background: rgba(217, 119, 6, 0.3); color: #fbbf24; }
-        .badge-pending_committee { background: rgba(139, 92, 246, 0.3); color: #a78bfa; }
-        .badge-approved { background: rgba(5, 150, 105, 0.3); color: #34d399; }
-    }
-
-    [data-theme="dark"] .badge-draft { background: rgba(51, 65, 85, 0.5); color: var(--text-secondary); }
-    [data-theme="dark"] .badge-submitted { background: rgba(30, 64, 175, 0.3); color: #60a5fa; }
-    [data-theme="dark"] .badge-under_review { background: rgba(217, 119, 6, 0.3); color: #fbbf24; }
-    [data-theme="dark"] .badge-pending_committee { background: rgba(139, 92, 246, 0.3); color: #a78bfa; }
-    [data-theme="dark"] .badge-approved { background: rgba(5, 150, 105, 0.3); color: #34d399; }
-
     .request-title-mobile {
         font-size: 1rem;
         font-weight: 600;
@@ -933,26 +885,6 @@
 
     .request-action-btn:active {
         background: var(--primary-100);
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .request-action-btn {
-            background: rgba(30, 64, 175, 0.2);
-            color: #60a5fa;
-            border-color: rgba(30, 64, 175, 0.3);
-        }
-        .request-action-btn:active {
-            background: rgba(30, 64, 175, 0.3);
-        }
-    }
-
-    [data-theme="dark"] .request-action-btn {
-        background: rgba(30, 64, 175, 0.2);
-        color: #60a5fa;
-        border-color: rgba(30, 64, 175, 0.3);
-    }
-    [data-theme="dark"] .request-action-btn:active {
-        background: rgba(30, 64, 175, 0.3);
     }
 
     /* Activities */
@@ -1070,16 +1002,12 @@
         box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
     }
 
-    /* Responsive adjustments */
+    /* Responsive */
     @media (min-width: 640px) {
         .dashboard-mobile {
             padding: 24px;
             max-width: 600px;
             margin: 0 auto;
-        }
-
-        .quick-actions {
-            grid-template-columns: repeat(3, 1fr);
         }
 
         .stats-grid-mobile {
@@ -1088,18 +1016,6 @@
 
         .alert-card-mobile {
             flex: 0 0 45%;
-        }
-    }
-
-    @media (min-width: 1024px) {
-        .dashboard-mobile {
-            max-width: 900px;
-        }
-
-        .two-columns-desktop {
-            display: grid;
-            grid-template-columns: 1.5fr 1fr;
-            gap: 24px;
         }
     }
 </style>

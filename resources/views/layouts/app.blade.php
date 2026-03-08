@@ -18,509 +18,38 @@
     <link rel="apple-touch-icon" href="{{ asset('icons/icon-192x192.png') }}">
     <link rel="icon" type="image/png" href="{{ asset('icons/icon-72x72.png') }}">
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/mobile.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/pwa.css') }}">
+    <!-- Styles Uniques -->
+    <link rel="stylesheet" href="{{ asset('css/bhdm-complete.css') }}">
+
     @yield('styles')
-
-    <style>
-        /* ============================================
-           DESIGN SYSTEM - VARIABLES
-           ============================================ */
-        :root {
-            --primary-600: #1e40af;
-            --primary-500: #3b82f6;
-            --primary-50: #eff6ff;
-            --success-500: #10b981;
-            --warning-500: #f59e0b;
-            --danger-500: #ef4444;
-            --gray-900: #0f172a;
-            --gray-700: #334155;
-            --gray-500: #64748b;
-            --gray-400: #94a3b8;
-            --gray-200: #e2e8f0;
-            --gray-100: #f1f5f9;
-            --radius: 16px;
-            --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1);
-        }
-
-        /* ============================================
-           HEADER PREMIUM
-           ============================================ */
-        .mobile-header {
-            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-500) 100%);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .mobile-header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            height: 56px;
-        }
-
-        .brand-logo {
-            height: 32px;
-            width: auto;
-            filter: brightness(0) invert(1);
-            object-fit: contain;
-        }
-
-        .mobile-header-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .header-logo-fallback {
-            display: none;
-            width: 32px;
-            height: 32px;
-            background: white;
-            border-radius: 8px;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary-600);
-            font-weight: 800;
-            font-size: 1.125rem;
-        }
-
-        .mobile-header-title {
-            color: rgba(255, 255, 255, 0.95);
-            font-weight: 600;
-            font-size: 1.125rem;
-            letter-spacing: -0.025em;
-        }
-
-        /* Bouton Déconnexion */
-        .btn-logout-header {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 8px 14px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            backdrop-filter: blur(10px);
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .btn-logout-header:active {
-            background: rgba(255, 255, 255, 0.25);
-            transform: scale(0.98);
-        }
-
-        .logout-label {
-            display: none;
-        }
-
-        @media (min-width: 380px) {
-            .logout-label {
-                display: inline;
-            }
-        }
-
-        /* ============================================
-           CARTE PORTEFEUILLE
-           ============================================ */
-        .wallet-card {
-            background: linear-gradient(145deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
-            border-radius: 20px;
-            padding: 24px;
-            margin: 16px;
-            color: white;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 20px 40px -10px rgba(30, 64, 175, 0.4);
-        }
-
-        .wallet-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -20%;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-
-        .wallet-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .wallet-label {
-            font-size: 0.875rem;
-            font-weight: 500;
-            opacity: 0.85;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 8px;
-        }
-
-        .wallet-balance {
-            font-size: 2rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            line-height: 1;
-        }
-
-        .wallet-icon {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border-radius: 14px;
-            padding: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .wallet-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            position: relative;
-            z-index: 1;
-            padding-top: 16px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .wallet-stat-value {
-            font-size: 1.125rem;
-            font-weight: 700;
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .wallet-stat-label {
-            font-size: 0.75rem;
-            opacity: 0.8;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        /* ============================================
-           NAVIGATION MOBILE
-           ============================================ */
-        .mobile-nav {
-            background: white;
-            border-top: 1px solid var(--gray-200);
-            padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            display: flex;
-            justify-content: space-around;
-            align-items: flex-end;
-        }
-
-        .mobile-nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            padding: 8px 4px;
-            color: var(--gray-400);
-            font-size: 0.6875rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-
-        .mobile-nav-item.active {
-            color: var(--primary-600);
-        }
-
-        .mobile-nav-item svg {
-            width: 24px;
-            height: 24px;
-            stroke-width: 2;
-        }
-
-        .nav-item-primary {
-            position: relative;
-            top: -16px;
-            color: var(--primary-600);
-        }
-
-        .nav-icon-bg {
-            background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
-            border-radius: 50%;
-            width: 56px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
-            color: white;
-            margin-bottom: 4px;
-        }
-
-        /* ============================================
-           MODALS
-           ============================================ */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 1000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 24px;
-            padding: 32px 24px;
-            max-width: 340px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            position: relative;
-            z-index: 1;
-            animation: modalSlideUp 0.3s ease-out;
-        }
-
-        @keyframes modalSlideUp {
-            from { opacity: 0; transform: translateY(20px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        .modal-icon-danger {
-            background: #fef2f2;
-            color: var(--danger-500);
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
-
-        .modal-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: 8px;
-        }
-
-        .modal-text {
-            color: var(--gray-600);
-            font-size: 0.9375rem;
-            line-height: 1.5;
-            margin-bottom: 24px;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 14px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.9375rem;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-secondary {
-            background: var(--gray-100);
-            color: var(--gray-700);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #dc2626, var(--danger-500));
-            color: white;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-        }
-
-        /* ============================================
-           OFFLINE BANNER
-           ============================================ */
-        .offline-banner {
-            background: var(--gray-900);
-            color: white;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            position: sticky;
-            top: 0;
-            z-index: 99;
-        }
-
-        .offline-banner.hidden {
-            display: none;
-        }
-
-        /* ============================================
-           ALERTES
-           ============================================ */
-        .alert {
-            margin: 16px;
-            padding: 16px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.9375rem;
-            animation: slideUp 0.4s ease-out;
-        }
-
-        .alert-success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
-        }
-
-        .alert-error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-        }
-
-        .alert-close {
-            margin-left: auto;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            opacity: 0.6;
-        }
-
-        /* ============================================
-           iOS INSTALL PROMPT
-           ============================================ */
-        .ios-prompt {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 1001;
-            display: none;
-            padding: 20px;
-            animation: slideUp 0.5s ease-out;
-        }
-
-        .ios-prompt-content {
-            background: white;
-            border-radius: 24px;
-            padding: 24px;
-            max-width: 360px;
-            margin: 0 auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
-            position: relative;
-        }
-
-        .ios-prompt-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: var(--gray-400);
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
-        /* ============================================
-           UTILITAIRES
-           ============================================ */
-        .main-content {
-            min-height: calc(100vh - 56px);
-            padding-bottom: 100px;
-        }
-
-        .page-content {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.4s ease;
-        }
-
-        .page-content.loaded {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-
-        /* Bouton flottant installation PWA */
-        #pwa-install-btn {
-            position: fixed;
-            bottom: 100px;
-            right: 16px;
-            background: linear-gradient(135deg, #1e40af, #3b82f6);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
-            z-index: 999;
-            display: none;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-
-        #pwa-install-btn:active {
-            transform: scale(0.95);
-        }
-    </style>
 </head>
 
-<body>
+<body class="bhdm-app">
+    <!-- Page Transition Overlay -->
+    <div id="page-transition" class="page-transition">
+        <div class="transition-spinner">
+            <svg viewBox="0 0 50 50">
+                <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">
+                    <animate attributeName="stroke-dasharray" values="1,150;90,150;90,150" dur="1.5s" repeatCount="indefinite"/>
+                    <animate attributeName="stroke-dashoffset" values="0;-35;-124" dur="1.5s" repeatCount="indefinite"/>
+                </circle>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Auth Transition (pour la connexion) -->
+    <div id="auth-transition" class="auth-transition">
+        <div class="auth-transition-content">
+            <div class="auth-logo">B</div>
+            <div class="auth-welcome">Bienvenue sur BHDM</div>
+            <div class="auth-loading-bar">
+                <div class="auth-loading-progress"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Offline Banner -->
-    <div id="offline-banner" class="offline-banner hidden">
+    <div id="offline-banner" class="offline-banner">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
@@ -528,12 +57,10 @@
         <span>Connexion interrompue - Mode hors ligne</span>
     </div>
 
-    <!-- Header -->
+    <!-- Header Premium -->
     <header class="mobile-header">
         <div class="mobile-header-content">
             <div class="mobile-header-brand">
-                <img src="{{ asset('images/logo.png') }}" alt="BHDM" class="brand-logo"
-                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                 <div class="header-logo-fallback">B</div>
                 <span class="mobile-header-title">@yield('header-title', 'Mon Espace')</span>
             </div>
@@ -545,18 +72,18 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    <span class="logout-label">Deconnecte</span>
+                    <span class="logout-label">Sortir</span>
                 </button>
                 @endauth
             </div>
         </div>
     </header>
 
-    <!-- Contenu Principal -->
+    <!-- Contenu Principal avec animation de page -->
     <main class="main-content" id="main-content">
         <div class="page-content" id="page-content">
             @if(session('success'))
-            <div class="alert alert-success alert-dismissible">
+            <div class="alert alert-success alert-dismissible alert-enter">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
@@ -566,7 +93,7 @@
             @endif
 
             @if(session('error'))
-            <div class="alert alert-error alert-dismissible">
+            <div class="alert alert-error alert-dismissible alert-enter">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -575,70 +102,43 @@
             </div>
             @endif
 
-            <!-- Wallet Card -->
-            @if(request()->routeIs('client.dashboard') && isset($financialSummary))
-            <div class="wallet-card">
-                <div class="wallet-header">
-                    <div>
-                        <div class="wallet-label">Solde disponible</div>
-                        <div class="wallet-balance">
-                            {{ $financialSummary['formatted_balance'] }}
-                        </div>
-                        @if(!$financialSummary['has_wallet'])
-                        <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 4px;">
-                            Portefeuille non activé
-                        </div>
-                        @endif
-                    </div>
-                    <div class="wallet-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="wallet-stats">
-                    <div class="wallet-stat">
-                        <span class="wallet-stat-value">{{ $stats['active_requests'] ?? 0 }}</span>
-                        <span class="wallet-stat-label">Demandes actives</span>
-                    </div>
-                    <div class="wallet-stat">
-                        <span class="wallet-stat-value">{{ $stats['success_rate']['value'] ?? 0 }}%</span>
-                        <span class="wallet-stat-label">Taux de succès</span>
-                    </div>
-                </div>
-            </div>
-            @endif
-
             @yield('content')
         </div>
     </main>
 
-    <!-- Navigation Mobile -->
+    <!-- Navigation Mobile avec animations -->
     @auth
     @if(!auth()->user()->is_admin && !auth()->user()->is_moderator)
     <nav class="mobile-nav">
         <a href="{{ route('client.dashboard') }}"
-            class="mobile-nav-item {{ request()->routeIs('client.dashboard') ? 'active' : '' }}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
+            class="mobile-nav-item {{ request()->routeIs('client.dashboard') ? 'active' : '' }}"
+            data-transition="slide-left">
+            <div class="nav-icon-wrapper">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+            </div>
             <span>Accueil</span>
         </a>
 
         <a href="{{ route('client.wallet.show') }}"
-            class="mobile-nav-item {{ request()->routeIs('client.wallet.show') ? 'active' : '' }}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-            </svg>
+            class="mobile-nav-item {{ request()->routeIs('client.wallet.show') ? 'active' : '' }}"
+            data-transition="slide-up">
+            <div class="nav-icon-wrapper">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+            </div>
             <span>Portefeuille</span>
         </a>
 
-        <a href="{{ route('client.requests.create') }}" class="mobile-nav-item nav-item-primary">
+        <a href="{{ route('client.requests.create') }}"
+            class="mobile-nav-item nav-item-primary"
+            data-transition="scale-up">
             <div class="nav-icon-bg">
+                <div class="nav-pulse-ring"></div>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -648,50 +148,59 @@
         </a>
 
         <a href="{{ route('client.requests.index') }}"
-            class="mobile-nav-item {{ request()->routeIs('client.requests.*') && !request()->routeIs('client.requests.create') ? 'active' : '' }}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
+            class="mobile-nav-item {{ request()->routeIs('client.requests.*') && !request()->routeIs('client.requests.create') ? 'active' : '' }}"
+            data-transition="slide-right">
+            <div class="nav-icon-wrapper">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+            </div>
             <span>Demandes</span>
         </a>
 
         <a href="{{ route('client.profile') }}"
-            class="mobile-nav-item {{ request()->routeIs('client.profile') ? 'active' : '' }}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+            class="mobile-nav-item {{ request()->routeIs('client.profile') ? 'active' : '' }}"
+            data-transition="fade">
+            <div class="nav-icon-wrapper">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+            </div>
             <span>Profil</span>
         </a>
     </nav>
     @endif
     @endauth
 
-    <!-- Modal Déconnexion -->
-    <div id="logout-modal" class="modal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div class="modal-icon-danger">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="32" height="32">
+    <!-- Modal Déconnexion Premium -->
+    <div id="logout-modal" class="modal-logout">
+        <div class="modal-logout-backdrop" id="logout-backdrop"></div>
+        <div class="modal-logout-content">
+            <div class="modal-logout-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
             </div>
 
-            <h3 class="modal-title">Déconnexion sécurisée</h3>
-            <p class="modal-text">Vous allez être déconnecté de votre espace client. Voulez-vous continuer ?</p>
+            <h3 class="modal-logout-title">Déconnexion sécurisée</h3>
+            <p class="modal-logout-text">
+                Vous allez être déconnecté de votre espace client BHDM. Toutes vos données sont sécurisées.
+            </p>
 
-            <div class="modal-actions">
+            <div class="modal-logout-actions">
                 <button type="button" class="btn btn-secondary" id="btn-cancel-logout">
                     Rester connecté
                 </button>
-                <form action="{{ route('logout') }}" method="POST" id="logout-form" style="margin: 0; flex: 1;">
+
+                <form action="{{ route('logout') }}" method="POST" id="logout-form" style="margin: 0; flex: 1; display: flex;">
                     @csrf
                     <button type="submit" class="btn btn-danger" id="btn-confirm-logout">
                         <span class="btn-text">Me déconnecter</span>
-                        <span class="btn-loader" style="display: none;">
-                            <svg class="spinner" fill="none" viewBox="0 0 24 24" width="16" height="16">
+                        <span class="btn-loader">
+                            <svg class="spinner" fill="none" viewBox="0 0 24 24" width="18" height="18">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25" />
                                 <path stroke="currentColor" stroke-width="3" stroke-linecap="round"
                                     d="M12 2a10 10 0 0110 10">
@@ -710,38 +219,209 @@
     <div id="ios-prompt" class="ios-prompt">
         <div class="ios-prompt-content">
             <button class="ios-prompt-close" id="ios-prompt-close">&times;</button>
-            <div style="text-align: center; margin-bottom: 20px;">
-                <div
-                    style="width: 64px; height: 64px; background: linear-gradient(135deg, var(--primary-600), var(--primary-500)); border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 28px; font-weight: 800; margin-bottom: 16px;">
-                    B</div>
-                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--gray-900); margin-bottom: 8px;">
-                    Installer BHDM</h3>
-                <p style="font-size: 0.875rem; color: var(--gray-500);">Ajoutez à l'écran d'accueil</p>
+            <div class="ios-prompt-header">
+                <div class="ios-app-icon">B</div>
+                <h3>Installer BHDM</h3>
+                <p>Ajoutez à l'écran d'accueil</p>
             </div>
-            <div style="background: var(--gray-100); border-radius: 12px; padding: 16px;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                    <span
-                        style="background: var(--primary-500); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 600;">1</span>
-                    <span style="font-size: 0.9375rem; color: var(--gray-700);">Appuyez sur
-                        <strong>Partager</strong></span>
-                    <svg style="margin-left: auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20"
-                        height="20">
+            <div class="ios-prompt-steps">
+                <div class="ios-step">
+                    <span class="ios-step-number">1</span>
+                    <span>Appuyez sur <strong>Partager</strong></span>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                     </svg>
                 </div>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span
-                        style="background: var(--primary-500); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 600;">2</span>
-                    <span style="font-size: 0.9375rem; color: var(--gray-700);">Sélectionnez <strong>"Sur l'écran
-                            d'accueil"</strong></span>
+                <div class="ios-step">
+                    <span class="ios-step-number">2</span>
+                    <span>Sélectionnez <strong>"Sur l'écran d'accueil"</strong></span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="{{ asset('js/app.js') }}"></script>
+    <!-- JavaScript pour les animations -->
+    <script>
+        // ==========================================
+        // SYSTÈME DE TRANSITION DE PAGES
+        // ==========================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+            // 1. ANIMATION DE CONNEXION (Auth Transition)
+            const authTransition = document.getElementById('auth-transition');
+
+            function showAuthTransition() {
+                if (authTransition) {
+                    authTransition.classList.add('active');
+                    // Simuler la fin après 2.5s
+                    setTimeout(() => {
+                        authTransition.classList.add('fade-out');
+                        setTimeout(() => {
+                            authTransition.classList.remove('active', 'fade-out');
+                        }, 500);
+                    }, 2500);
+                }
+            }
+
+            // Détecter si c'est une connexion fraîche (paramètre URL ou session)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('fresh_login') || document.referrer.includes('login')) {
+                showAuthTransition();
+            }
+
+            // 2. TRANSITIONS ENTRE PAGES
+            const pageTransition = document.getElementById('page-transition');
+            const navLinks = document.querySelectorAll('.mobile-nav-item');
+
+            function showPageTransition() {
+                if (pageTransition) {
+                    pageTransition.classList.add('active');
+                }
+            }
+
+            function hidePageTransition() {
+                if (pageTransition) {
+                    pageTransition.classList.remove('active');
+                }
+            }
+
+            // Intercepter les clics sur la navigation
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    const transition = this.dataset.transition || 'fade';
+
+                    // Ne pas intercepter si Ctrl/Cmd click (nouvel onglet)
+                    if (e.ctrlKey || e.metaKey || e.button !== 0) return;
+
+                    e.preventDefault();
+                    showPageTransition();
+
+                    // Ajouter la classe d'animation spécifique
+                    document.body.classList.add(`transition-${transition}`);
+
+                    // Navigation après l'animation
+                    setTimeout(() => {
+                        window.location.href = href;
+                    }, 400);
+                });
+            });
+
+            // Cacher le loader quand la page est chargée
+            window.addEventListener('load', hidePageTransition);
+            window.addEventListener('pageshow', hidePageTransition);
+
+            // 3. MODAL DÉCONNEXION
+            const modal = document.getElementById('logout-modal');
+            const btnTrigger = document.getElementById('btn-logout-trigger');
+            const btnCancel = document.getElementById('btn-cancel-logout');
+            const btnConfirm = document.getElementById('btn-confirm-logout');
+            const backdrop = document.getElementById('logout-backdrop');
+            const form = document.getElementById('logout-form');
+            const modalContent = modal.querySelector('.modal-logout-content');
+
+            function openModal() {
+                modal.style.display = 'flex';
+                modal.offsetHeight; // Force reflow
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                btnCancel.focus();
+            }
+
+            function closeModal() {
+                modal.classList.remove('active');
+                modal.classList.add('closing');
+
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    modal.classList.remove('closing');
+                    document.body.style.overflow = '';
+                }, 300);
+            }
+
+            if (btnTrigger) {
+                btnTrigger.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    openModal();
+                });
+            }
+
+            if (btnCancel) btnCancel.addEventListener('click', closeModal);
+            if (backdrop) backdrop.addEventListener('click', closeModal);
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal.classList.contains('active')) {
+                    closeModal();
+                }
+            });
+
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    if (btnConfirm.disabled) {
+                        e.preventDefault();
+                        return;
+                    }
+
+                    btnConfirm.disabled = true;
+                    btnConfirm.classList.add('loading');
+                    modalContent.style.transform = 'scale(0.98)';
+
+                    setTimeout(() => form.submit(), 200);
+                });
+            }
+
+            modalContent.addEventListener('click', e => e.stopPropagation());
+
+            // 4. ANIMATIONS DES ALERTES
+            const alerts = document.querySelectorAll('.alert-enter');
+            alerts.forEach((alert, index) => {
+                setTimeout(() => {
+                    alert.classList.add('alert-visible');
+                }, index * 100);
+            });
+
+            // 5. ANIMATION SCROLL HEADER
+            let lastScroll = 0;
+            const header = document.querySelector('.mobile-header');
+
+            window.addEventListener('scroll', () => {
+                const currentScroll = window.pageYOffset;
+
+                if (currentScroll > 100) {
+                    header.classList.add('header-scrolled');
+                } else {
+                    header.classList.remove('header-scrolled');
+                }
+
+                lastScroll = currentScroll;
+            }, { passive: true });
+
+            // 6. RIPPLE EFFECT SUR LES BOUTONS
+            function createRipple(e) {
+                const button = e.currentTarget;
+                const rect = button.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+
+                button.appendChild(ripple);
+
+                setTimeout(() => ripple.remove(), 600);
+            }
+
+            document.querySelectorAll('.btn, .mobile-nav-item').forEach(btn => {
+                btn.addEventListener('click', createRipple);
+            });
+        });
+    </script>
 
     @yield('scripts')
 </body>

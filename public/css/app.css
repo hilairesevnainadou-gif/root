@@ -1,921 +1,166 @@
 /* ============================================
-   BHDM - Variables et Reset
-   ============================================ */
-
-:root {
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
-  --secondary: #64748b;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --info: #3b82f6;
-
-  --bg: #f8fafc;
-  --surface: #ffffff;
-  --text: #1e293b;
-  --text-muted: #64748b;
-  --border: #e2e8f0;
-
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-
-  --safe-top: env(safe-area-inset-top);
-  --safe-bottom: env(safe-area-inset-bottom);
-  --safe-left: env(safe-area-inset-left);
-  --safe-right: env(safe-area-inset-right);
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-
-html {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  background: var(--bg);
-  color: var(--text);
-}
-
-body {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ============================================
-   Typography
-   ============================================ */
-
-h1, h2, h3, h4 {
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-h1 { font-size: 1.75rem; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.25rem; }
-h4 { font-size: 1.125rem; }
-
-/* ============================================
-   Layout
-   ============================================ */
-
-.container {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
-
-.main-content {
-  flex: 1;
-  padding: 1rem;
-  padding-bottom: calc(80px + var(--safe-bottom));
-}
-
-
-/* ============================================
-   Alerts - Améliorés
-   ============================================ */
-
-.alert {
-  padding: 1rem;
-  border-radius: 12px;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  animation: slideUp 0.3s ease;
-}
-
-.alert-dismissible {
-  padding-right: 2.5rem;
-  position: relative;
-}
-
-.alert-content {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-}
-
-.alert-icon {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-}
-
-.alert-close {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  color: currentColor;
-  opacity: 0.5;
-  cursor: pointer;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s;
-}
-
-.alert-close:hover {
-  opacity: 1;
-  background: rgba(0,0,0,0.05);
-}
-
-.alert-success {
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  color: #166534;
-}
-
-.alert-error {
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
-  color: #991b1b;
-}
-
-/* ============================================
-   Main Content
-   ============================================ */
-
-.main-content {
-  flex: 1;
-  padding: 1rem;
-  padding-bottom: calc(90px + env(safe-area-inset-bottom));
-  min-height: 100vh;
-}
-
-/* ============================================
-   Boutons de base
-   ============================================ */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #4b5563;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-.btn-danger {
-  background: #dc2626;
-  color: white;
-}
-
-.btn-danger:hover {
-  background: #b91c1c;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-}
-
-/* ============================================
-   Offline Banner
-   ============================================ */
-
-.offline-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: #f59e0b;
-  color: #92400e;
-  padding: 0.5rem 1rem;
-  text-align: center;
-  font-size: 0.875rem;
-  font-weight: 600;
-  z-index: 10001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transform: translateY(0);
-  transition: transform 0.3s;
-}
-
-.offline-banner.hidden {
-  transform: translateY(-100%);
-}
-/* ============================================
-   Header & Logout Button - CORRECTION VISIBILITÉ
+   HEADER & LOGOUT BUTTON - STYLES COMPLETS
    ============================================ */
 
 .mobile-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 0.75rem 1rem;
-  padding-top: calc(0.75rem + var(--safe-top));
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    padding-top: calc(0.75rem + env(safe-area-inset-top));
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .mobile-header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.mobile-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.header-logo-fallback {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 800;
+    font-size: 1.125rem;
+    flex-shrink: 0;
 }
 
 .mobile-header-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--text);
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Header Actions */
 .header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
 }
 
-/* Logout Form & Button - VISIBLE */
-.logout-form {
-  margin: 0;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-}
+/* ============================================
+   BOUTON DÉCONNEXION HEADER - STYLE PREMIUM
+   ============================================ */
 
-.btn-logout {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: linear-gradient(135deg, #fee2e2, #fecaca);
-  border: 1px solid #fca5a5;
-  color: #dc2626;
-  padding: 0.5rem 0.875rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
-  transition: all 0.2s;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.btn-logout:hover {
-  background: linear-gradient(135deg, #fecaca, #fca5a5);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
-}
-
-.btn-logout:active {
-  transform: scale(0.95);
-}
-
-.btn-logout svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.logout-text {
-  display: none; /* Caché sur mobile très petit */
-}
-
-/* Sur écrans un peu plus larges, montrer le texte */
-@media (min-width: 380px) {
-  .logout-text {
-    display: inline;
-  }
-}
-
-/* Alternative: bouton icône seul pour très petits écrans */
-@media (max-width: 379px) {
-  .btn-logout {
-    padding: 0.5rem;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
+.btn-logout-header {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-  }
-
-  .btn-logout svg {
-    width: 20px;
-    height: 20px;
-  }
+    gap: 6px;
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border: 1.5px solid #fca5a5;
+    color: #dc2626;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.05);
 }
 
-/* Animation de déconnexion */
-.btn-logout.logging-out {
-  opacity: 0.7;
-  pointer-events: none;
+.btn-logout-header:hover {
+    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+    border-color: #f87171;
 }
 
-.btn-logout.logging-out svg {
-  animation: spin 1s linear infinite;
+.btn-logout-header:active {
+    transform: scale(0.96) translateY(0);
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.1);
 }
 
-/* ============================================
-   Mobile Navigation (Bottom)
-   ============================================ */
-
-.mobile-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  padding-bottom: var(--safe-bottom);
-  z-index: 1000;
-  display: flex;
-  justify-content: space-around;
-  padding-top: 0.5rem;
+.btn-logout-header svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+    flex-shrink: 0;
 }
 
-.mobile-nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.5rem;
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 0.75rem;
-  transition: color 0.2s;
-  flex: 1;
-  max-width: 80px;
+/* Label "Sortir" - visible par défaut */
+.logout-label {
+    display: inline;
 }
 
-.mobile-nav-item.active {
-  color: var(--primary);
+/* Responsive: icône seule sur petits écrans */
+@media (max-width: 380px) {
+    .btn-logout-header {
+        padding: 8px;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+    }
+
+    .logout-label {
+        display: none;
+    }
+
+    .btn-logout-header svg {
+        width: 20px;
+        height: 20px;
+    }
 }
 
-.mobile-nav-item svg {
-  width: 24px;
-  height: 24px;
-  margin-bottom: 0.25rem;
+/* État désactivé pendant la déconnexion */
+.btn-logout-header:disabled,
+.btn-logout-header.logging-out {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
-/* ============================================
-   Cards
-   ============================================ */
-
-.card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 1.25rem;
-  margin-bottom: 1rem;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.card-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-}
-
-/* ============================================
-   Forms
-   ============================================ */
-
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  color: var(--text);
-}
-
-.form-input,
-.form-select,
-.form-textarea {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 1rem;
-  background: var(--surface);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-input:focus,
-.form-select:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
-}
-
-.form-input::placeholder {
-  color: var(--text-muted);
-}
-
-.form-error {
-  color: var(--danger);
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-}
-
-/* ============================================
-   Buttons
-   ============================================ */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-  background: transparent;
-}
-
-.btn:active {
-  transform: scale(0.98);
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--primary-dark);
-}
-
-.btn-secondary {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-
-.btn-success {
-  background: var(--success);
-  color: white;
-}
-
-.btn-danger {
-  background: var(--danger);
-  color: white;
-}
-
-.btn-sm {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-}
-
-.btn-lg {
-  padding: 1rem 2rem;
-  font-size: 1.125rem;
-}
-
-.btn-block {
-  width: 100%;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* ============================================
-   Status Badges
-   ============================================ */
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.badge-draft { background: #f1f5f9; color: #475569; }
-.badge-submitted { background: #dbeafe; color: #1e40af; }
-.badge-under_review { background: #fef3c7; color: #92400e; }
-.badge-pending_committee { background: #fce7f3; color: #9d174d; }
-.badge-approved { background: #d1fae5; color: #065f46; }
-.badge-funded { background: #22c55e; color: white; }
-.badge-rejected { background: #fee2e2; color: #991b1b; }
-.badge-cancelled { background: #f3f4f6; color: #6b7280; }
-
-/* ============================================
-   Alerts
-   ============================================ */
-
-.alert {
-  padding: 1rem;
-  border-radius: var(--radius-sm);
-  margin-bottom: 1rem;
-}
-
-.alert-success {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #166534;
-}
-
-.alert-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-}
-
-.alert-warning {
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  color: #92400e;
-}
-
-.alert-info {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #1e40af;
-}
-
-/* ============================================
-   List Items
-   ============================================ */
-
-.list-item {
-  display: flex;
-  align-items: center;
-  padding: 1rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  text-decoration: none;
-  color: inherit;
-}
-
-.list-item:last-child {
-  border-bottom: none;
-  border-radius: 0 0 var(--radius) var(--radius);
-}
-
-.list-item-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 1rem;
-  flex-shrink: 0;
-}
-
-.list-item-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.list-item-title {
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.list-item-subtitle {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-}
-
-.list-item-action {
-  margin-left: 0.5rem;
-  color: var(--text-muted);
-}
-
-/* ============================================
-   Stats Grid
-   ============================================ */
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.stat-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  padding: 1rem;
-  text-align: center;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--primary);
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-
-/* ============================================
-   Progress Steps
-   ============================================ */
-
-.progress-steps {
-  display: flex;
-  justify-content: space-between;
-  margin: 1.5rem 0;
-  position: relative;
-}
-
-.progress-steps::before {
-  content: '';
-  position: absolute;
-  top: 15px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--border);
-  z-index: 0;
-}
-
-.step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-}
-
-.step-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--surface);
-  border: 2px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.step.completed .step-circle {
-  background: var(--success);
-  border-color: var(--success);
-  color: white;
-}
-
-.step.active .step-circle {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: white;
-}
-
-.step-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-/* ============================================
-   Empty State
-   ============================================ */
-
-.empty-state {
-  text-align: center;
-  padding: 3rem 1rem;
-}
-
-.empty-state-icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1rem;
-  background: var(--bg);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-}
-
-.empty-state-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.empty-state-text {
-  color: var(--text-muted);
-  margin-bottom: 1.5rem;
-}
-
-/* ============================================
-   Skeleton Loading
-   ============================================ */
-
-.skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-sm);
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* ============================================
-   Utilities
-   ============================================ */
-
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.text-muted { color: var(--text-muted); }
-.text-primary { color: var(--primary); }
-.text-success { color: var(--success); }
-.text-danger { color: var(--danger); }
-.text-warning { color: var(--warning); }
-
-.font-bold { font-weight: 700; }
-.font-semibold { font-weight: 600; }
-
-.mt-1 { margin-top: 0.25rem; }
-.mt-2 { margin-top: 0.5rem; }
-.mt-3 { margin-top: 0.75rem; }
-.mt-4 { margin-top: 1rem; }
-
-.mb-1 { margin-bottom: 0.25rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-3 { margin-bottom: 0.75rem; }
-.mb-4 { margin-bottom: 1rem; }
-
-.hidden { display: none !important; }
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
-/* ============================================
-   Animations
-   ============================================ */
-
-@keyframes slideUp {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes slideDown {
-  from { transform: translateY(0); opacity: 1; }
-  to { transform: translateY(100%); opacity: 0; }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.btn-logout-header.logging-out svg {
+    animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
-}
-
-.animate-slide-up { animation: slideUp 0.3s ease; }
-.animate-slide-down { animation: slideDown 0.3s ease; }
-.animate-fade-in { animation: fadeIn 0.3s ease; }
-.animate-pulse { animation: pulse 2s infinite; }
-.animate-shake { animation: shake 0.5s; }
-.animate-spin { animation: spin 1s linear infinite; }
-
-/* ============================================
-   Desktop Overrides
-   ============================================ */
-
-@media (min-width: 768px) {
-  .mobile-nav {
-    display: none;
-  }
-
-  .main-content {
-    padding-bottom: 1rem;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .container {
-    padding: 0 2rem;
-  }
-
-  .mobile-header {
-    display: none;
-  }
-}
-
-/* Print styles */
-@media print {
-  .mobile-nav,
-  .mobile-header,
-  .btn {
-    display: none !important;
-  }
-}
-
-/* Dark mode support */
+/* Dark mode */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --text: #f1f5f9;
-    --text-muted: #94a3b8;
-    --border: #334155;
-  }
+    .mobile-header {
+        background: #1e293b;
+        border-bottom-color: #334155;
+    }
+
+    .mobile-header-title {
+        color: #f8fafc;
+    }
+
+    .btn-logout-header {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: rgba(239, 68, 68, 0.25);
+        color: #f87171;
+    }
+
+    .btn-logout-header:hover {
+        background: rgba(239, 68, 68, 0.25);
+        border-color: rgba(239, 68, 68, 0.4);
+    }
 }
