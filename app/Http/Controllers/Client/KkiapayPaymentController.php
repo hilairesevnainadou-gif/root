@@ -31,7 +31,6 @@ class KkiapayPaymentController extends Controller
 
     /**
      * INITIALIZE — Crée la transaction pending
-     * Gère deux cas : paiement inscription (avec FundingRequest) et dépôt wallet (sans FundingRequest)
      */
     public function initialize(?FundingRequest $fundingRequest = null): JsonResponse
     {
@@ -107,40 +106,41 @@ class KkiapayPaymentController extends Controller
     /**
      * Initialiser un dépôt wallet
      */
-  public function initializeWalletDeposit(): JsonResponse
-{
-    $amount = request()->input('amount', 0);  // Montant à créditer (sans frais)
+    public function initializeWalletDeposit(): JsonResponse
+    {
+        $amount = request()->input('amount', 0);  // Montant à créditer (sans frais)
 
-    if ($amount <= 0) {
-        return response()->json(['success' => false, 'message' => 'Montant invalide'], 400);
+        if ($amount <= 0) {
+            return response()->json(['success' => false, 'message' => 'Montant invalide'], 400);
+        }
+
+        $wallet = $this->getOrCreateWallet();
+
+        // Créer transaction de dépôt
+        $transaction = Transaction::create([
+            'wallet_id'          => $wallet->id,
+            'funding_request_id' => null,
+            'transaction_id'     => 'WLT-DEP-' . strtoupper(uniqid()) . '-' . time(),
+            'type'               => 'deposit',
+            'amount'             => $amount,        // Montant qui sera crédité
+            'fee'                => 0,              // Les frais sont gérés par Kkiapay
+            'total_amount'       => $amount,        // Total payé (Kkiapay ajoute ses frais)
+            'payment_method'     => 'kkiapay',
+            'status'             => 'pending',
+            'description'        => "Dépôt wallet - " . number_format($amount, 0, ',', ' ') . " FCFA",
+            'metadata'           => [
+                'type'                   => 'wallet_deposit',
+                'amount_credited'        => $amount,
+                'user_id'                => auth()->id(),
+                'kkiapay_initialized_at' => now()->toIso8601String(),
+            ],
+        ]);
+
+        // IMPORTANT: Envoyer seulement le montant à Kkiapay
+        // Kkiapay ajoutera automatiquement ses frais de 1.9%
+        return $this->buildInitializeResponse($transaction, $amount, null);
     }
 
-    $wallet = $this->getOrCreateWallet();
-
-    // Créer transaction de dépôt
-    $transaction = Transaction::create([
-        'wallet_id'          => $wallet->id,
-        'funding_request_id' => null,
-        'transaction_id'     => 'WLT-DEP-' . strtoupper(uniqid()) . '-' . time(),
-        'type'               => 'deposit',
-        'amount'             => $amount,        // Montant qui sera crédité
-        'fee'                => 0,              // Les frais sont gérés par Kkiapay
-        'total_amount'       => $amount,        // Total payé (Kkiapay ajoute ses frais)
-        'payment_method'     => 'kkiapay',
-        'status'             => 'pending',
-        'description'        => "Dépôt wallet - " . number_format($amount, 0, ',', ' ') . " FCFA",
-        'metadata'           => [
-            'type'                   => 'wallet_deposit',
-            'amount_credited'        => $amount,
-            'user_id'                => auth()->id(),
-            'kkiapay_initialized_at' => now()->toIso8601String(),
-        ],
-    ]);
-
-    // IMPORTANT: Envoyer seulement le montant à Kkiapay
-    // Kkiapay ajoutera automatiquement ses frais de 1.9%
-    return $this->buildInitializeResponse($transaction, $amount, null);
-}
     /**
      * Récupérer ou créer le wallet
      */
@@ -175,7 +175,6 @@ class KkiapayPaymentController extends Controller
         ]);
 
         // 🔥 CORRECTION CRITIQUE : Mettre à jour la référence Kkiapay IMMÉDIATEMENT
-        // avant toute vérification pour que le webhook puisse trouver la transaction
         $transaction = Transaction::where('transaction_id', $validated['internal_transaction_id'])
             ->where('status', 'pending')
             ->first();
@@ -200,7 +199,6 @@ class KkiapayPaymentController extends Controller
         }
 
         // 🔥 SAUVEGARDER LA RÉFÉRENCE KKIAPAY IMMÉDIATEMENT
-        // C'est crucial pour que le webhook puisse trouver la transaction
         if (empty($transaction->reference) || $transaction->reference !== $validated['transactionId']) {
             $transaction->update(['reference' => $validated['transactionId']]);
             Log::channel('kkiapay')->info('💾 Référence Kkiapay sauvegardée', [
@@ -208,13 +206,26 @@ class KkiapayPaymentController extends Controller
             ]);
         }
 
-        // ==== CAS 1 : Dépôt Wallet (pas de funding_request_id) ====
+        // ==== CAS 1 : Dépôt Wallet (type = deposit) ====
+        // 🔥 CORRECTION : Vérifier le type de transaction, pas seulement funding_request_id
         if ($transaction->type === 'deposit') {
             return $this->verifyWalletDeposit($transaction, $validated['transactionId']);
         }
 
         // ==== CAS 2 : Paiement d'inscription (avec funding_request_id) ====
-        return $this->verifyRegistrationPayment($transaction, $validated);
+        // 🔥 CORRECTION : Vérifier que funding_request_id existe avant d'appeler
+        if (!empty($validated['funding_request_id'])) {
+            return $this->verifyRegistrationPayment($transaction, $validated);
+        }
+
+        // Si on arrive ici, c'est une erreur
+        Log::channel('kkiapay')->error('❌ Type de transaction inconnu', [
+            'transaction_id' => $transaction->id,
+            'type' => $transaction->type,
+            'funding_request_id' => $transaction->funding_request_id,
+        ]);
+
+        return response()->json(['success' => false, 'message' => 'Type de transaction invalide'], 400);
     }
 
     /**
@@ -282,6 +293,11 @@ class KkiapayPaymentController extends Controller
      */
     private function verifyRegistrationPayment(Transaction $transaction, array $validated): JsonResponse
     {
+        // 🔥 CORRECTION : Vérifier que funding_request_id existe
+        if (empty($validated['funding_request_id'])) {
+            return response()->json(['success' => false, 'message' => 'Funding request ID manquant'], 400);
+        }
+
         $fundingRequest = FundingRequest::findOrFail($validated['funding_request_id']);
 
         if ($fundingRequest->user_id !== auth()->id()) {
@@ -333,6 +349,7 @@ class KkiapayPaymentController extends Controller
         try {
             Log::channel('kkiapay')->info('🔍 Verifying deposit via Kkiapay API', ['transactionId' => $kkiapayId]);
 
+            // 🔥 CORRECTION : URL sans espace !
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->privateKey,
                 'Accept' => 'application/json',
@@ -354,6 +371,7 @@ class KkiapayPaymentController extends Controller
                         'success'      => true,
                         'status'       => 'completed',
                         'redirect_url' => route('client.wallet.show'),
+                        'new_balance'  => $transaction->wallet->fresh()->balance,
                     ]);
                 }
 
@@ -388,26 +406,34 @@ class KkiapayPaymentController extends Controller
         ]);
 
         DB::transaction(function () use ($transaction, $transactionId, $data) {
-            // Mettre à jour la transaction
+            // 🔥 RÉCUPÉRER LES FRAIS RÉELS DU WEBHOOK/API
+            $actualFee = $data['fees'] ?? 0;
+            $actualAmount = $data['amount'] ?? $transaction->amount;
+
+            // Mettre à jour la transaction avec les vrais frais
             $transaction->update([
                 'status'       => 'completed',
                 'completed_at' => now(),
-                'fee'          => $data['fees'] ?? 0,
+                'fee'          => $actualFee,           // Frais réels de Kkiapay
+                'total_amount' => $actualAmount + $actualFee, // Total payé
                 'reference'    => $transactionId,
                 'metadata'     => array_merge($transaction->metadata ?? [], [
                     'kkiapay_transaction_id' => $transactionId,
                     'kkiapay_event'          => 'transaction.success',
+                    'kkiapay_fees'           => $actualFee,
+                    'kkiapay_amount_paid'    => $actualAmount + $actualFee,
                     'processed_at'           => now()->toIso8601String(),
-                ]),
-            ]);
+                ]),            ]);
 
-            // Créditer le wallet
+            // Créditer le wallet avec le montant demandé (pas le total avec frais)
             $wallet = $transaction->wallet;
-            $wallet->balance += $data['amount'] ?? $transaction->amount;
+            $wallet->balance += $transaction->amount; // Montant crédité (sans les frais)
             $wallet->save();
 
             Log::channel('kkiapay')->info('✅ Wallet credited', [
                 'wallet_id' => $wallet->id,
+                'amount_credited' => $transaction->amount,
+                'fee_charged' => $actualFee,
                 'new_balance' => $wallet->balance,
             ]);
         });
@@ -421,6 +447,7 @@ class KkiapayPaymentController extends Controller
         try {
             Log::channel('kkiapay')->info('🔍 Verifying via Kkiapay API', ['transactionId' => $kkiapayId]);
 
+            // 🔥 CORRECTION : URL sans espace !
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->privateKey,
                 'Accept' => 'application/json',
@@ -687,10 +714,12 @@ class KkiapayPaymentController extends Controller
         Log::channel('kkiapay')->info('💰 DÉPÔT WALLET - Traitement...');
 
         if ($isSuccess && $event === 'transaction.success') {
+            // 🔥 IMPORTANT : Utiliser les frais réels du webhook
             $transaction->update([
                 'status'       => 'completed',
                 'completed_at' => now(),
-                'fee'          => $fees,
+                'fee'          => $fees,           // Frais réels de Kkiapay
+                'total_amount' => $amount + $fees,  // Total réellement payé
                 'reference'    => $transactionId,
                 'metadata'     => array_merge($transaction->metadata ?? [], [
                     'kkiapay_transaction_id' => $transactionId,
@@ -698,19 +727,25 @@ class KkiapayPaymentController extends Controller
                     'kkiapay_method'         => $method,
                     'kkiapay_account'        => $account,
                     'kkiapay_fees'           => $fees,
+                    'kkiapay_amount_paid'    => $amount + $fees,
                     'kkiapay_performed_at'   => $performedAt,
                     'webhook_processed_at'   => now()->toIso8601String(),
                 ]),
             ]);
 
-            // Créditer le wallet
+            // 🔥 IMPORTANT : Créditer le wallet avec le montant demandé (pas le total)
+            // Le montant crédité = amount reçu - frais (ou le montant original de la transaction)
             $wallet = $transaction->wallet;
-            $wallet->balance += $amount;
+            $creditedAmount = $transaction->amount; // Montant original demandé
+            $wallet->balance += $creditedAmount;
             $wallet->save();
 
             Log::channel('kkiapay')->info('✅✅✅ DÉPÔT RÉUSSI', [
-                'wallet_id'   => $wallet->id,
-                'new_balance' => $wallet->balance,
+                'wallet_id'       => $wallet->id,
+                'amount_credited' => $creditedAmount,
+                'fee_charged'     => $fees,
+                'total_paid'      => $amount + $fees,
+                'new_balance'     => $wallet->balance,
             ]);
         } else {
             Log::channel('kkiapay')->warning('❌ DÉPÔT ÉCHOUÉ', [

@@ -43,26 +43,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/verification/change', [AuthController::class, 'changeMethod'])->name('verification.change');
     Route::post('/verification/update-contact', [AuthController::class, 'updateContact'])->name('verification.update-contact');
 });
-Route::get('/check-pwa', function () {
-    $checks = [
-        'manifest' => file_exists(public_path('manifest.json')),
-        'sw' => file_exists(public_path('service-worker.js')),
-        'icons' => [],
-        'screenshots' => []
-    ];
 
-    $iconSizes = [72, 96, 128, 144, 152, 192, 384, 512];
-    foreach ($iconSizes as $size) {
-        $path = public_path("icons/icon-{$size}x{$size}.png");
-        $checks['icons'][$size] = file_exists($path);
-    }
-
-    // Screenshots optionnels
-    $checks['screenshots']['screenshot1'] = file_exists(public_path('screenshots/screenshot1.png'));
-    $checks['screenshots']['screenshot2'] = file_exists(public_path('screenshots/screenshot2.png'));
-
-    return response()->json($checks);
-});
 // Logout
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
