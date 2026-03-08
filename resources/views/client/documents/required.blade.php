@@ -16,6 +16,21 @@
         : 0;
 
     $allCompleted = $emptyDocs->count() === 0;
+
+    // 🔥 TRADUCTIONS DES STATUTS EN DUR
+    $statusLabels = [
+        'draft' => 'Brouillon',
+        'submitted' => 'Soumise',
+        'under_review' => 'En cours d\'examen',
+        'pending_committee' => 'En attente du comité',
+        'approved' => 'Approuvée',
+        'rejected' => 'Rejetée',
+        'funded' => 'Financée',
+        'completed' => 'Terminée',
+        'cancelled' => 'Annulée',
+    ];
+
+    $currentStatusLabel = $statusLabels[$fundingRequest->status] ?? $fundingRequest->status;
 @endphp
 
 <div class="dashboard-container" style="padding-bottom: 100px;">
@@ -40,7 +55,7 @@
                 </h2>
                 <p style="margin: 0; color: {{ $allCompleted ? '#166534' : '#92400e' }}; font-size: 0.9375rem;">
                     Demande <span style="font-family: monospace; background: rgba(255,255,255,0.6); padding: 0.125rem 0.5rem; border-radius: 4px; font-weight: 600;">{{ $fundingRequest->request_number }}</span>
-                    • Statut: <strong>{{ __('status.' . $fundingRequest->status) }}</strong>
+                    • Statut: <strong>{{ $currentStatusLabel }}</strong>
                 </p>
             </div>
         </div>
@@ -54,7 +69,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
             </svg>
             <p style="margin: 0; font-size: 0.875rem;">
-                Les documents ne peuvent plus être modifiés car la demande est en <strong>{{ __('status.' . $fundingRequest->status) }}</strong>.
+                Les documents ne peuvent plus être modifiés car la demande est en <strong>{{ $currentStatusLabel }}</strong>.
             </p>
         </div>
     </div>
