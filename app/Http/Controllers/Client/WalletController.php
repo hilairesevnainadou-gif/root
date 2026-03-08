@@ -113,7 +113,7 @@ class WalletController extends Controller
         $transaction = Transaction::create([
             'wallet_id' => $wallet->id,
             'transaction_id' => 'WLT-DEP-' . strtoupper(Str::random(10)),
-            'type' => 'credit',
+            'type' => 'deposit',
             'amount' => $validated['amount'],
             'fee' => $fee,
             'total_amount' => $total,
