@@ -171,15 +171,15 @@
 
             {{-- SECTION ENTREPRISE - Uniquement si type entreprise --}}
             <div class="section-company" id="company-section" style="display: none;">
-                <div class="section-header">
-                    <div class="sh-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <div class="section-header-company">
+                    <div class="sh-icon-company">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                     </div>
-                    <div class="sh-text">
-                        <h3>Entreprise concernée</h3>
+                    <div class="sh-text-company">
+                        <h3>🏢 Entreprise concernée</h3>
                         <p>Sélectionnez une entreprise existante ou créez-en une nouvelle</p>
                     </div>
                 </div>
@@ -208,7 +208,10 @@
                 {{-- Formulaire nouvelle entreprise --}}
                 <div class="new-company-panel" id="new-company-form" style="display: none;">
                     <div class="ncp-header">
-                        <h4>Nouvelle entreprise</h4>
+                        <div class="ncp-title-wrapper">
+                            <span class="ncp-icon">✨</span>
+                            <h4>Nouvelle entreprise</h4>
+                        </div>
                         <button type="button" class="ncp-close" onclick="toggleNewCompanyForm()">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -216,16 +219,16 @@
                         </button>
                     </div>
 
-                    <div class="form-grid cols-2">
-                        <div class="form-group">
-                            <label class="form-label">Nom de l'entreprise <span class="text-danger">*</span></label>
-                            <input type="text" name="new_company[name]" id="new_company_name" class="form-control company-field"
+                    <div class="form-grid-company">
+                        <div class="form-group-company">
+                            <label class="form-label-company">Nom de l'entreprise <span class="text-danger">*</span></label>
+                            <input type="text" name="new_company[name]" id="new_company_name" class="form-control-company company-field"
                                 placeholder="Ex: Ma Société SARL">
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label">Type d'entreprise <span class="text-danger">*</span></label>
-                            <select name="new_company[company_type]" id="new_company_type" class="form-control company-field">
+                        <div class="form-group-company">
+                            <label class="form-label-company">Type d'entreprise <span class="text-danger">*</span></label>
+                            <select name="new_company[company_type]" id="new_company_type" class="form-control-company company-field">
                                 <option value="">Choisir...</option>
                                 <option value="SARL">SARL</option>
                                 <option value="SA">SA</option>
@@ -236,21 +239,21 @@
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label">Secteur d'activité <span class="text-danger">*</span></label>
-                            <input type="text" name="new_company[sector]" id="new_company_sector" class="form-control company-field"
+                        <div class="form-group-company">
+                            <label class="form-label-company">Secteur d'activité <span class="text-danger">*</span></label>
+                            <input type="text" name="new_company[sector]" id="new_company_sector" class="form-control-company company-field"
                                 placeholder="Ex: Agriculture, Commerce...">
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label">Votre poste <span class="text-danger">*</span></label>
-                            <input type="text" name="new_company[job_title]" id="new_company_job" class="form-control company-field"
+                        <div class="form-group-company">
+                            <label class="form-label-company">Votre poste <span class="text-danger">*</span></label>
+                            <input type="text" name="new_company[job_title]" id="new_company_job" class="form-control-company company-field"
                                 placeholder="Ex: Directeur Général">
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label">Nombre d'employés</label>
-                            <select name="new_company[employees_count]" id="new_company_employees" class="form-control company-field">
+                        <div class="form-group-company">
+                            <label class="form-label-company">Nombre d'employés</label>
+                            <select name="new_company[employees_count]" id="new_company_employees" class="form-control-company company-field">
                                 <option value="">Choisir...</option>
                                 <option value="1">1 (Auto-entrepreneur)</option>
                                 <option value="2-5">2 à 5</option>
@@ -261,10 +264,10 @@
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label">Chiffre d'affaires annuel (FCFA)</label>
+                        <div class="form-group-company">
+                            <label class="form-label-company">Chiffre d'affaires annuel (FCFA)</label>
                             <input type="number" name="new_company[annual_turnover]" id="new_company_turnover"
-                                class="form-control company-field" placeholder="Ex: 50000000" min="0" step="100000">
+                                class="form-control-company company-field" placeholder="Ex: 50000000" min="0" step="100000">
                         </div>
                     </div>
                 </div>
@@ -640,7 +643,9 @@ function renderCompaniesList() {
     if (userCompanies.length === 0) {
         grid.innerHTML = `
             <div class="no-companies-message">
+                <div class="no-companies-icon">🏢</div>
                 <p>Vous n'avez aucune entreprise enregistrée.</p>
+                <small>Créez-en une nouvelle ci-dessous</small>
             </div>
         `;
         return;
@@ -936,7 +941,7 @@ async function onKkiapaySuccess(response) {
 
             const data = await verifyRes.json();
 
-            if (data.status === 'paid') {
+            if (data.status === 'paid' || data.status === 'completed') {
                 showPaymentSuccess();
                 setTimeout(() => {
                     window.location.href = data.redirect_url || '/my-requests';
@@ -1005,8 +1010,6 @@ function escapeHtml(text) {
 @endsection
 
 @section('styles')
-
-@section('styles')
 <style>
 /* ============================================
    STEPPER - Indicateur d'étapes moderne
@@ -1015,6 +1018,9 @@ function escapeHtml(text) {
     background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
     padding: 1.5rem 1rem;
     border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .stepper-track {
@@ -1083,6 +1089,7 @@ function escapeHtml(text) {
     text-transform: uppercase;
     letter-spacing: 0.025em;
     transition: all 0.3s ease;
+    text-align: center;
 }
 
 .step.active .step-bubble {
@@ -1448,15 +1455,16 @@ function escapeHtml(text) {
 }
 
 /* ============================================
-   SECTION ENTREPRISE - DESIGN SPÉCIAL
+   SECTION ENTREPRISE - DESIGN AMÉLIORÉ MOBILE
    ============================================ */
 .section-company {
     background: linear-gradient(180deg, #fdf2f8 0%, #ffffff 100%);
     border: 2px solid #fbcfe8;
-    border-radius: 16px;
-    padding: 1.25rem;
+    border-radius: 20px;
+    padding: 1.5rem;
     margin-bottom: 1.5rem;
     animation: fadeInUp 0.4s ease;
+    box-shadow: 0 4px 20px rgba(236, 72, 153, 0.08);
 }
 
 @keyframes fadeInUp {
@@ -1464,36 +1472,40 @@ function escapeHtml(text) {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.section-header {
+.section-header-company {
     display: flex;
     align-items: flex-start;
-    gap: 0.875rem;
-    margin-bottom: 1.25rem;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid #fbcfe8;
+    border-bottom: 2px solid #fbcfe8;
 }
 
-.sh-icon {
-    width: 44px;
-    height: 44px;
+.sh-icon-company {
+    width: 52px;
+    height: 52px;
     background: linear-gradient(135deg, #ec4899, #f472b6);
-    border-radius: 12px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
 }
 
-.sh-text h3 {
-    font-size: 1rem;
+.sh-text-company h3 {
+    font-size: 1.125rem;
     font-weight: 700;
     color: #831843;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.sh-text p {
-    font-size: 0.8125rem;
+.sh-text-company p {
+    font-size: 0.875rem;
     color: #9d174d;
     line-height: 1.5;
 }
@@ -1501,30 +1513,50 @@ function escapeHtml(text) {
 .companies-list {
     display: flex;
     flex-direction: column;
-    gap: 0.625rem;
+    gap: 0.75rem;
     margin-bottom: 1rem;
 }
 
 .company-select-card {
     display: flex;
     align-items: center;
-    gap: 0.875rem;
+    gap: 1rem;
     background: white;
     border: 2px solid #fbcfe8;
-    border-radius: 12px;
-    padding: 1rem;
+    border-radius: 14px;
+    padding: 1.25rem;
     cursor: pointer;
     transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .company-select-card:hover {
     border-color: #f472b6;
-    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.1);
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.12);
+    transform: translateY(-1px);
 }
 
 .company-select-card.selected {
     border-color: #ec4899;
-    background: #fdf2f8;
+    background: linear-gradient(135deg, #fdf2f8, #fce7f3);
+}
+
+.company-select-card.selected::before {
+    content: '✓';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    background: #ec4899;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
 }
 
 .csc-radio {
@@ -1532,12 +1564,13 @@ function escapeHtml(text) {
 }
 
 .csc-radio .radio-inner {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     border: 2px solid #fbcfe8;
     border-radius: 50%;
     position: relative;
     transition: all 0.2s;
+    background: white;
 }
 
 .csc-radio .radio-inner.checked {
@@ -1563,35 +1596,35 @@ function escapeHtml(text) {
 }
 
 .csc-name {
-    font-size: 0.9375rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 700;
     color: #0f172a;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.375rem;
 }
 
 .csc-meta {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: #64748b;
     margin-bottom: 0.25rem;
 }
 
 .csc-poste {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     color: #9d174d;
-    font-weight: 500;
+    font-weight: 600;
     background: #fce7f3;
-    padding: 0.125rem 0.5rem;
-    border-radius: 4px;
+    padding: 0.25rem 0.625rem;
+    border-radius: 6px;
     display: inline-block;
 }
 
 .divider-or {
     display: flex;
     align-items: center;
-    margin: 1rem 0;
+    margin: 1.25rem 0;
     color: #9d174d;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.875rem;
+    font-weight: 700;
 }
 
 .divider-or::before,
@@ -1599,52 +1632,58 @@ function escapeHtml(text) {
     content: '';
     flex: 1;
     height: 1px;
-    background: #fbcfe8;
+    background: linear-gradient(90deg, transparent, #fbcfe8, transparent);
 }
 
 .divider-or span {
-    padding: 0 0.75rem;
+    padding: 0 1rem;
+    background: #fdf2f8;
+    border-radius: 20px;
 }
 
 .btn-create-company {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.875rem;
     background: white;
-    border: 2px dashed #fbcfe8;
-    border-radius: 12px;
-    padding: 1rem;
+    border: 2px dashed #f472b6;
+    border-radius: 14px;
+    padding: 1.25rem;
     cursor: pointer;
     transition: all 0.2s;
     color: #9d174d;
+    font-weight: 600;
 }
 
 .btn-create-company:hover {
     border-color: #ec4899;
     background: #fdf2f8;
+    transform: translateY(-1px);
 }
 
 .bcc-icon {
-    width: 36px;
-    height: 36px;
-    background: #fce7f3;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    color: #ec4899;
 }
 
 .bcc-text {
     flex: 1;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     text-align: left;
 }
 
 .bcc-arrow {
     transition: transform 0.2s;
+    color: #f472b6;
 }
 
 .btn-create-company[aria-expanded="true"] .bcc-arrow {
@@ -1652,12 +1691,13 @@ function escapeHtml(text) {
 }
 
 .new-company-panel {
-    margin-top: 1rem;
+    margin-top: 1.25rem;
     background: white;
     border: 2px solid #ec4899;
-    border-radius: 12px;
-    padding: 1.25rem;
+    border-radius: 16px;
+    padding: 1.5rem;
     animation: slideDown 0.3s ease;
+    box-shadow: 0 10px 40px rgba(236, 72, 153, 0.15);
 }
 
 @keyframes slideDown {
@@ -1669,31 +1709,115 @@ function escapeHtml(text) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #fbcfe8;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #fbcfe8;
+}
+
+.ncp-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ncp-icon {
+    font-size: 1.5rem;
 }
 
 .ncp-header h4 {
-    font-size: 0.9375rem;
+    font-size: 1.125rem;
     font-weight: 700;
     color: #831843;
+    margin: 0;
 }
 
 .ncp-close {
-    background: none;
+    background: #fce7f3;
     border: none;
     color: #9d174d;
     cursor: pointer;
-    padding: 0.25rem;
+    padding: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
+    border-radius: 10px;
+    transition: all 0.2s;
 }
 
 .ncp-close:hover {
-    background: #fce7f3;
+    background: #fbcfe8;
+    transform: rotate(90deg);
+}
+
+/* Formulaire entreprise responsive */
+.form-grid-company {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.form-group-company {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-label-company {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.form-control-company {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    background: white;
+    color: #111827;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.form-control-company:focus {
+    border-color: #ec4899;
+    box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.1);
+    outline: none;
+}
+
+select.form-control-company {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg fill='none' stroke='%236b7280' viewBox='0 0 24 24' width='16' height='16'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+}
+
+.no-companies-message {
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 14px;
+    border: 2px dashed #fbcfe8;
+    color: #9d174d;
+}
+
+.no-companies-icon {
+    font-size: 3rem;
+    margin-bottom: 0.75rem;
+}
+
+.no-companies-message p {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.no-companies-message small {
+    font-size: 0.875rem;
+    color: #9ca3af;
 }
 
 /* ============================================
@@ -2205,19 +2329,90 @@ select.form-control {
     font-size: 0.875rem;
 }
 
-.no-companies-message {
-    text-align: center;
-    padding: 1.5rem;
-    background: white;
-    border-radius: 10px;
-    color: #9d174d;
-    font-size: 0.875rem;
+/* ============================================
+   RESPONSIVE - MOBILE OPTIMISÉ
+   ============================================ */
+@media (max-width: 640px) {
+    .stepper {
+        padding: 1rem;
+    }
+
+    .step-label {
+        font-size: 0.625rem;
+    }
+
+    .step-bubble {
+        width: 36px;
+        height: 36px;
+    }
+
+    .step-panel {
+        padding: 1rem;
+    }
+
+    .financement-card {
+        padding: 1rem;
+    }
+
+    .fc-stats {
+        gap: 0.5rem;
+    }
+
+    .stat-item {
+        padding: 0.375rem 0.5rem;
+    }
+
+    .section-company {
+        padding: 1rem;
+        border-radius: 16px;
+    }
+
+    .section-header-company {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .sh-icon-company {
+        width: 44px;
+        height: 44px;
+    }
+
+    .company-select-card {
+        padding: 1rem;
+    }
+
+    .form-grid-company {
+        gap: 1rem;
+    }
+
+    .new-company-panel {
+        padding: 1rem;
+    }
+
+    .calculation-preview {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .calc-row {
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+    }
 }
 
-/* ============================================
-   RESPONSIVE
-   ============================================ */
-@media (min-width: 640px) {
+@media (min-width: 641px) {
+    .form-grid-company {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .form-group-company:first-child,
+    .form-group-company:nth-child(4) {
+        grid-column: span 2;
+    }
+}
+
+@media (min-width: 768px) {
     .stepper {
         padding: 2rem;
     }
@@ -2284,7 +2479,8 @@ select.form-control {
         border-color: #334155;
     }
 
-    .form-control {
+    .form-control,
+    .form-control-company {
         background: #0f172a;
         border-color: #334155;
         color: #f8fafc;

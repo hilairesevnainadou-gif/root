@@ -117,11 +117,13 @@ class KkiapayPaymentController extends Controller
 
         $wallet = $this->getOrCreateWallet();
 
-        // Créer transaction de dépôt
+        // Créer transaction de dépôt avec ID spécifique wallet
+        $transactionId = 'WLT-DEP-' . strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 10));
+
         $transaction = Transaction::create([
             'wallet_id'          => $wallet->id,
-            'funding_request_id' => null, // Pas de funding request pour un dépôt
-            'transaction_id'     => 'TXN-DEP-' . uniqid() . '-' . time(),
+            'funding_request_id' => null,
+            'transaction_id'     => $transactionId,
             'type'               => 'deposit',
             'amount'             => $amount,
             'fee'                => 0,
@@ -172,10 +174,23 @@ class KkiapayPaymentController extends Controller
             'internal_transaction_id'  => 'required|string',
         ]);
 
-        // Récupérer la transaction par son ID interne
-        $transaction = Transaction::where('transaction_id', $validated['internal_transaction_id'])->first();
+        // 🔥 CORRECTION CRITIQUE : Mettre à jour la référence Kkiapay IMMÉDIATEMENT
+        // avant toute vérification pour que le webhook puisse trouver la transaction
+        $transaction = Transaction::where('transaction_id', $validated['internal_transaction_id'])
+            ->where('status', 'pending')
+            ->first();
 
         if (!$transaction) {
+            // Vérifier si déjà complétée par le webhook entre-temps
+            $completedTransaction = Transaction::where('transaction_id', $validated['internal_transaction_id'])
+                ->where('status', 'completed')
+                ->first();
+
+            if ($completedTransaction) {
+                Log::channel('kkiapay')->info('✅ Transaction déjà complétée par webhook');
+                return $this->handleCompletedTransaction($completedTransaction, $validated);
+            }
+
             return response()->json(['success' => false, 'message' => 'Transaction introuvable'], 404);
         }
 
@@ -184,18 +199,55 @@ class KkiapayPaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
-        // Mettre à jour la référence Kkiapay si pas déjà fait
-        if (empty($transaction->reference)) {
+        // 🔥 SAUVEGARDER LA RÉFÉRENCE KKIAPAY IMMÉDIATEMENT
+        // C'est crucial pour que le webhook puisse trouver la transaction
+        if (empty($transaction->reference) || $transaction->reference !== $validated['transactionId']) {
             $transaction->update(['reference' => $validated['transactionId']]);
+            Log::channel('kkiapay')->info('💾 Référence Kkiapay sauvegardée', [
+                'reference' => $validated['transactionId']
+            ]);
         }
 
         // ==== CAS 1 : Dépôt Wallet (pas de funding_request_id) ====
-        if (empty($validated['funding_request_id']) || $transaction->type === 'deposit') {
+        if ($transaction->type === 'deposit') {
             return $this->verifyWalletDeposit($transaction, $validated['transactionId']);
         }
 
         // ==== CAS 2 : Paiement d'inscription (avec funding_request_id) ====
         return $this->verifyRegistrationPayment($transaction, $validated);
+    }
+
+    /**
+     * Gérer une transaction déjà complétée
+     */
+    private function handleCompletedTransaction(Transaction $transaction, array $validated): JsonResponse
+    {
+        // Si c'est un dépôt wallet
+        if ($transaction->type === 'deposit') {
+            return response()->json([
+                'success'      => true,
+                'status'       => 'completed',
+                'redirect_url' => route('client.wallet.show'),
+                'message'      => 'Dépôt déjà traité',
+            ]);
+        }
+
+        // Si c'est un paiement d'inscription
+        if ($transaction->funding_request_id) {
+            $fundingRequest = FundingRequest::find($transaction->funding_request_id);
+            if ($fundingRequest) {
+                return response()->json([
+                    'success'      => true,
+                    'status'       => 'paid',
+                    'redirect_url' => $this->getRedirectUrl($fundingRequest),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'status'  => 'completed',
+        ]);
     }
 
     /**
@@ -459,6 +511,7 @@ class KkiapayPaymentController extends Controller
         $failureCode    = $request->input('failureCode');
         $failureMessage = $request->input('failureMessage');
         $performedAt    = $request->input('performedAt');
+        $stateData      = $request->input('stateData');
 
         Log::channel('kkiapay')->info('Payload analysé', [
             'transactionId' => $transactionId,
@@ -466,6 +519,7 @@ class KkiapayPaymentController extends Controller
             'event'         => $event,
             'amount'        => $amount,
             'fees'          => $fees,
+            'stateData'     => $stateData,
         ]);
 
         if (!$transactionId) {
@@ -476,18 +530,37 @@ class KkiapayPaymentController extends Controller
         try {
             DB::transaction(function () use (
                 $transactionId, $isSuccess, $event, $amount, $fees,
-                $account, $method, $failureCode, $failureMessage, $performedAt
+                $account, $method, $failureCode, $failureMessage, $performedAt, $stateData
             ) {
-                // Chercher la transaction par référence
+                // 🔥 CORRECTION : Chercher par référence OU par transaction_id interne dans stateData
+                $transaction = null;
+
+                // 1. Chercher par référence Kkiapay
                 $transaction = Transaction::where('reference', $transactionId)
                     ->lockForUpdate()
                     ->first();
 
-                // Si pas trouvé par référence, chercher dans metadata
+                // 2. Si pas trouvé, chercher dans metadata
                 if (!$transaction) {
                     $transaction = Transaction::whereJsonContains('metadata', ['kkiapay_transaction_id' => $transactionId])
                         ->lockForUpdate()
                         ->first();
+                }
+
+                // 3. 🔥 NOUVEAU : Parser stateData pour trouver l'internal_transaction_id
+                if (!$transaction && $stateData) {
+                    $stateDataParsed = json_decode($stateData, true);
+                    if (isset($stateDataParsed['internal_transaction_id'])) {
+                        $transaction = Transaction::where('transaction_id', $stateDataParsed['internal_transaction_id'])
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($transaction) {
+                            Log::channel('kkiapay')->info('✅ Transaction trouvée via stateData', [
+                                'internal_id' => $stateDataParsed['internal_transaction_id']
+                            ]);
+                        }
+                    }
                 }
 
                 if (!$transaction) {
@@ -502,6 +575,11 @@ class KkiapayPaymentController extends Controller
                     'funding_request_id' => $transaction->funding_request_id,
                     'type'               => $transaction->type,
                 ]);
+
+                // Mettre à jour la référence si pas déjà faite
+                if (empty($transaction->reference)) {
+                    $transaction->update(['reference' => $transactionId]);
+                }
 
                 // Éviter double traitement
                 if ($transaction->status === 'completed') {
