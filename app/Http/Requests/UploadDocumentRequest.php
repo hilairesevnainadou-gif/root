@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Rules\OwnedByUser; // Si vous utilisez la classe Rule
 
 class UploadDocumentRequest extends FormRequest
 {
@@ -14,31 +15,33 @@ class UploadDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'funding_request_id' => ['required', 'exists:funding_requests,id', 'owned_by_user'],
-            'typedoc_id' => [
+            'funding_request_id' => [
                 'required',
-                'exists:typedocs,id',
-                'required_for_funding',
-                'not_duplicate'
+                'integer',
+                'exists:funding_requests,id',
+                new OwnedByUser(), // Méthode 1 : avec la classe Rule
+                // 'owned_by_user', // Méthode 2 : avec Validator::extend
             ],
+            'typedoc_id' => 'required|integer|exists:type_docs,id',
             'document' => [
                 'required',
                 'file',
-                'mimes:pdf,jpg,jpeg,png',
+                'mimes:pdf,jpg,jpeg,png,doc,docx',
                 'max:10240', // 10MB
             ],
-            'notes' => ['nullable', 'string', 'max:500'],
+            'notes' => 'nullable|string|max:500',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'document.max' => 'Le fichier ne doit pas dépasser 10MB.',
-            'document.mimes' => 'Formats acceptés : PDF, JPG, PNG.',
-            'typedoc_id.owned_by_user' => 'Cette demande ne vous appartient pas.',
-            'typedoc_id.required_for_funding' => 'Ce document n\'est pas requis pour ce financement.',
-            'typedoc_id.not_duplicate' => 'Vous avez déjà fourni ce document.',
+            'funding_request_id.required' => 'Une demande de financement est requise.',
+            'funding_request_id.exists' => 'La demande de financement n\'existe pas.',
+            'typedoc_id.required' => 'Le type de document est requis.',
+            'document.required' => 'Un fichier est requis.',
+            'document.mimes' => 'Format accepté : PDF, JPG, PNG, DOC, DOCX.',
+            'document.max' => 'Taille maximale : 10 Mo.',
         ];
     }
 }
