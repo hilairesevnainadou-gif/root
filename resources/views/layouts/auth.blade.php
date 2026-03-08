@@ -4,10 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1e3a5f">
+    <meta name="description" content="BHDM - Plateforme de financement participatif pour entrepreneurs et porteurs de projets innovants">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BHDM">
+
     <title>@yield('title', 'BHDM - Plateforme de Financement')</title>
 
+    <!-- Manifest PWA -->
     <link rel="manifest" href="/manifest.json">
+
+    <!-- Icônes -->
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-72x72.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png">
+
+    <!-- Styles -->
     <link rel="stylesheet" href="/css/app.css">
     <link rel="stylesheet" href="/css/mobile.css">
     <link rel="stylesheet" href="/css/pwa.css">
@@ -46,6 +58,7 @@
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior-y: none;
         }
 
         /* ============================================
@@ -62,8 +75,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 2rem;
+            padding: 1rem;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .presentation-overlay.hidden {
@@ -72,19 +86,31 @@
 
         .presentation-dialog {
             background: var(--surface);
-            border-radius: 8px;
+            border-radius: 12px;
             max-width: 800px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: var(--shadow-xl);
             border: 1px solid var(--border);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .presentation-header {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
             color: white;
-            padding: 2.5rem;
+            padding: 2rem;
             text-align: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -103,11 +129,11 @@
         }
 
         .presentation-content {
-            padding: 2.5rem;
+            padding: 2rem;
         }
 
         .content-section {
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         .content-section:last-child {
@@ -163,9 +189,9 @@
         .acceptance-section {
             background: #f1f5f9;
             border: 1px solid var(--border);
-            border-radius: 6px;
+            border-radius: 8px;
             padding: 1.5rem;
-            margin: 2rem 0;
+            margin: 1.5rem 0;
         }
 
         .checkbox-field {
@@ -175,8 +201,8 @@
         }
 
         .checkbox-field input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             margin-top: 2px;
             accent-color: var(--primary);
             cursor: pointer;
@@ -198,12 +224,12 @@
 
         .action-button {
             width: 100%;
-            padding: 0.875rem 1.5rem;
+            padding: 1rem 1.5rem;
             background: #94a3b8;
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 0.9375rem;
+            border-radius: 8px;
+            font-size: 1rem;
             font-weight: 600;
             cursor: not-allowed;
             transition: all 0.2s ease;
@@ -218,8 +244,12 @@
         }
 
         .action-button.enabled:hover {
-            transform: translateY(-1px);
+            transform: translateY(-2px);
             box-shadow: var(--shadow-lg);
+        }
+
+        .action-button.enabled:active {
+            transform: translateY(0);
         }
 
         /* ============================================
@@ -239,7 +269,7 @@
         .app-header {
             background: var(--surface);
             border-bottom: 1px solid var(--border);
-            padding: 1rem 2rem;
+            padding: 1rem 1.5rem;
             position: sticky;
             top: 0;
             z-index: 100;
@@ -250,7 +280,7 @@
             max-width: 1400px;
             margin: 0 auto;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
         }
 
@@ -264,14 +294,18 @@
         .brand-logo {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 1.125rem;
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         .brand-text {
@@ -281,40 +315,6 @@
             letter-spacing: -0.025em;
         }
 
-        .nav-menu {
-            display: flex;
-            gap: 2rem;
-            list-style: none;
-        }
-
-        .nav-menu a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: color 0.2s;
-            position: relative;
-        }
-
-        .nav-menu a:hover {
-            color: var(--primary);
-        }
-
-        .nav-menu a::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: var(--primary);
-            transition: width 0.3s;
-        }
-
-        .nav-menu a:hover::after {
-            width: 100%;
-        }
-
         /* Auth Layout */
         .auth-section {
             min-height: calc(100vh - 73px);
@@ -322,13 +322,13 @@
             align-items: center;
             justify-content: center;
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            padding: 2rem;
+            padding: 1.5rem;
         }
 
         .auth-box {
             background: var(--surface);
-            border-radius: 8px;
-            padding: 2.5rem;
+            border-radius: 12px;
+            padding: 2rem;
             width: 100%;
             max-width: 480px;
             box-shadow: var(--shadow-xl);
@@ -352,134 +352,11 @@
             font-size: 0.875rem;
         }
 
-        /* Info Section */
-        .info-section {
-            background: var(--background);
-            padding: 4rem 2rem;
-        }
-
-        .info-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .section-header h2 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-            letter-spacing: -0.025em;
-        }
-
-        .section-header p {
-            color: var(--text-secondary);
-            font-size: 1.125rem;
-            max-width: 700px;
-            margin: 0 auto;
-            line-height: 1.7;
-        }
-
-        .process-timeline {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2rem;
-            margin: 3rem 0;
-            position: relative;
-        }
-
-        .process-timeline::before {
-            content: '';
-            position: absolute;
-            top: 24px;
-            left: 12.5%;
-            right: 12.5%;
-            height: 2px;
-            background: var(--border);
-        }
-
-        .timeline-item {
-            text-align: center;
-            position: relative;
-            z-index: 1;
-        }
-
-        .timeline-number {
-            width: 50px;
-            height: 50px;
-            background: var(--surface);
-            border: 2px solid var(--primary);
-            color: var(--primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.125rem;
-            font-weight: 700;
-            margin: 0 auto 1rem;
-        }
-
-        .timeline-item.active .timeline-number {
-            background: var(--primary);
-            color: white;
-        }
-
-        .timeline-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-        }
-
-        .timeline-desc {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-top: 3rem;
-        }
-
-        .feature-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .feature-card:hover {
-            border-color: var(--primary);
-            box-shadow: var(--shadow-lg);
-            transform: translateY(-2px);
-        }
-
-        .feature-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 0.75rem;
-        }
-
-        .feature-desc {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
         /* Footer */
         .app-footer {
             background: var(--primary);
             color: white;
-            padding: 2rem;
+            padding: 1.5rem;
             margin-top: auto;
         }
 
@@ -494,17 +371,37 @@
             opacity: 0.9;
         }
 
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .process-timeline {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .process-timeline::before {
-                display: none;
-            }
+        /* Bouton d'installation PWA */
+        .pwa-install-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 24px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
         }
 
+        .pwa-install-button.visible {
+            display: flex;
+        }
+
+        .pwa-install-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
             .presentation-content {
                 padding: 1.5rem;
@@ -518,21 +415,15 @@
                 font-size: 1.5rem;
             }
 
-            .nav-menu {
-                display: none;
-            }
-
-            .process-timeline {
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
-            }
-
             .auth-box {
                 padding: 1.5rem;
+                margin: 1rem;
             }
 
-            .info-section {
-                padding: 2rem 1rem;
+            .pwa-install-button {
+                left: 20px;
+                right: 20px;
+                justify-content: center;
             }
         }
 
@@ -545,9 +436,35 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Offline indicator */
+        .offline-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #dc2626;
+            color: white;
+            text-align: center;
+            padding: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            z-index: 10000;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .offline-indicator.visible {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
+
+    <!-- Indicateur hors ligne -->
+    <div class="offline-indicator" id="offlineIndicator">
+        Vous êtes hors ligne. Certaines fonctionnalités peuvent être limitées.
+    </div>
 
     <!-- ============================================
          MODAL DE PRÉSENTATION - PREMIÈRE VISITE
@@ -625,18 +542,11 @@
         <header class="app-header">
             <div class="header-content">
                 <a href="#" class="brand">
-                    <div class="brand-logo">BH</div>
+                    <div class="brand-logo">
+                        <img src="/images/logo.png" alt="BHDM Logo">
+                    </div>
                     <span class="brand-text">BHDM</span>
                 </a>
-
-                <nav>
-                    <ul class="nav-menu">
-                        <li><a href="#accueil">Accueil</a></li>
-                        <li><a href="#projets">Projets</a></li>
-                        <li><a href="#fonctionnement">Fonctionnement</a></li>
-                        <li><a href="#contact">Contact</a></li>
-                    </ul>
-                </nav>
             </div>
         </header>
 
@@ -652,73 +562,6 @@
             </div>
         </section>
 
-        <!-- Section Information -->
-        <section class="info-section" id="fonctionnement">
-            <div class="info-container">
-                <div class="section-header">
-                    <h2>Système de Financement Participatif</h2>
-                    <p>
-                        Notre plateforme connecte les porteurs de projets innovants avec les financements
-                        nécessaires à leur réalisation à travers un processus transparent et sécurisé.
-                    </p>
-                </div>
-
-                <div class="process-timeline">
-                    <div class="timeline-item active">
-                        <div class="timeline-number">1</div>
-                        <h3 class="timeline-title">Soumission</h3>
-                        <p class="timeline-desc">Dépôt du projet avec business plan et objectifs de financement</p>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-number">2</div>
-                        <h3 class="timeline-title">Validation</h3>
-                        <p class="timeline-desc">Analyse de faisabilité par notre comité d'experts</p>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-number">3</div>
-                        <h3 class="timeline-title">Collecte</h3>
-                        <p class="timeline-desc">Ouverture des contributions auprès de la communauté</p>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-number">4</div>
-                        <h3 class="timeline-title">Réalisation</h3>
-                        <p class="timeline-desc">Versement des fonds et accompagnement du projet</p>
-                    </div>
-                </div>
-
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <h4 class="feature-title">Objectif Principal</h4>
-                        <p class="feature-desc">
-                            Démocratiser l'accès au financement entrepreneurial par un écosystème transparent
-                            et accessible aux porteurs de projets innovants.
-                        </p>
-                    </div>
-                    <div class="feature-card">
-                        <h4 class="feature-title">Sécurité Garantie</h4>
-                        <p class="feature-desc">
-                            Transactions sécurisées, protection des données personnelles et vérification
-                            rigoureuse de chaque projet soumis sur la plateforme.
-                        </p>
-                    </div>
-                    <div class="feature-card">
-                        <h4 class="feature-title">Transparence Totale</h4>
-                        <p class="feature-desc">
-                            Suivi en temps réel des contributions, reporting détaillé et traçabilité complète
-                            des flux financiers à chaque étape.
-                        </p>
-                    </div>
-                    <div class="feature-card">
-                        <h4 class="feature-title">Accompagnement Expert</h4>
-                        <p class="feature-desc">
-                            Support personnalisé et conseils stratégiques pour optimiser la réussite
-                            de votre campagne de financement.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <!-- Footer -->
         <footer class="app-footer">
             <div class="footer-content">
@@ -730,46 +573,71 @@
 
     </div>
 
-    <script src="/js/app.js"></script>
+    <!-- Bouton d'installation PWA -->
+    <button class="pwa-install-button" id="pwaInstallBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Installer l'application
+    </button>
+<script>
+    // ============================================
+    // GESTION DU MODAL DE PRÉSENTATION
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('presentationModal');
+        const mainInterface = document.getElementById('mainInterface');
+        const checkbox = document.getElementById('acceptTerms');
+        const btn = document.getElementById('btnApprove');
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const modal = document.getElementById('presentationModal');
-            const mainInterface = document.getElementById('mainInterface');
-            const checkbox = document.getElementById('acceptTerms');
-            const btn = document.getElementById('btnApprove');
+        // Vérifier acceptation précédente
+        if (localStorage.getItem('bhdm_accepted') === 'true') {
+            modal.classList.add('hidden');
+            mainInterface.classList.add('visible');
+        }
 
-            // Vérifier acceptation précédente
-            if (localStorage.getItem('bhdm_accepted') === 'true') {
+        // Gérer état bouton
+        checkbox.addEventListener('change', function() {
+            btn.disabled = !this.checked;
+            btn.classList.toggle('enabled', this.checked);
+        });
+
+        // Gérer approbation
+        btn.addEventListener('click', function() {
+            if (checkbox.checked) {
+                localStorage.setItem('bhdm_accepted', 'true');
+                localStorage.setItem('bhdm_accepted_date', new Date().toISOString());
+
                 modal.classList.add('hidden');
                 mainInterface.classList.add('visible');
-                return;
+                window.scrollTo(0, 0);
             }
-
-            // Gérer état bouton
-            checkbox.addEventListener('change', function() {
-                if (this.checked) {
-                    btn.disabled = false;
-                    btn.classList.add('enabled');
-                } else {
-                    btn.disabled = true;
-                    btn.classList.remove('enabled');
-                }
-            });
-
-            // Gérer approbation
-            btn.addEventListener('click', function() {
-                if (checkbox.checked) {
-                    localStorage.setItem('bhdm_accepted', 'true');
-                    localStorage.setItem('bhdm_accepted_date', new Date().toISOString());
-
-                    modal.classList.add('hidden');
-                    mainInterface.classList.add('visible');
-                    window.scrollTo(0, 0);
-                }
-            });
         });
-    </script>
+    });
+
+    // ============================================
+    // GESTION DU MODE HORS LIGNE (HTML uniquement)
+    // ============================================
+    const offlineIndicator = document.getElementById('offlineIndicator');
+
+    function updateOnlineStatus() {
+        if (navigator.onLine) {
+            offlineIndicator.classList.remove('visible');
+        } else {
+            offlineIndicator.classList.add('visible');
+        }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+</script>
+
+<!-- Charger app.js APRÈS -->
+<script src="/js/app.js"></script>
+
+
+
 
     @yield('scripts')
 </body>

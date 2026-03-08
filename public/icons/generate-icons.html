@@ -1,48 +1,183 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Générer icônes</title>
+    <title>Générer icônes BHDM</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f3f4f6; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; }
+        h1 { color: #1e3a5f; }
+        button {
+            background: #2563eb; color: white; border: none; padding: 15px 30px;
+            border-radius: 8px; font-size: 16px; cursor: pointer; margin: 10px 5px;
+        }
+        button:hover { background: #1d4ed8; }
+        .preview { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
+        .icon-preview { text-align: center; }
+        .icon-preview img { border: 1px solid #e5e7eb; border-radius: 8px; }
+        .icon-preview p { font-size: 12px; color: #6b7280; margin-top: 5px; }
+    </style>
 </head>
 <body>
-    <canvas id="canvas" width="512" height="512"></canvas>
+    <div class="container">
+        <h1>🎨 Générateur d'icônes BHDM</h1>
+        <p>Cliquez pour générer et télécharger les icônes manquantes</p>
+
+        <button onclick="generateIcons()">📱 Générer les icônes (72-512px)</button>
+        <button onclick="generateScreenshots()">🖼️ Générer les screenshots</button>
+
+        <div class="preview" id="preview"></div>
+    </div>
+
     <script>
-        const canvas = document.getElementById('canvas');
+        // Canvas principal
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
         const ctx = canvas.getContext('2d');
 
-        // Fond bleu
-        ctx.fillStyle = '#2563eb';
-        ctx.fillRect(0, 0, 512, 512);
+        function drawIcon() {
+            // Fond dégradé
+            const gradient = ctx.createLinearGradient(0, 0, 512, 512);
+            gradient.addColorStop(0, '#1e3a5f');
+            gradient.addColorStop(1, '#2563eb');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 512, 512);
 
-        // Cercle blanc
-        ctx.beginPath();
-        ctx.arc(256, 256, 180, 0, Math.PI * 2);
-        ctx.fillStyle = 'white';
-        ctx.fill();
+            // Cercle blanc
+            ctx.beginPath();
+            ctx.arc(256, 256, 160, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
 
-        // Texte "BHDM"
-        ctx.fillStyle = '#2563eb';
-        ctx.font = 'bold 120px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('BHDM', 256, 256);
+            // Texte "BH"
+            ctx.fillStyle = '#1e3a5f';
+            ctx.font = 'bold 140px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('BH', 256, 256);
+        }
 
-        // Télécharger
-        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        function generateIcons() {
+            drawIcon();
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '<h3 style="width:100%;">Icônes générées :</h3>';
 
-        sizes.forEach(size => {
-            const c = document.createElement('canvas');
-            c.width = size;
-            c.height = size;
-            const cx = c.getContext('2d');
-            cx.drawImage(canvas, 0, 0, size, size);
+            const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
 
-            const link = document.createElement('a');
-            link.download = `icon-${size}x${size}.png`;
-            link.href = c.toDataURL();
-            link.click();
-        });
+            sizes.forEach(size => {
+                const c = document.createElement('canvas');
+                c.width = size;
+                c.height = size;
+                const cx = c.getContext('2d');
+                cx.drawImage(canvas, 0, 0, size, size);
 
-        alert('Icônes générées ! Vérifiez vos téléchargements.');
+                // Télécharger
+                const link = document.createElement('a');
+                link.download = `icon-${size}x${size}.png`;
+                link.href = c.toDataURL('image/png');
+                link.click();
+
+                // Preview
+                const div = document.createElement('div');
+                div.className = 'icon-preview';
+                div.innerHTML = `
+                    <img src="${c.toDataURL()}" width="${size > 100 ? 100 : size}" height="${size > 100 ? 100 : size}">
+                    <p>${size}x${size}</p>
+                `;
+                preview.appendChild(div);
+            });
+        }
+
+        function generateScreenshots() {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '<h3 style="width:100%;">Screenshots générés :</h3>';
+
+            // Screenshot 1 - Desktop (1280x720)
+            const canvas1 = document.createElement('canvas');
+            canvas1.width = 1280;
+            canvas1.height = 720;
+            const ctx1 = canvas1.getContext('2d');
+
+            // Fond
+            const grad1 = ctx1.createLinearGradient(0, 0, 1280, 720);
+            grad1.addColorStop(0, '#1e3a5f');
+            grad1.addColorStop(1, '#3b82f6');
+            ctx1.fillStyle = grad1;
+            ctx1.fillRect(0, 0, 1280, 720);
+
+            // Contenu
+            ctx1.fillStyle = 'white';
+            ctx1.font = 'bold 60px Arial';
+            ctx1.textAlign = 'center';
+            ctx1.fillText('BHDM - Plateforme de Financement', 640, 300);
+            ctx1.font = '30px Arial';
+            ctx1.fillText('Connectez les porteurs de projets avec les investisseurs', 640, 380);
+
+            // Télécharger
+            const link1 = document.createElement('a');
+            link1.download = 'screenshot1.png';
+            link1.href = canvas1.toDataURL('image/png');
+            link1.click();
+
+            const div1 = document.createElement('div');
+            div1.className = 'icon-preview';
+            div1.innerHTML = `
+                <img src="${canvas1.toDataURL()}" width="300">
+                <p>screenshot1.png (1280x720)</p>
+            `;
+            preview.appendChild(div1);
+
+            // Screenshot 2 - Mobile (750x1334)
+            const canvas2 = document.createElement('canvas');
+            canvas2.width = 750;
+            canvas2.height = 1334;
+            const ctx2 = canvas2.getContext('2d');
+
+            // Fond mobile
+            const grad2 = ctx2.createLinearGradient(0, 0, 750, 1334);
+            grad2.addColorStop(0, '#1e3a5f');
+            grad2.addColorStop(1, '#2563eb');
+            ctx2.fillStyle = grad2;
+            ctx2.fillRect(0, 0, 750, 1334);
+
+            // Header mobile
+            ctx2.fillStyle = 'white';
+            ctx2.fillRect(0, 0, 750, 100);
+            ctx2.fillStyle = '#1e3a5f';
+            ctx2.font = 'bold 40px Arial';
+            ctx2.textAlign = 'left';
+            ctx2.fillText('BHDM', 30, 65);
+
+            // Contenu mobile
+            ctx2.fillStyle = 'white';
+            ctx2.textAlign = 'center';
+            ctx2.font = 'bold 50px Arial';
+            ctx2.fillText('Connexion', 375, 400);
+
+            // Formulaire simulé
+            ctx2.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx2.fillRect(100, 500, 550, 80);
+            ctx2.fillRect(100, 620, 550, 80);
+            ctx2.fillStyle = '#2563eb';
+            ctx2.fillRect(100, 780, 550, 80);
+            ctx2.fillStyle = 'white';
+            ctx2.font = '30px Arial';
+            ctx2.fillText('Se connecter', 375, 830);
+
+            // Télécharger
+            const link2 = document.createElement('a');
+            link2.download = 'screenshot2.png';
+            link2.href = canvas2.toDataURL('image/png');
+            link2.click();
+
+            const div2 = document.createElement('div');
+            div2.className = 'icon-preview';
+            div2.innerHTML = `
+                <img src="${canvas2.toDataURL()}" width="150">
+                <p>screenshot2.png (750x1334)</p>
+            `;
+            preview.appendChild(div2);
+        }
     </script>
 </body>
 </html>

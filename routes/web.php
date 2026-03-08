@@ -43,7 +43,26 @@ Route::middleware('guest')->group(function () {
     Route::post('/verification/change', [AuthController::class, 'changeMethod'])->name('verification.change');
     Route::post('/verification/update-contact', [AuthController::class, 'updateContact'])->name('verification.update-contact');
 });
+Route::get('/check-pwa', function () {
+    $checks = [
+        'manifest' => file_exists(public_path('manifest.json')),
+        'sw' => file_exists(public_path('service-worker.js')),
+        'icons' => [],
+        'screenshots' => []
+    ];
 
+    $iconSizes = [72, 96, 128, 144, 152, 192, 384, 512];
+    foreach ($iconSizes as $size) {
+        $path = public_path("icons/icon-{$size}x{$size}.png");
+        $checks['icons'][$size] = file_exists($path);
+    }
+
+    // Screenshots optionnels
+    $checks['screenshots']['screenshot1'] = file_exists(public_path('screenshots/screenshot1.png'));
+    $checks['screenshots']['screenshot2'] = file_exists(public_path('screenshots/screenshot2.png'));
+
+    return response()->json($checks);
+});
 // Logout
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -118,12 +137,12 @@ Route::prefix('wallet')->name('client.wallet.')->middleware('auth')->group(funct
     // Affichage
     Route::get('/', [ClientWalletController::class, 'show'])->name('show');
     Route::get('/transactions', [ClientWalletController::class, 'transactions'])->name('transactions');
-    
+
     // Dépôt (Kkiapay)
     Route::get('/deposit', [ClientWalletController::class, 'depositForm'])->name('deposit');
     Route::post('/deposit', [ClientWalletController::class, 'deposit'])->name('deposit.store');
     Route::post('/deposit/verify', [ClientWalletController::class, 'verifyDeposit'])->name('deposit.verify');
-    
+
     // Retrait
     Route::get('/withdraw', [ClientWalletController::class, 'withdrawForm'])->name('withdraw');
     Route::post('/withdraw', [ClientWalletController::class, 'withdraw'])->name('withdraw.store');

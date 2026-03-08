@@ -29,9 +29,12 @@
     <div id="page-transition" class="page-transition">
         <div class="transition-spinner">
             <svg viewBox="0 0 50 50">
-                <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">
-                    <animate attributeName="stroke-dasharray" values="1,150;90,150;90,150" dur="1.5s" repeatCount="indefinite"/>
-                    <animate attributeName="stroke-dashoffset" values="0;-35;-124" dur="1.5s" repeatCount="indefinite"/>
+                <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4"
+                    stroke-linecap="round">
+                    <animate attributeName="stroke-dasharray" values="1,150;90,150;90,150" dur="1.5s"
+                        repeatCount="indefinite" />
+                    <animate attributeName="stroke-dashoffset" values="0;-35;-124" dur="1.5s"
+                        repeatCount="indefinite" />
                 </circle>
             </svg>
         </div>
@@ -40,7 +43,8 @@
     <!-- Auth Transition (pour la connexion) -->
     <div id="auth-transition" class="auth-transition">
         <div class="auth-transition-content">
-            <div class="auth-logo">B</div>
+            <div class="auth-logo"><img src="{{ asset('images/logo.png') }}" alt="BHDM Logo" class="auth-logo-img">
+            </div>
             <div class="auth-welcome">Bienvenue sur BHDM</div>
             <div class="auth-loading-bar">
                 <div class="auth-loading-progress"></div>
@@ -61,7 +65,7 @@
     <header class="mobile-header">
         <div class="mobile-header-content">
             <div class="mobile-header-brand">
-                <div class="header-logo-fallback">B</div>
+                <img src="{{ asset('images/logo.png') }}" alt="BHDM Logo" class="header-logo" width="40" height="40">
                 <span class="mobile-header-title">@yield('header-title', 'Mon Espace')</span>
             </div>
 
@@ -134,8 +138,7 @@
             <span>Portefeuille</span>
         </a>
 
-        <a href="{{ route('client.requests.create') }}"
-            class="mobile-nav-item nav-item-primary"
+        <a href="{{ route('client.requests.create') }}" class="mobile-nav-item nav-item-primary"
             data-transition="scale-up">
             <div class="nav-icon-bg">
                 <div class="nav-pulse-ring"></div>
@@ -160,8 +163,7 @@
         </a>
 
         <a href="{{ route('client.profile') }}"
-            class="mobile-nav-item {{ request()->routeIs('client.profile') ? 'active' : '' }}"
-            data-transition="fade">
+            class="mobile-nav-item {{ request()->routeIs('client.profile') ? 'active' : '' }}" data-transition="fade">
             <div class="nav-icon-wrapper">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -174,7 +176,8 @@
     @endif
     @endauth
 
-    <!-- Modal Déconnexion Premium -->
+
+    <!-- Modal Déconnexion -->
     <div id="logout-modal" class="modal-logout">
         <div class="modal-logout-backdrop" id="logout-backdrop"></div>
         <div class="modal-logout-content">
@@ -195,12 +198,14 @@
                     Rester connecté
                 </button>
 
-                <form action="{{ route('logout') }}" method="POST" id="logout-form" style="margin: 0; flex: 1; display: flex;">
+                {{-- CORRECTION: Formulaire avec token CSRF explicite --}}
+                <form action="{{ route('logout') }}" method="POST" id="logout-form"
+                    style="margin: 0; flex: 1; display: flex;">
                     @csrf
                     <button type="submit" class="btn btn-danger" id="btn-confirm-logout">
                         <span class="btn-text">Me déconnecter</span>
-                        <span class="btn-loader">
-                            <svg class="spinner" fill="none" viewBox="0 0 24 24" width="18" height="18">
+                        <span class="btn-loader" style="display: none;">
+                            <svg class="spinner" fill="none" viewBox="0 0 24 24" width="16" height="16">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25" />
                                 <path stroke="currentColor" stroke-width="3" stroke-linecap="round"
                                     d="M12 2a10 10 0 0110 10">
@@ -243,184 +248,96 @@
 
     <!-- JavaScript pour les animations -->
     <script>
-        // ==========================================
-        // SYSTÈME DE TRANSITION DE PAGES
-        // ==========================================
-
         document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('logout-modal');
+    const btnTrigger = document.getElementById('btn-logout-trigger');
+    const btnCancel = document.getElementById('btn-cancel-logout');
+    const btnConfirm = document.getElementById('btn-confirm-logout');
+    const backdrop = document.getElementById('logout-backdrop');
+    const form = document.getElementById('logout-form');
+    const modalContent = modal.querySelector('.modal-logout-content');
 
-            // 1. ANIMATION DE CONNEXION (Auth Transition)
-            const authTransition = document.getElementById('auth-transition');
+    // Ouvrir le modal
+    function openModal() {
+        modal.style.display = 'flex';
+        modal.offsetHeight; // Force reflow
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        btnCancel.focus();
+    }
 
-            function showAuthTransition() {
-                if (authTransition) {
-                    authTransition.classList.add('active');
-                    // Simuler la fin après 2.5s
-                    setTimeout(() => {
-                        authTransition.classList.add('fade-out');
-                        setTimeout(() => {
-                            authTransition.classList.remove('active', 'fade-out');
-                        }, 500);
-                    }, 2500);
-                }
-            }
+    // Fermer le modal avec animation
+    function closeModal() {
+        modal.classList.remove('active');
+        modal.classList.add('closing');
 
-            // Détecter si c'est une connexion fraîche (paramètre URL ou session)
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('fresh_login') || document.referrer.includes('login')) {
-                showAuthTransition();
-            }
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.classList.remove('closing');
+            document.body.style.overflow = '';
+        }, 300);
+    }
 
-            // 2. TRANSITIONS ENTRE PAGES
-            const pageTransition = document.getElementById('page-transition');
-            const navLinks = document.querySelectorAll('.mobile-nav-item');
-
-            function showPageTransition() {
-                if (pageTransition) {
-                    pageTransition.classList.add('active');
-                }
-            }
-
-            function hidePageTransition() {
-                if (pageTransition) {
-                    pageTransition.classList.remove('active');
-                }
-            }
-
-            // Intercepter les clics sur la navigation
-            navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    const href = this.getAttribute('href');
-                    const transition = this.dataset.transition || 'fade';
-
-                    // Ne pas intercepter si Ctrl/Cmd click (nouvel onglet)
-                    if (e.ctrlKey || e.metaKey || e.button !== 0) return;
-
-                    e.preventDefault();
-                    showPageTransition();
-
-                    // Ajouter la classe d'animation spécifique
-                    document.body.classList.add(`transition-${transition}`);
-
-                    // Navigation après l'animation
-                    setTimeout(() => {
-                        window.location.href = href;
-                    }, 400);
-                });
-            });
-
-            // Cacher le loader quand la page est chargée
-            window.addEventListener('load', hidePageTransition);
-            window.addEventListener('pageshow', hidePageTransition);
-
-            // 3. MODAL DÉCONNEXION
-            const modal = document.getElementById('logout-modal');
-            const btnTrigger = document.getElementById('btn-logout-trigger');
-            const btnCancel = document.getElementById('btn-cancel-logout');
-            const btnConfirm = document.getElementById('btn-confirm-logout');
-            const backdrop = document.getElementById('logout-backdrop');
-            const form = document.getElementById('logout-form');
-            const modalContent = modal.querySelector('.modal-logout-content');
-
-            function openModal() {
-                modal.style.display = 'flex';
-                modal.offsetHeight; // Force reflow
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                btnCancel.focus();
-            }
-
-            function closeModal() {
-                modal.classList.remove('active');
-                modal.classList.add('closing');
-
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                    modal.classList.remove('closing');
-                    document.body.style.overflow = '';
-                }, 300);
-            }
-
-            if (btnTrigger) {
-                btnTrigger.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    openModal();
-                });
-            }
-
-            if (btnCancel) btnCancel.addEventListener('click', closeModal);
-            if (backdrop) backdrop.addEventListener('click', closeModal);
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && modal.classList.contains('active')) {
-                    closeModal();
-                }
-            });
-
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    if (btnConfirm.disabled) {
-                        e.preventDefault();
-                        return;
-                    }
-
-                    btnConfirm.disabled = true;
-                    btnConfirm.classList.add('loading');
-                    modalContent.style.transform = 'scale(0.98)';
-
-                    setTimeout(() => form.submit(), 200);
-                });
-            }
-
-            modalContent.addEventListener('click', e => e.stopPropagation());
-
-            // 4. ANIMATIONS DES ALERTES
-            const alerts = document.querySelectorAll('.alert-enter');
-            alerts.forEach((alert, index) => {
-                setTimeout(() => {
-                    alert.classList.add('alert-visible');
-                }, index * 100);
-            });
-
-            // 5. ANIMATION SCROLL HEADER
-            let lastScroll = 0;
-            const header = document.querySelector('.mobile-header');
-
-            window.addEventListener('scroll', () => {
-                const currentScroll = window.pageYOffset;
-
-                if (currentScroll > 100) {
-                    header.classList.add('header-scrolled');
-                } else {
-                    header.classList.remove('header-scrolled');
-                }
-
-                lastScroll = currentScroll;
-            }, { passive: true });
-
-            // 6. RIPPLE EFFECT SUR LES BOUTONS
-            function createRipple(e) {
-                const button = e.currentTarget;
-                const rect = button.getBoundingClientRect();
-                const size = Math.max(rect.width, rect.height);
-                const x = e.clientX - rect.left - size / 2;
-                const y = e.clientY - rect.top - size / 2;
-
-                const ripple = document.createElement('span');
-                ripple.classList.add('ripple');
-                ripple.style.width = ripple.style.height = size + 'px';
-                ripple.style.left = x + 'px';
-                ripple.style.top = y + 'px';
-
-                button.appendChild(ripple);
-
-                setTimeout(() => ripple.remove(), 600);
-            }
-
-            document.querySelectorAll('.btn, .mobile-nav-item').forEach(btn => {
-                btn.addEventListener('click', createRipple);
-            });
+    // Gestion du clic sur le bouton de déconnexion
+    if (btnTrigger) {
+        btnTrigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            openModal();
         });
+    }
+
+    // Annuler la déconnexion
+    if (btnCancel) {
+        btnCancel.addEventListener('click', closeModal);
+    }
+
+    // Fermer en cliquant sur le backdrop
+    if (backdrop) {
+        backdrop.addEventListener('click', closeModal);
+    }
+
+    // Fermer avec la touche Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    // CORRECTION: Gestion de la soumission du formulaire
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Empêcher la soumission multiple
+            if (btnConfirm.disabled) {
+                e.preventDefault();
+                return;
+            }
+
+            // Vérifier que le token CSRF est présent
+            const csrfToken = document.querySelector('input[name="_token"]')?.value;
+            if (!csrfToken) {
+                e.preventDefault();
+                console.error('CSRF token manquant');
+                alert('Erreur de sécurité. Veuillez recharger la page.');
+                return;
+            }
+
+            // Activer l'état de chargement
+            btnConfirm.disabled = true;
+            btnConfirm.classList.add('loading');
+
+            // Feedback visuel
+            modalContent.style.transform = 'scale(0.98)';
+
+            // Laisser le formulaire se soumettre normalement
+            // Pas de e.preventDefault() ici !
+        });
+    }
+
+    // Empêcher la fermeture si on clique sur le contenu
+    modalContent.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+});
     </script>
 
     @yield('scripts')
