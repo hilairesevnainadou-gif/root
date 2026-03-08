@@ -13,6 +13,9 @@ use Illuminate\View\View;
 
 class DocumentController extends Controller
 {
+    /**
+     * Liste des documents de l'utilisateur
+     */
     public function index(): View
     {
         $documents = DocumentUser::with(['typeDoc', 'fundingRequest'])
@@ -24,95 +27,116 @@ class DocumentController extends Controller
     }
 
     /**
-     * Documents requis pour une demande
+     * Documents requis pour une demande spécifique
      */
-    public function required(FundingRequest $fundingRequest): View
-    {
-        // Policy ou vérification manuelle
-        $this->authorize('view', $fundingRequest);
+    // public function required(FundingRequest $fundingRequest): View
+    // {
+    //     $this->authorize('view', $fundingRequest);
 
-        $documents = DocumentUser::with('typeDoc')
-            ->where('funding_request_id', $fundingRequest->id)
-            ->get();
+    //     $requiredDocs = $fundingRequest->typeFinancement->requiredTypeDocs();
+    //     $providedDocs = $fundingRequest->documentUsers()->with('typeDoc')->get();
+    //     $missingDocs = $fundingRequest->missingDocuments();
 
-        return view('client.documents.required', compact('fundingRequest', 'documents'));
-    }
+    //     return view('client.documents.required', compact(
+    //         'fundingRequest',
+    //         'requiredDocs',
+    //         'providedDocs',
+    //         'missingDocs'
+    //     ));
+    // }
 
     /**
-     * Upload avec validation complète
+     * Upload un document (stockage PUBLIC)
      */
     public function store(UploadDocumentRequest $request): RedirectResponse
     {
-        // La validation est déjà faite par UploadDocumentRequest
-        $validated = $request->validated();
+        $fundingRequest = FundingRequest::findOrFail($request->funding_request_id);
 
-        $fundingRequest = FundingRequest::findOrFail($validated['funding_request_id']);
+        if ($fundingRequest->user_id !== auth()->id()) {
+            return back()->with('error', 'Non autorisé.');
+        }
 
-        // Vérification supplémentaire du statut
         if ($fundingRequest->status !== 'draft') {
             return back()->with('error', 'Impossible d\'ajouter des documents après soumission.');
         }
 
-        // Upload
+        // Stocker dans PUBLIC (pas private)
         $file = $request->file('document');
-        $directory = "documents/{$fundingRequest->user_id}/{$fundingRequest->id}";
-        $path = $file->store($directory, 'public');
+        $directory = 'documents/' . auth()->id() . '/' . $fundingRequest->id;
+        $path = $file->store($directory, 'public'); // DISK = public
 
         DocumentUser::create([
             'user_id' => auth()->id(),
-            'funding_request_id' => $validated['funding_request_id'],
-            'typedoc_id' => $validated['typedoc_id'],
+            'funding_request_id' => $request->funding_request_id,
+            'typedoc_id' => $request->typedoc_id,
             'file_path' => $path,
             'file_name' => $file->getClientOriginalName(),
             'file_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
             'status' => 'pending',
-            'notes' => $validated['notes'] ?? null,
+            'notes' => $request->notes,
         ]);
 
         return back()->with('success', 'Document uploadé avec succès.');
     }
 
+
     /**
-     * Afficher le document (inline)
+ * Afficher les documents requis pour une demande
+ */
+public function required(FundingRequest $fundingRequest): View
+{
+    // Vérifier que la demande appartient à l'utilisateur
+    if ($fundingRequest->user_id !== auth()->id()) {
+        abort(403);
+    }
+
+    // Charger les documents avec leur type
+    $documents = DocumentUser::with('typeDoc')
+        ->where('funding_request_id', $fundingRequest->id)
+        ->get();
+
+    return view('client.documents.required', compact('fundingRequest', 'documents'));
+}
+    /**
+     * Voir/Télécharger un document (retourne Response, pas RedirectResponse)
      */
     public function show(DocumentUser $document): Response
     {
         $this->authorize('view', $document);
 
         if (!Storage::disk('public')->exists($document->file_path)) {
-            abort(404);
+            abort(404, 'Fichier non trouvé');
         }
 
-        return response(
-            Storage::disk('public')->get($document->file_path),
-            200,
-            [
-                'Content-Type' => $document->file_type,
-                'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
-            ]
-        );
+        // Retourne le fichier pour affichage ou téléchargement
+        $fileContent = Storage::disk('public')->get($document->file_path);
+        $mimeType = $document->file_type;
+
+        return response($fileContent, 200, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
+        ]);
     }
 
     /**
-     * Télécharger le document
+     * Télécharger un document (force download)
      */
     public function download(DocumentUser $document): Response
     {
         $this->authorize('view', $document);
 
         if (!Storage::disk('public')->exists($document->file_path)) {
-            abort(404);
+            abort(404, 'Fichier non trouvé');
         }
 
-        return response(
-            Storage::disk('public')->get($document->file_path),
-            200,
-            [
-                'Content-Type' => $document->file_type,
-                'Content-Disposition' => 'attachment; filename="' . $document->file_name . '"',
-            ]
-        );
+        $fileContent = Storage::disk('public')->get($document->file_path);
+        $mimeType = $document->file_type;
+
+        return response($fileContent, 200, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'attachment; filename="' . $document->file_name . '"',
+        ]);
     }
 
     /**
@@ -126,6 +150,7 @@ class DocumentController extends Controller
             return back()->with('error', 'Impossible de supprimer un document déjà traité.');
         }
 
+        // Supprimer du stockage public
         Storage::disk('public')->delete($document->file_path);
         $document->delete();
 
