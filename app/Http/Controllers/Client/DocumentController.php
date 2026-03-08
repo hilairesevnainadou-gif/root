@@ -45,7 +45,6 @@ class DocumentController extends Controller
 
     /**
      * 🔥 UPLOAD - Met à jour un DocumentUser existant
-     * Permis si status: draft, submitted, under_review, pending_committee
      */
     public function store(UploadDocumentRequest $request): JsonResponse
     {
@@ -59,8 +58,8 @@ class DocumentController extends Controller
             ], 403);
         }
 
-        // 🔥 STATUTS PERMIS pour l'upload
-        $allowedStatuses = ['draft', 'submitted', 'under_review', 'pending_committee'];
+        //  SEULEMENT draft ou submitted (pas encore en examen)
+        $allowedStatuses = ['draft', 'submitted'];
 
         if (!in_array($fundingRequest->status, $allowedStatuses)) {
             return response()->json([
@@ -102,8 +101,8 @@ class DocumentController extends Controller
             'status' => 'pending',
         ]);
 
-        // 🔥 VÉRIFIER SI TOUS LES DOCUMENTS SONT COMPLÉTÉS
-        $this->checkAndUpdateFundingRequestStatus($fundingRequest);
+        // VÉRIFIER SI TOUS LES DOCUMENTS SONT COMPLÉTÉS → PASSER EN EXAMEN
+        $this->checkAndSubmitForReview($fundingRequest);
 
         return response()->json([
             'success' => true,
@@ -117,9 +116,9 @@ class DocumentController extends Controller
     }
 
     /**
-     * 🔥 Vérifie si tous les documents sont uploadés et met à jour le statut
+     * 🔥 Vérifie si tous les documents sont uploadés et soumet pour examen
      */
-    private function checkAndUpdateFundingRequestStatus(FundingRequest $fundingRequest): void
+    private function checkAndSubmitForReview(FundingRequest $fundingRequest): void
     {
         // Compter les documents
         $totalDocs = DocumentUser::where('funding_request_id', $fundingRequest->id)->count();
@@ -127,12 +126,13 @@ class DocumentController extends Controller
             ->whereNotNull('file_path')
             ->count();
 
-        // Si tous les documents sont présents et statut permet la transition
+        // 🔥 SI TOUS LES DOCUMENTS SONT PRÉSENTS → PASSER EN under_review
         if ($totalDocs > 0 && $totalDocs === $filledDocs) {
-            if (in_array($fundingRequest->status, ['draft', 'submitted'])) {
+            // Vérifier que c'est bien payé aussi
+            if ($fundingRequest->payment_status === 'paid' && in_array($fundingRequest->status, ['draft', 'submitted'])) {
                 $fundingRequest->update([
                     'status' => 'under_review',
-                    'reviewed_at' => now(), // Date de soumission
+                    'reviewed_at' => now(),
                 ]);
             }
         }
@@ -187,9 +187,10 @@ class DocumentController extends Controller
     {
         $this->authorize('delete', $document);
 
-        // 🔥 Même vérification de statut que pour l'upload
         $fundingRequest = $document->fundingRequest;
-        $allowedStatuses = ['draft', 'submitted', 'under_review', 'pending_committee'];
+
+        //  Même restriction que pour l'upload
+        $allowedStatuses = ['draft', 'submitted'];
 
         if (!in_array($fundingRequest->status, $allowedStatuses)) {
             return back()->with('error', 'Impossible de supprimer un document à ce stade.');

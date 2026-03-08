@@ -6,8 +6,7 @@
 @section('content')
 
 @php
-    // 🔥 STATUTS qui permettent l'upload/modification
-    $canUpload = in_array($fundingRequest->status, ['draft', 'submitted', 'under_review', 'pending_committee']);
+    $canUpload = in_array($fundingRequest->status, ['draft', 'submitted']);
 
     $emptyDocs = $documents->whereNull('file_path');
     $filledDocs = $documents->whereNotNull('file_path');
@@ -17,7 +16,6 @@
 
     $allCompleted = $emptyDocs->count() === 0;
 
-    // 🔥 TRADUCTIONS DES STATUTS EN DUR
     $statusLabels = [
         'draft' => 'Brouillon',
         'submitted' => 'Soumise',
@@ -33,130 +31,106 @@
     $currentStatusLabel = $statusLabels[$fundingRequest->status] ?? $fundingRequest->status;
 @endphp
 
-<div class="dashboard-container" style="padding-bottom: 100px;">
+<div class="documents-container">
 
-    {{-- Header avec statut --}}
-    <div class="card-premium" style="background: {{ $allCompleted ? 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)' : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' }}; border-color: {{ $allCompleted ? '#86efac' : '#fcd34d' }}; margin-bottom: 1rem;">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-            <div style="width: 48px; height: 48px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: {{ $allCompleted ? '#16a34a' : '#d97706' }}; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    {{-- En-tête de statut --}}
+    <div class="status-card {{ $allCompleted ? 'status-complete' : 'status-pending' }}">
+        <div class="status-content">
+            <div class="status-indicator">
                 @if($allCompleted)
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span class="status-check">OK</span>
                 @else
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span class="status-pending-text">EN COURS</span>
                 @endif
             </div>
-            <div>
-                <h2 style="font-size: 1.125rem; font-weight: 700; color: {{ $allCompleted ? '#166534' : '#92400e' }}; margin: 0;">
+            <div class="status-details">
+                <h2 class="status-title">
                     @if($allCompleted)
-                        Dossier complet !
+                        Dossier complet
                     @else
-                        Documents en cours
+                        Documents en cours de constitution
                     @endif
                 </h2>
-                <p style="margin: 0; color: {{ $allCompleted ? '#166534' : '#92400e' }}; font-size: 0.9375rem;">
-                    Demande <span style="font-family: monospace; background: rgba(255,255,255,0.6); padding: 0.125rem 0.5rem; border-radius: 4px; font-weight: 600;">{{ $fundingRequest->request_number }}</span>
-                    • Statut: <strong>{{ $currentStatusLabel }}</strong>
+                <p class="status-subtitle">
+                    Demande <span class="request-number">{{ $fundingRequest->request_number }}</span>
+                    <span class="separator">|</span>
+                    Statut: <strong>{{ $currentStatusLabel }}</strong>
                 </p>
             </div>
         </div>
     </div>
 
-    {{-- Message si plus modifiable --}}
+    {{-- Alerte si verrouillé --}}
     @if(!$canUpload)
-    <div class="card-premium" style="background: #fee2e2; border-color: #fecaca; margin-bottom: 1rem;">
-        <div style="display: flex; align-items: center; gap: 0.75rem; color: #991b1b;">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-            </svg>
-            <p style="margin: 0; font-size: 0.875rem;">
-                Les documents ne peuvent plus être modifiés car la demande est en <strong>{{ $currentStatusLabel }}</strong>.
-            </p>
-        </div>
+    <div class="alert alert-locked">
+        <p>
+            Les documents ne peuvent plus être modifiés car la demande est en <strong>{{ $currentStatusLabel }}</strong>.
+        </p>
     </div>
     @endif
 
-    {{-- Récapitulatif --}}
-    <div class="card-premium" style="margin-bottom: 1rem;">
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 600;">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-            </svg>
-            <span>Récapitulatif</span>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-            <div>
-                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">Financement</div>
-                <div style="font-size: 0.9375rem; font-weight: 600; color: #0f172a;">{{ $fundingRequest->typeFinancement->name }}</div>
+    {{-- Récapitulatif de la demande --}}
+    <div class="card summary-card">
+        <h3 class="card-title">Récapitulatif de la demande</h3>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <span class="summary-label">Type de financement</span>
+                <span class="summary-value">{{ $fundingRequest->typeFinancement->name }}</span>
             </div>
-            <div>
-                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">Montant</div>
-                <div style="font-size: 0.9375rem; font-weight: 600; color: #2563eb;">{{ number_format($fundingRequest->amount_requested, 0, ',', ' ') }} FCFA</div>
+            <div class="summary-item">
+                <span class="summary-label">Montant demandé</span>
+                <span class="summary-value amount">{{ number_format($fundingRequest->amount_requested, 0, ',', ' ') }} FCFA</span>
             </div>
-            <div>
-                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">Durée</div>
-                <div style="font-size: 0.9375rem; font-weight: 600; color: #0f172a;">{{ $fundingRequest->duration }} mois</div>
+            <div class="summary-item">
+                <span class="summary-label">Durée</span>
+                <span class="summary-value">{{ $fundingRequest->duration }} mois</span>
             </div>
-            <div>
-                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">Frais payés</div>
-                <div style="font-size: 0.9375rem; font-weight: 600; color: #16a34a;">{{ number_format($fundingRequest->registration_fee_paid, 0, ',', ' ') }} FCFA</div>
+            <div class="summary-item">
+                <span class="summary-label">Frais d'inscription</span>
+                <span class="summary-value fee">{{ number_format($fundingRequest->registration_fee_paid, 0, ',', ' ') }} FCFA</span>
             </div>
         </div>
     </div>
 
-    {{-- Section documents --}}
-    <div class="card-premium">
-        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="22" height="22" style="color: #2563eb;">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0;">Documents requis</h3>
-        </div>
+    {{-- Section Documents --}}
+    <div class="card documents-card">
+        <h3 class="card-title">Documents requis</h3>
 
         {{-- Barre de progression --}}
-        <div style="margin-bottom: 1.5rem;">
-            <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-bottom: 0.5rem;">
-                <div style="height: 100%; background: linear-gradient(90deg, #2563eb, #3b82f6); border-radius: 3px; transition: width 0.6s ease; width: {{ $progressPercent }}%;"></div>
+        <div class="progress-section">
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: {{ $progressPercent }}%"></div>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b;">
-                <span>{{ $filledDocs->count() }}/{{ $documents->count() }} documents</span>
-                <span>{{ $progressPercent }}% complété</span>
+            <div class="progress-stats">
+                <span>{{ $filledDocs->count() }} sur {{ $documents->count() }} documents fournis</span>
+                <span class="progress-percent">{{ $progressPercent }}%</span>
             </div>
         </div>
 
         {{-- Documents à compléter --}}
         @if($emptyDocs->count() > 0)
-        <div style="margin-bottom: 1.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-                <span style="min-width: 24px; height: 24px; border-radius: 50%; background: #f59e0b; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;">{{ $emptyDocs->count() }}</span>
-                <span style="font-size: 0.875rem; font-weight: 600; color: #374151;">À compléter</span>
-            </div>
+        <div class="documents-section">
+            <h4 class="section-title">
+                <span class="badge badge-warning">{{ $emptyDocs->count() }}</span>
+                Documents à fournir
+            </h4>
 
-            <div style="display: flex; flex-direction: column; gap: 0.875rem;">
+            <div class="documents-list">
                 @foreach($emptyDocs as $doc)
-                <div class="document-item" id="doc-{{ $doc->id }}" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: white; border: 2px solid #e2e8f0; border-radius: 12px;">
-
-                    {{-- Icône --}}
-                    <div style="width: 44px; height: 44px; border-radius: 10px; background: #dbeafe; color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                        </svg>
-                    </div>
-
-                    {{-- Info --}}
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
-                            <h4 style="font-size: 0.9375rem; font-weight: 600; color: #0f172a; margin: 0;">{{ $doc->typeDoc->name }}</h4>
+                <div class="document-item" id="doc-{{ $doc->id }}">
+                    <div class="document-info">
+                        <div class="document-header">
+                            <span class="document-name">{{ $doc->typeDoc->name }}</span>
                             @if($doc->typeDoc->is_required ?? true)
-                                <span style="font-size: 0.625rem; font-weight: 700; padding: 0.125rem 0.5rem; border-radius: 9999px; text-transform: uppercase; background: #fee2e2; color: #991b1b;">Obligatoire</span>
+                                <span class="badge badge-required">Obligatoire</span>
                             @else
-                                <span style="font-size: 0.625rem; font-weight: 700; padding: 0.125rem 0.5rem; border-radius: 9999px; text-transform: uppercase; background: #e2e8f0; color: #475569;">Optionnel</span>
+                                <span class="badge badge-optional">Optionnel</span>
                             @endif
                         </div>
-                        <p style="font-size: 0.8125rem; color: #64748b; margin: 0;">{{ $doc->typeDoc->description ?? 'PDF, JPG, PNG (max 10MB)' }}</p>
+                        <p class="document-hint">{{ $doc->typeDoc->description ?? 'Formats acceptés: PDF, JPG, PNG (max 10MB)' }}</p>
                     </div>
 
-                    {{-- Upload (conditionné par $canUpload) --}}
-                    <div style="flex-shrink: 0;">
+                    <div class="document-actions">
                         @if($canUpload)
                         <form action="{{ route('client.documents.store') }}" method="POST" enctype="multipart/form-data" class="upload-form" data-doc-id="{{ $doc->id }}">
                             @csrf
@@ -164,27 +138,22 @@
                             <input type="hidden" name="funding_request_id" value="{{ $fundingRequest->id }}">
                             <input type="hidden" name="typedoc_id" value="{{ $doc->typedoc_id }}">
 
-                            <label class="btn-action" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; color: #2563eb; font-size: 0.875rem; font-weight: 600; cursor: pointer;">
-                                <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="handleFileSelect(this, {{ $doc->id }})" style="display: none;">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                                </svg>
-                                <span id="bu-text-{{ $doc->id }}">Choisir</span>
+                            <label class="file-input-label">
+                                <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="handleFileSelect(this, {{ $doc->id }})" class="file-input">
+                                <span class="btn btn-secondary" id="btn-text-{{ $doc->id }}">Choisir un fichier</span>
                             </label>
 
-                            <div id="preview-{{ $doc->id }}" style="display: none; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-                                <span id="fp-name-{{ $doc->id }}" style="font-size: 0.75rem; color: #166534; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-                                <button type="button" onclick="clearFile({{ $doc->id }})" style="width: 20px; height: 20px; border: none; background: #fee2e2; color: #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                </button>
+                            <div class="file-preview" id="preview-{{ $doc->id }}" style="display: none;">
+                                <span class="file-name" id="file-name-{{ $doc->id }}"></span>
+                                <button type="button" class="btn-remove" onclick="clearFile({{ $doc->id }})">x</button>
                             </div>
 
-                            <button type="submit" id="submit-{{ $doc->id }}" style="display: none; margin-top: 0.5rem; padding: 0.625rem 1.25rem; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer;">
-                                Confirmer
+                            <button type="submit" class="btn btn-primary" id="submit-{{ $doc->id }}" style="display: none;">
+                                Confirmer l'envoi
                             </button>
                         </form>
                         @else
-                        <span style="font-size: 0.75rem; color: #94a3b8; font-style: italic;">Verrouillé</span>
+                        <span class="text-muted">Verrouillé</span>
                         @endif
                     </div>
                 </div>
@@ -195,71 +164,49 @@
 
         {{-- Documents complétés --}}
         @if($filledDocs->count() > 0)
-        <div>
-            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-                <span style="min-width: 24px; height: 24px; border-radius: 50%; background: #10b981; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;">{{ $filledDocs->count() }}</span>
-                <span style="font-size: 0.875rem; font-weight: 600; color: #374151;">Téléchargés</span>
-            </div>
+        <div class="documents-section">
+            <h4 class="section-title">
+                <span class="badge badge-success">{{ $filledDocs->count() }}</span>
+                Documents fournis
+            </h4>
 
-            <div style="display: flex; flex-direction: column; gap: 0.875rem;">
+            <div class="documents-list">
                 @foreach($filledDocs as $doc)
-                <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 12px;">
-
-                    {{-- Icône --}}
-                    <div style="width: 44px; height: 44px; border-radius: 10px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-
-                    {{-- Info --}}
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
-                            <h4 style="font-size: 0.9375rem; font-weight: 600; color: #0f172a; margin: 0;">{{ $doc->typeDoc->name }}</h4>
-                            <span style="font-size: 0.625rem; font-weight: 700; padding: 0.125rem 0.5rem; border-radius: 9999px; text-transform: uppercase; background: #dcfce7; color: #166534;">
-                                {{ $doc->status === 'verified' ? '✓ Vérifié' : '⏳ En attente de validation' }}
+                <div class="document-item document-completed">
+                    <div class="document-info">
+                        <div class="document-header">
+                            <span class="document-name">{{ $doc->typeDoc->name }}</span>
+                            <span class="badge badge-{{ $doc->status === 'verified' ? 'verified' : 'pending' }}">
+                                {{ $doc->status === 'verified' ? 'Vérifié' : 'En attente de validation' }}
                             </span>
                         </div>
-                        <p style="font-size: 0.8125rem; color: #16a34a; margin: 0;">
-                            {{ $doc->file_name }} • {{ round($doc->file_size / 1024, 1) }} Ko
+                        <p class="document-meta">
+                            {{ $doc->file_name }} ({{ round($doc->file_size / 1024, 1) }} Ko)
                         </p>
                     </div>
 
-                    {{-- Actions --}}
-                    <div style="flex-shrink: 0; display: flex; gap: 0.5rem;">
-                        <a href="{{ route('client.documents.show', $doc) }}" target="_blank" class="btn-action" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: white; border: 1.5px solid #e2e8f0; border-radius: 8px; color: #475569; font-size: 0.875rem; font-weight: 600; text-decoration: none;">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                            </svg>
+                    <div class="document-actions">
+                        <a href="{{ route('client.documents.show', $doc) }}" target="_blank" class="btn btn-view">
                             Voir
                         </a>
 
                         @if($canUpload)
-                        {{-- Remplacer --}}
-                        <form action="{{ route('client.documents.store') }}" method="POST" enctype="multipart/form-data" style="display: inline;">
+                        <form action="{{ route('client.documents.store') }}" method="POST" enctype="multipart/form-data" class="form-inline">
                             @csrf
                             <input type="hidden" name="document_user_id" value="{{ $doc->id }}">
                             <input type="hidden" name="funding_request_id" value="{{ $fundingRequest->id }}">
                             <input type="hidden" name="typedoc_id" value="{{ $doc->typedoc_id }}">
 
-                            <label class="btn-action" style="display: inline-flex; align-items: center; padding: 0.5rem; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; color: #2563eb; cursor: pointer;" title="Remplacer">
+                            <label class="btn btn-replace" title="Remplacer le document">
                                 <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="this.form.submit()" style="display: none;">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                                </svg>
+                                Remplacer
                             </label>
                         </form>
 
-                        {{-- Supprimer --}}
-                        <form action="{{ route('client.documents.destroy', $doc) }}" method="POST" style="display: inline;">
+                        <form action="{{ route('client.documents.destroy', $doc) }}" method="POST" class="form-inline" onsubmit="return confirm('Supprimer ce document ?');">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" onclick="return confirm('Supprimer ce document ?')" class="btn-action" style="display: inline-flex; align-items: center; padding: 0.5rem; background: #fee2e2; border: 1.5px solid #fecaca; border-radius: 8px; color: #dc2626; cursor: pointer;">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                </svg>
-                            </button>
+                            <button type="submit" class="btn btn-delete">Supprimer</button>
                         </form>
                         @endif
                     </div>
@@ -269,40 +216,31 @@
         </div>
         @endif
 
-        {{-- Footer --}}
-        <div style="margin-top: 1.5rem; padding: 1rem; background: #f8fafc; border-radius: 10px;">
+        {{-- Footer / Actions --}}
+        <div class="documents-footer">
             @if($allCompleted)
-                <div style="text-align: center;">
-                    <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #dcfce7, #bbf7d0); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #16a34a; margin: 0 auto 1rem;">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="32" height="32">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                    <h4 style="font-size: 1.125rem; font-weight: 700; color: #166534; margin: 0 0 0.5rem;">
+                <div class="completion-message">
+                    <h4>
                         @if(in_array($fundingRequest->status, ['under_review', 'pending_committee']))
-                            Dossier en cours d'examen !
+                            Dossier en cours d'examen
                         @else
-                            Dossier complet !
+                            Dossier complet
                         @endif
                     </h4>
-                    <p style="color: #64748b; margin: 0 0 1rem;">
+                    <p>
                         @if(in_array($fundingRequest->status, ['under_review', 'pending_committee']))
                             Votre demande est actuellement étudiée par notre équipe.
                         @else
-                            Tous les documents ont été fournis.
+                            Tous les documents requis ont été fournis.
                         @endif
                     </p>
-                    <a href="{{ route('client.requests.show', $fundingRequest) }}" class="btn-premium" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.5rem; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; border-radius: 10px; font-weight: 600; text-decoration: none;">
-                        Voir ma demande
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    <a href="{{ route('client.requests.show', $fundingRequest) }}" class="btn btn-primary btn-lg">
+                        Voir le détail de ma demande
                     </a>
                 </div>
             @else
-                <div style="display: flex; align-items: flex-start; gap: 0.75rem; color: #1e40af; font-size: 0.875rem;">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" style="flex-shrink: 0; margin-top: 0.125rem;">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <p style="margin: 0;">
+                <div class="info-message">
+                    <p>
                         @if($canUpload)
                             Votre demande ne sera traitée qu'après réception de tous les documents obligatoires.
                         @else
@@ -318,6 +256,482 @@
 
 @endsection
 
+@section('styles')
+<style>
+.documents-container {
+    padding-bottom: 2rem;
+}
+
+/* Status Card */
+.status-card {
+    padding: 1.25rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+}
+
+.status-complete {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    border-color: #86efac;
+    color: #166534;
+}
+
+.status-pending {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #fcd34d;
+    color: #92400e;
+}
+
+.status-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.status-indicator {
+    width: 48px;
+    height: 48px;
+    background: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.status-check {
+    color: #16a34a;
+}
+
+.status-pending-text {
+    color: #d97706;
+    font-size: 0.625rem;
+}
+
+.status-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+}
+
+.status-subtitle {
+    margin: 0;
+    font-size: 0.9375rem;
+    opacity: 0.9;
+}
+
+.request-number {
+    font-family: monospace;
+    background: rgba(255,255,255,0.6);
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.separator {
+    margin: 0 0.5rem;
+    opacity: 0.5;
+}
+
+/* Alert */
+.alert-locked {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.alert-locked p {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+/* Cards */
+.card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Summary Grid */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.summary-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.summary-value {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.summary-value.amount {
+    color: #2563eb;
+}
+
+.summary-value.fee {
+    color: #16a34a;
+}
+
+/* Progress */
+.progress-section {
+    margin-bottom: 1.5rem;
+}
+
+.progress-bar-bg {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    border-radius: 3px;
+    transition: width 0.6s ease;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.progress-percent {
+    font-weight: 600;
+    color: #2563eb;
+}
+
+/* Documents Sections */
+.documents-section {
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 1rem;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0 0.5rem;
+}
+
+.badge-warning {
+    background: #f59e0b;
+    color: white;
+}
+
+.badge-success {
+    background: #10b981;
+    color: white;
+}
+
+.badge-required {
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+}
+
+.badge-optional {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+}
+
+.badge-verified {
+    background: #dcfce7;
+    color: #166534;
+    font-size: 0.625rem;
+}
+
+.badge-pending {
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.625rem;
+}
+
+/* Document Items */
+.documents-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+}
+
+.document-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    transition: border-color 0.2s;
+}
+
+.document-item:hover {
+    border-color: #cbd5e1;
+}
+
+.document-completed {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.document-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.document-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.25rem;
+}
+
+.document-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.document-hint {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: 0;
+}
+
+.document-meta {
+    font-size: 0.8125rem;
+    color: #16a34a;
+    margin: 0;
+}
+
+.document-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-secondary {
+    background: #eff6ff;
+    border: 1.5px solid #bfdbfe;
+    color: #2563eb;
+}
+
+.btn-secondary:hover {
+    background: #dbeafe;
+}
+
+.btn-view {
+    background: white;
+    border: 1.5px solid #e2e8f0;
+    color: #475569;
+}
+
+.btn-view:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.btn-replace {
+    background: #eff6ff;
+    border: 1.5px solid #bfdbfe;
+    color: #2563eb;
+    cursor: pointer;
+}
+
+.btn-delete {
+    background: #fee2e2;
+    border: 1.5px solid #fecaca;
+    color: #dc2626;
+}
+
+.btn-delete:hover {
+    background: #fecaca;
+}
+
+.btn-lg {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+}
+
+/* File Input */
+.file-input-label {
+    cursor: pointer;
+    display: inline-block;
+}
+
+.file-input {
+    display: none;
+}
+
+.file-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.file-name {
+    color: #166534;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-remove {
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.form-inline {
+    display: inline;
+}
+
+/* Footer */
+.documents-footer {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.completion-message {
+    text-align: center;
+}
+
+.completion-message h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #166534;
+    margin: 0 0 0.5rem;
+}
+
+.completion-message p {
+    color: #64748b;
+    margin: 0 0 1rem;
+}
+
+.info-message {
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    color: #1e40af;
+    font-size: 0.875rem;
+}
+
+.info-message p {
+    margin: 0;
+}
+
+.text-muted {
+    color: #94a3b8;
+    font-size: 0.75rem;
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .document-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .document-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+</style>
+@endsection
+
 @section('scripts')
 <script>
 function handleFileSelect(input, docId) {
@@ -325,24 +739,31 @@ function handleFileSelect(input, docId) {
     if (!file) return;
 
     const maxSize = 10 * 1024 * 1024;
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
 
     if (file.size > maxSize) {
-        alert('Le fichier est trop volumineux. Maximum 10MB.');
+        alert('Le fichier est trop volumineux. Maximum 10Mo.');
         input.value = '';
         return;
     }
 
     if (!allowedTypes.includes(file.type)) {
-        alert('Format non supporté. Utilisez PDF, JPG, PNG, DOC ou DOCX.');
+        alert('Format non supporte. Utilisez PDF, JPG, PNG, DOC ou DOCX.');
         input.value = '';
         return;
     }
 
-    document.getElementById('fp-name-' + docId).textContent = file.name;
+    document.getElementById('file-name-' + docId).textContent = file.name;
     document.getElementById('preview-' + docId).style.display = 'flex';
-    document.getElementById('bu-text-' + docId).textContent = 'Changer';
-    document.getElementById('submit-' + docId).style.display = 'block';
+    document.getElementById('btn-text-' + docId).textContent = 'Changer';
+    document.getElementById('submit-' + docId).style.display = 'inline-flex';
 }
 
 function clearFile(docId) {
@@ -351,7 +772,7 @@ function clearFile(docId) {
     fileInput.value = '';
 
     document.getElementById('preview-' + docId).style.display = 'none';
-    document.getElementById('bu-text-' + docId).textContent = 'Choisir';
+    document.getElementById('btn-text-' + docId).textContent = 'Choisir un fichier';
     document.getElementById('submit-' + docId).style.display = 'none';
 }
 
@@ -362,7 +783,7 @@ document.querySelectorAll('.upload-form').forEach(form => {
 
         const submitBtn = this.querySelector('button[type="submit"]');
         const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Envoi...';
+        submitBtn.textContent = 'Envoi en cours...';
         submitBtn.disabled = true;
 
         try {
@@ -381,10 +802,10 @@ document.querySelectorAll('.upload-form').forEach(form => {
             if (data.success) {
                 window.location.reload();
             } else {
-                throw new Error(data.message || 'Erreur upload');
+                throw new Error(data.message || 'Erreur lors de l\'envoi');
             }
         } catch (error) {
-            alert(error.message || 'Erreur lors de l\'upload');
+            alert(error.message || 'Erreur lors de l\'envoi du document');
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         }
