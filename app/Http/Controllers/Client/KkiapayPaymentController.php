@@ -123,7 +123,7 @@ class KkiapayPaymentController extends Controller
             'wallet_id' => $wallet->id,
             'funding_request_id' => null,
             'transaction_id' => 'WLT-DEP-'.strtoupper(uniqid()).'-'.time(),
-            'type' => 'deposit',
+            'type' => 'credit',
             'amount' => $amount,        // Montant qui sera crédité
             'fee' => 0,              // Les frais sont gérés par Kkiapay
             'total_amount' => $amount,        // Total payé (Kkiapay ajoute ses frais)
@@ -201,7 +201,7 @@ class KkiapayPaymentController extends Controller
 
         // ==== CAS 1 : Dépôt Wallet ====
         // 🔥 CORRECTION : Vérifier le type de transaction AVANT tout
-        if ($transaction->type === 'deposit') {
+        if ($transaction->type === 'credit') {
             return $this->verifyWalletDeposit($transaction, $validated['transactionId']);
         }
 
@@ -222,7 +222,7 @@ class KkiapayPaymentController extends Controller
         ]);
 
         $transaction = Transaction::where('transaction_id', $validated['internal_transaction_id'])
-            ->where('type', 'deposit')
+            ->where('type', 'credit')
             ->where('status', 'pending')
             ->first();
 
@@ -242,7 +242,7 @@ class KkiapayPaymentController extends Controller
     private function handleCompletedTransaction(Transaction $transaction, array $validated): JsonResponse
     {
         // Si c'est un dépôt wallet
-        if ($transaction->type === 'deposit') {
+        if ($transaction->type === 'credit') {
             return response()->json([
                 'success' => true,
                 'status' => 'completed',
