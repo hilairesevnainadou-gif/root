@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
-use App\Models\DocumentUser;
 use App\Models\FundingRequest;
 use App\Models\Transaction;
 use App\Models\Wallet;
@@ -17,15 +16,18 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 class KkiapayPaymentController extends Controller
 {
     private string $publicKey;
+
     private string $privateKey;
+
     private string $webhookSecret;
+
     private bool $sandbox;
 
     public function __construct()
     {
-        $this->sandbox       = config('services.kkiapay.sandbox', true);
-        $this->publicKey     = config('services.kkiapay.public_key');
-        $this->privateKey    = config('services.kkiapay.private_key');
+        $this->sandbox = config('services.kkiapay.sandbox', true);
+        $this->publicKey = config('services.kkiapay.public_key');
+        $this->privateKey = config('services.kkiapay.private_key');
         $this->webhookSecret = config('services.kkiapay.webhook_secret', '');
     }
 
@@ -58,12 +60,12 @@ class KkiapayPaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
-        if (!$fundingRequest->isDraft()) {
+        if (! $fundingRequest->isDraft()) {
             return response()->json(['success' => false, 'message' => 'Demande déjà traitée'], 400);
         }
 
         $typeFinancement = $fundingRequest->typeFinancement;
-        if (!$typeFinancement) {
+        if (! $typeFinancement) {
             return response()->json(['success' => false, 'message' => 'Type de financement introuvable'], 400);
         }
 
@@ -82,20 +84,20 @@ class KkiapayPaymentController extends Controller
 
         // Créer nouvelle transaction
         $transaction = Transaction::create([
-            'wallet_id'          => $wallet->id,
+            'wallet_id' => $wallet->id,
             'funding_request_id' => $fundingRequest->id,
-            'transaction_id'     => 'TXN-' . uniqid() . '-' . time(),
-            'type'               => 'payment',
-            'amount'             => $amount,
-            'fee'                => 0,
-            'total_amount'       => $amount,
-            'payment_method'     => 'kkiapay',
-            'status'             => 'pending',
-            'description'        => "Frais d'inscription - {$fundingRequest->request_number}",
-            'metadata'           => [
-                'funding_request_id'     => $fundingRequest->id,
-                'type'                   => 'registration_fee',
-                'user_id'                => auth()->id(),
+            'transaction_id' => 'TXN-'.uniqid().'-'.time(),
+            'type' => 'payment',
+            'amount' => $amount,
+            'fee' => 0,
+            'total_amount' => $amount,
+            'payment_method' => 'kkiapay',
+            'status' => 'pending',
+            'description' => "Frais d'inscription - {$fundingRequest->request_number}",
+            'metadata' => [
+                'funding_request_id' => $fundingRequest->id,
+                'type' => 'registration_fee',
+                'user_id' => auth()->id(),
                 'kkiapay_initialized_at' => now()->toIso8601String(),
             ],
         ]);
@@ -118,20 +120,20 @@ class KkiapayPaymentController extends Controller
 
         // Créer transaction de dépôt
         $transaction = Transaction::create([
-            'wallet_id'          => $wallet->id,
+            'wallet_id' => $wallet->id,
             'funding_request_id' => null,
-            'transaction_id'     => 'WLT-DEP-' . strtoupper(uniqid()) . '-' . time(),
-            'type'               => 'deposit',
-            'amount'             => $amount,        // Montant qui sera crédité
-            'fee'                => 0,              // Les frais sont gérés par Kkiapay
-            'total_amount'       => $amount,        // Total payé (Kkiapay ajoute ses frais)
-            'payment_method'     => 'kkiapay',
-            'status'             => 'pending',
-            'description'        => "Dépôt wallet - " . number_format($amount, 0, ',', ' ') . " FCFA",
-            'metadata'           => [
-                'type'                   => 'wallet_deposit',
-                'amount_credited'        => $amount,
-                'user_id'                => auth()->id(),
+            'transaction_id' => 'WLT-DEP-'.strtoupper(uniqid()).'-'.time(),
+            'type' => 'deposit',
+            'amount' => $amount,        // Montant qui sera crédité
+            'fee' => 0,              // Les frais sont gérés par Kkiapay
+            'total_amount' => $amount,        // Total payé (Kkiapay ajoute ses frais)
+            'payment_method' => 'kkiapay',
+            'status' => 'pending',
+            'description' => 'Dépôt wallet - '.number_format($amount, 0, ',', ' ').' FCFA',
+            'metadata' => [
+                'type' => 'wallet_deposit',
+                'amount_credited' => $amount,
+                'user_id' => auth()->id(),
                 'kkiapay_initialized_at' => now()->toIso8601String(),
             ],
         ]);
@@ -150,7 +152,7 @@ class KkiapayPaymentController extends Controller
             ->where('status', 'active')
             ->first();
 
-        if (!$wallet) {
+        if (! $wallet) {
             $wallet = Wallet::createForUser(auth()->id());
         }
 
@@ -163,15 +165,10 @@ class KkiapayPaymentController extends Controller
      */
     public function verify(Request $request): JsonResponse
     {
-        Log::channel('kkiapay')->info('=== FRONTEND VERIFY ===', $request->only([
-            'transactionId', 'funding_request_id', 'internal_transaction_id'
-        ]));
-
-        // Validation conditionnelle : funding_request_id est optionnel pour les dépôts
         $validated = $request->validate([
-            'transactionId'            => 'required|string',
-            'funding_request_id'       => 'nullable|integer|exists:funding_requests,id',
-            'internal_transaction_id'  => 'required|string',
+            'transactionId' => 'required|string',
+            'funding_request_id' => 'nullable|integer|exists:funding_requests,id',
+            'internal_transaction_id' => 'required|string',
         ]);
 
         // 🔥 CORRECTION CRITIQUE : Mettre à jour la référence Kkiapay IMMÉDIATEMENT
@@ -179,53 +176,64 @@ class KkiapayPaymentController extends Controller
             ->where('status', 'pending')
             ->first();
 
-        if (!$transaction) {
-            // Vérifier si déjà complétée par le webhook entre-temps
+        if (! $transaction) {
+            // Vérifier si déjà complétée
             $completedTransaction = Transaction::where('transaction_id', $validated['internal_transaction_id'])
                 ->where('status', 'completed')
                 ->first();
 
             if ($completedTransaction) {
-                Log::channel('kkiapay')->info('✅ Transaction déjà complétée par webhook');
                 return $this->handleCompletedTransaction($completedTransaction, $validated);
             }
 
             return response()->json(['success' => false, 'message' => 'Transaction introuvable'], 404);
         }
 
-        // Vérifier l'autorisation (user doit être propriétaire)
+        // Vérifier l'autorisation
         if ($transaction->wallet->user_id !== auth()->id()) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
-        // 🔥 SAUVEGARDER LA RÉFÉRENCE KKIAPAY IMMÉDIATEMENT
+        // Sauvegarder la référence
         if (empty($transaction->reference) || $transaction->reference !== $validated['transactionId']) {
             $transaction->update(['reference' => $validated['transactionId']]);
-            Log::channel('kkiapay')->info('💾 Référence Kkiapay sauvegardée', [
-                'reference' => $validated['transactionId']
-            ]);
         }
 
-        // ==== CAS 1 : Dépôt Wallet (type = deposit) ====
-        // 🔥 CORRECTION : Vérifier le type de transaction, pas seulement funding_request_id
+        // ==== CAS 1 : Dépôt Wallet ====
+        // 🔥 CORRECTION : Vérifier le type de transaction AVANT tout
         if ($transaction->type === 'deposit') {
             return $this->verifyWalletDeposit($transaction, $validated['transactionId']);
         }
 
-        // ==== CAS 2 : Paiement d'inscription (avec funding_request_id) ====
-        // 🔥 CORRECTION : Vérifier que funding_request_id existe avant d'appeler
-        if (!empty($validated['funding_request_id'])) {
+        // ==== CAS 2 : Paiement d'inscription ====
+        if (! empty($validated['funding_request_id'])) {
             return $this->verifyRegistrationPayment($transaction, $validated);
         }
 
         // Si on arrive ici, c'est une erreur
-        Log::channel('kkiapay')->error('❌ Type de transaction inconnu', [
-            'transaction_id' => $transaction->id,
-            'type' => $transaction->type,
-            'funding_request_id' => $transaction->funding_request_id,
+        return response()->json(['success' => false, 'message' => 'Type de transaction invalide'], 400);
+    }
+
+    public function verifyDeposit(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'transactionId' => 'required|string',
+            'internal_transaction_id' => 'required|string',
         ]);
 
-        return response()->json(['success' => false, 'message' => 'Type de transaction invalide'], 400);
+        $transaction = Transaction::where('transaction_id', $validated['internal_transaction_id'])
+            ->where('type', 'deposit')
+            ->where('status', 'pending')
+            ->first();
+
+        if (! $transaction || $transaction->wallet->user_id !== auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Transaction invalide'], 404);
+        }
+
+        // Appeler la même logique que KkiapayPaymentController
+        $kkiapayController = app(KkiapayPaymentController::class);
+
+        return $kkiapayController->verifyWalletDeposit($transaction, $validated['transactionId']);
     }
 
     /**
@@ -236,10 +244,10 @@ class KkiapayPaymentController extends Controller
         // Si c'est un dépôt wallet
         if ($transaction->type === 'deposit') {
             return response()->json([
-                'success'      => true,
-                'status'       => 'completed',
+                'success' => true,
+                'status' => 'completed',
                 'redirect_url' => route('client.wallet.show'),
-                'message'      => 'Dépôt déjà traité',
+                'message' => 'Dépôt déjà traité',
             ]);
         }
 
@@ -248,8 +256,8 @@ class KkiapayPaymentController extends Controller
             $fundingRequest = FundingRequest::find($transaction->funding_request_id);
             if ($fundingRequest) {
                 return response()->json([
-                    'success'      => true,
-                    'status'       => 'paid',
+                    'success' => true,
+                    'status' => 'paid',
                     'redirect_url' => $this->getRedirectUrl($fundingRequest),
                 ]);
             }
@@ -257,7 +265,7 @@ class KkiapayPaymentController extends Controller
 
         return response()->json([
             'success' => true,
-            'status'  => 'completed',
+            'status' => 'completed',
         ]);
     }
 
@@ -269,17 +277,17 @@ class KkiapayPaymentController extends Controller
         // Si déjà complété
         if ($transaction->status === 'completed') {
             return response()->json([
-                'success'      => true,
-                'status'       => 'completed',
+                'success' => true,
+                'status' => 'completed',
                 'redirect_url' => route('client.wallet.show'),
-                'message'      => 'Dépôt déjà traité',
+                'message' => 'Dépôt déjà traité',
             ]);
         }
 
         if ($transaction->status === 'failed') {
             return response()->json([
                 'success' => false,
-                'status'  => 'failed',
+                'status' => 'failed',
                 'message' => 'Le dépôt a échoué.',
             ]);
         }
@@ -308,23 +316,24 @@ class KkiapayPaymentController extends Controller
         $freshRequest = $fundingRequest->fresh();
         if ($freshRequest->isPaid() && $freshRequest->isSubmitted()) {
             Log::channel('kkiapay')->info('✅ Already paid and submitted');
+
             return response()->json([
-                'success'      => true,
-                'status'       => 'paid',
+                'success' => true,
+                'status' => 'paid',
                 'redirect_url' => $this->getRedirectUrl($freshRequest),
             ]);
         }
 
         // Si transaction complétée mais demande pas à jour
         if ($transaction->status === 'completed') {
-            if (!$freshRequest->isPaid()) {
+            if (! $freshRequest->isPaid()) {
                 Log::channel('kkiapay')->info('🔄 Syncing funding request from transaction');
                 $freshRequest->markAsPaid($validated['transactionId'], $transaction->amount);
             }
 
             return response()->json([
-                'success'      => true,
-                'status'       => 'paid',
+                'success' => true,
+                'status' => 'paid',
                 'redirect_url' => $this->getRedirectUrl($freshRequest->fresh()),
             ]);
         }
@@ -332,7 +341,7 @@ class KkiapayPaymentController extends Controller
         if ($transaction->status === 'failed') {
             return response()->json([
                 'success' => false,
-                'status'  => 'failed',
+                'status' => 'failed',
                 'message' => 'Le paiement a échoué.',
             ]);
         }
@@ -351,9 +360,9 @@ class KkiapayPaymentController extends Controller
 
             // 🔥 CORRECTION : URL sans espace !
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->privateKey,
+                'Authorization' => 'Bearer '.$this->privateKey,
                 'Accept' => 'application/json',
-            ])->get('https://api.kkiapay.me/api/v1/transactions/' . $kkiapayId);
+            ])->get('https://api.kkiapay.me/api/v1/transactions/'.$kkiapayId);
 
             Log::channel('kkiapay')->info('Kkiapay API response', [
                 'status' => $response->status(),
@@ -368,10 +377,10 @@ class KkiapayPaymentController extends Controller
                     $this->processSuccessfulDeposit($transaction, $kkiapayId, $data);
 
                     return response()->json([
-                        'success'      => true,
-                        'status'       => 'completed',
+                        'success' => true,
+                        'status' => 'completed',
                         'redirect_url' => route('client.wallet.show'),
-                        'new_balance'  => $transaction->wallet->fresh()->balance,
+                        'new_balance' => $transaction->wallet->fresh()->balance,
                     ]);
                 }
 
@@ -380,7 +389,7 @@ class KkiapayPaymentController extends Controller
 
                     return response()->json([
                         'success' => false,
-                        'status'  => 'failed',
+                        'status' => 'failed',
                         'message' => 'Le dépôt a échoué.',
                     ]);
                 }
@@ -391,7 +400,7 @@ class KkiapayPaymentController extends Controller
 
         return response()->json([
             'success' => true,
-            'status'  => 'pending',
+            'status' => 'pending',
             'message' => 'Vérification en cours...',
         ]);
     }
@@ -412,17 +421,17 @@ class KkiapayPaymentController extends Controller
 
             // Mettre à jour la transaction avec les vrais frais
             $transaction->update([
-                'status'       => 'completed',
+                'status' => 'completed',
                 'completed_at' => now(),
-                'fee'          => $actualFee,           // Frais réels de Kkiapay
+                'fee' => $actualFee,           // Frais réels de Kkiapay
                 'total_amount' => $actualAmount + $actualFee, // Total payé
-                'reference'    => $transactionId,
-                'metadata'     => array_merge($transaction->metadata ?? [], [
+                'reference' => $transactionId,
+                'metadata' => array_merge($transaction->metadata ?? [], [
                     'kkiapay_transaction_id' => $transactionId,
-                    'kkiapay_event'          => 'transaction.success',
-                    'kkiapay_fees'           => $actualFee,
-                    'kkiapay_amount_paid'    => $actualAmount + $actualFee,
-                    'processed_at'           => now()->toIso8601String(),
+                    'kkiapay_event' => 'transaction.success',
+                    'kkiapay_fees' => $actualFee,
+                    'kkiapay_amount_paid' => $actualAmount + $actualFee,
+                    'processed_at' => now()->toIso8601String(),
                 ]),            ]);
 
             // Créditer le wallet avec le montant demandé (pas le total avec frais)
@@ -449,9 +458,9 @@ class KkiapayPaymentController extends Controller
 
             // 🔥 CORRECTION : URL sans espace !
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->privateKey,
+                'Authorization' => 'Bearer '.$this->privateKey,
                 'Accept' => 'application/json',
-            ])->get('https://api.kkiapay.me/api/v1/transactions/' . $kkiapayId);
+            ])->get('https://api.kkiapay.me/api/v1/transactions/'.$kkiapayId);
 
             Log::channel('kkiapay')->info('Kkiapay API response', [
                 'status' => $response->status(),
@@ -465,8 +474,8 @@ class KkiapayPaymentController extends Controller
                     $this->processSuccessfulPayment($transaction, $fundingRequest, $kkiapayId, $data);
 
                     return response()->json([
-                        'success'      => true,
-                        'status'       => 'paid',
+                        'success' => true,
+                        'status' => 'paid',
                         'redirect_url' => $this->getRedirectUrl($fundingRequest->fresh()),
                     ]);
                 }
@@ -477,7 +486,7 @@ class KkiapayPaymentController extends Controller
 
                     return response()->json([
                         'success' => false,
-                        'status'  => 'failed',
+                        'status' => 'failed',
                         'message' => 'Le paiement a échoué.',
                     ]);
                 }
@@ -488,7 +497,7 @@ class KkiapayPaymentController extends Controller
 
         return response()->json([
             'success' => true,
-            'status'  => 'pending',
+            'status' => 'pending',
             'message' => 'Vérification en cours...',
         ]);
     }
@@ -503,12 +512,12 @@ class KkiapayPaymentController extends Controller
         Log::channel('kkiapay')->info('║              WEBHOOK KKIAPAY REÇU                      ║');
         Log::channel('kkiapay')->info('╚════════════════════════════════════════════════════════╝');
         Log::channel('kkiapay')->info('Détails de la requête', [
-            'ip'         => $request->ip(),
+            'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),
-            'method'     => $request->method(),
-            'url'        => $request->fullUrl(),
-            'headers'    => $request->headers->all(),
-            'payload'    => $request->all(),
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+            'headers' => $request->headers->all(),
+            'payload' => $request->all(),
         ]);
 
         // Vérification signature
@@ -518,39 +527,41 @@ class KkiapayPaymentController extends Controller
             Log::channel('kkiapay')->info('Vérification signature', [
                 'received' => $receivedSecret,
                 'expected' => $this->webhookSecret,
-                'match'    => $receivedSecret === $this->webhookSecret,
+                'match' => $receivedSecret === $this->webhookSecret,
             ]);
 
             if ($receivedSecret !== $this->webhookSecret) {
                 Log::channel('kkiapay')->error('⛔ SIGNATURE INVALIDE');
+
                 return response()->json(['error' => 'Invalid signature'], 401);
             }
         }
 
         // Payload Kkiapay
-        $transactionId  = $request->input('transactionId');
-        $isSuccess      = $request->boolean('isPaymentSucces');
-        $event          = $request->input('event');
-        $amount         = (float) $request->input('amount', 0);
-        $fees           = (float) $request->input('fees', 0);
-        $account        = $request->input('account');
-        $method         = $request->input('method');
-        $failureCode    = $request->input('failureCode');
+        $transactionId = $request->input('transactionId');
+        $isSuccess = $request->boolean('isPaymentSucces');
+        $event = $request->input('event');
+        $amount = (float) $request->input('amount', 0);
+        $fees = (float) $request->input('fees', 0);
+        $account = $request->input('account');
+        $method = $request->input('method');
+        $failureCode = $request->input('failureCode');
         $failureMessage = $request->input('failureMessage');
-        $performedAt    = $request->input('performedAt');
-        $stateData      = $request->input('stateData');
+        $performedAt = $request->input('performedAt');
+        $stateData = $request->input('stateData');
 
         Log::channel('kkiapay')->info('Payload analysé', [
             'transactionId' => $transactionId,
-            'isSuccess'     => $isSuccess,
-            'event'         => $event,
-            'amount'        => $amount,
-            'fees'          => $fees,
-            'stateData'     => $stateData,
+            'isSuccess' => $isSuccess,
+            'event' => $event,
+            'amount' => $amount,
+            'fees' => $fees,
+            'stateData' => $stateData,
         ]);
 
-        if (!$transactionId) {
+        if (! $transactionId) {
             Log::channel('kkiapay')->error('❌ transactionId manquant');
+
             return response()->json(['error' => 'Missing transactionId'], 400);
         }
 
@@ -568,14 +579,14 @@ class KkiapayPaymentController extends Controller
                     ->first();
 
                 // 2. Si pas trouvé, chercher dans metadata
-                if (!$transaction) {
+                if (! $transaction) {
                     $transaction = Transaction::whereJsonContains('metadata', ['kkiapay_transaction_id' => $transactionId])
                         ->lockForUpdate()
                         ->first();
                 }
 
                 // 3. 🔥 NOUVEAU : Parser stateData pour trouver l'internal_transaction_id
-                if (!$transaction && $stateData) {
+                if (! $transaction && $stateData) {
                     $stateDataParsed = json_decode($stateData, true);
                     if (isset($stateDataParsed['internal_transaction_id'])) {
                         $transaction = Transaction::where('transaction_id', $stateDataParsed['internal_transaction_id'])
@@ -584,23 +595,24 @@ class KkiapayPaymentController extends Controller
 
                         if ($transaction) {
                             Log::channel('kkiapay')->info('✅ Transaction trouvée via stateData', [
-                                'internal_id' => $stateDataParsed['internal_transaction_id']
+                                'internal_id' => $stateDataParsed['internal_transaction_id'],
                             ]);
                         }
                     }
                 }
 
-                if (!$transaction) {
+                if (! $transaction) {
                     Log::channel('kkiapay')->warning('⚠️ Transaction non trouvée', ['id' => $transactionId]);
+
                     return;
                 }
 
                 Log::channel('kkiapay')->info('✅ Transaction trouvée', [
-                    'db_id'              => $transaction->id,
-                    'transaction_id'     => $transaction->transaction_id,
-                    'current_status'     => $transaction->status,
+                    'db_id' => $transaction->id,
+                    'transaction_id' => $transaction->transaction_id,
+                    'current_status' => $transaction->status,
                     'funding_request_id' => $transaction->funding_request_id,
-                    'type'               => $transaction->type,
+                    'type' => $transaction->type,
                 ]);
 
                 // Mettre à jour la référence si pas déjà faite
@@ -611,25 +623,28 @@ class KkiapayPaymentController extends Controller
                 // Éviter double traitement
                 if ($transaction->status === 'completed') {
                     Log::channel('kkiapay')->info('ℹ️ Déjà complétée, ignoré');
+
                     return;
                 }
 
                 // ==== CAS 1 : Dépôt Wallet ====
                 if ($transaction->type === 'deposit' || empty($transaction->funding_request_id)) {
                     $this->processWebhookWalletDeposit($transaction, $isSuccess, $event, $amount, $fees, $transactionId, $method, $account, $performedAt);
+
                     return;
                 }
 
                 // ==== CAS 2 : Paiement Inscription ====
                 $fundingRequest = FundingRequest::lockForUpdate()->find($transaction->funding_request_id);
 
-                if (!$fundingRequest) {
+                if (! $fundingRequest) {
                     Log::channel('kkiapay')->error('❌ FundingRequest non trouvée');
+
                     return;
                 }
 
                 Log::channel('kkiapay')->info('📋 FundingRequest trouvée', [
-                    'id'     => $fundingRequest->id,
+                    'id' => $fundingRequest->id,
                     'status' => $fundingRequest->status,
                 ]);
 
@@ -637,45 +652,45 @@ class KkiapayPaymentController extends Controller
                     Log::channel('kkiapay')->info('💰 PAIEMENT RÉUSSI - Traitement...');
 
                     $transaction->update([
-                        'status'       => 'completed',
+                        'status' => 'completed',
                         'completed_at' => now(),
-                        'fee'          => $fees,
-                        'reference'    => $transactionId,
-                        'metadata'     => array_merge($transaction->metadata ?? [], [
+                        'fee' => $fees,
+                        'reference' => $transactionId,
+                        'metadata' => array_merge($transaction->metadata ?? [], [
                             'kkiapay_transaction_id' => $transactionId,
-                            'kkiapay_event'          => 'transaction.success',
-                            'kkiapay_method'         => $method,
-                            'kkiapay_account'        => $account,
-                            'kkiapay_fees'           => $fees,
-                            'kkiapay_performed_at'   => $performedAt,
-                            'webhook_processed_at'   => now()->toIso8601String(),
+                            'kkiapay_event' => 'transaction.success',
+                            'kkiapay_method' => $method,
+                            'kkiapay_account' => $account,
+                            'kkiapay_fees' => $fees,
+                            'kkiapay_performed_at' => $performedAt,
+                            'webhook_processed_at' => now()->toIso8601String(),
                         ]),
                     ]);
 
                     $fundingRequest->markAsPaid($transactionId, $amount);
 
-                    Log::channel('kkiapay')->info('✅✅✅ TRAITEMENT RÉUSSI', [
+                    Log::channel('kkiapay')->info('TRAITEMENT RÉUSSI', [
                         'funding_request_id' => $fundingRequest->id,
-                        'new_status'         => $fundingRequest->fresh()->status,
-                        'payment_status'     => $fundingRequest->fresh()->payment_status,
+                        'new_status' => $fundingRequest->fresh()->status,
+                        'payment_status' => $fundingRequest->fresh()->payment_status,
                     ]);
 
                 } else {
                     Log::channel('kkiapay')->warning('❌ PAIEMENT ÉCHOUÉ', [
-                        'event'          => $event,
-                        'failureCode'    => $failureCode,
+                        'event' => $event,
+                        'failureCode' => $failureCode,
                         'failureMessage' => $failureMessage,
                     ]);
 
                     $transaction->update([
-                        'status'   => 'failed',
+                        'status' => 'failed',
                         'reference' => $transactionId,
                         'metadata' => array_merge($transaction->metadata ?? [], [
                             'kkiapay_transaction_id' => $transactionId,
-                            'kkiapay_event'          => $event ?? 'transaction.failed',
-                            'failure_code'           => $failureCode,
-                            'failure_message'        => $failureMessage,
-                            'webhook_processed_at'   => now()->toIso8601String(),
+                            'kkiapay_event' => $event ?? 'transaction.failed',
+                            'failure_code' => $failureCode,
+                            'failure_message' => $failureMessage,
+                            'webhook_processed_at' => now()->toIso8601String(),
                         ]),
                     ]);
 
@@ -686,14 +701,16 @@ class KkiapayPaymentController extends Controller
         } catch (\Exception $e) {
             Log::channel('kkiapay')->error('💥 ERREUR CRITIQUE WEBHOOK', [
                 'message' => $e->getMessage(),
-                'line'    => $e->getLine(),
-                'file'    => $e->getFile(),
-                'trace'   => $e->getTraceAsString(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Processing error: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Processing error: '.$e->getMessage()], 500);
         }
 
         Log::channel('kkiapay')->info('✅ Webhook terminé avec succès (HTTP 200)');
+
         return response()->json(['status' => 'received', 'success' => true], 200);
     }
 
@@ -716,20 +733,20 @@ class KkiapayPaymentController extends Controller
         if ($isSuccess && $event === 'transaction.success') {
             // 🔥 IMPORTANT : Utiliser les frais réels du webhook
             $transaction->update([
-                'status'       => 'completed',
+                'status' => 'completed',
                 'completed_at' => now(),
-                'fee'          => $fees,           // Frais réels de Kkiapay
+                'fee' => $fees,           // Frais réels de Kkiapay
                 'total_amount' => $amount + $fees,  // Total réellement payé
-                'reference'    => $transactionId,
-                'metadata'     => array_merge($transaction->metadata ?? [], [
+                'reference' => $transactionId,
+                'metadata' => array_merge($transaction->metadata ?? [], [
                     'kkiapay_transaction_id' => $transactionId,
-                    'kkiapay_event'          => 'transaction.success',
-                    'kkiapay_method'         => $method,
-                    'kkiapay_account'        => $account,
-                    'kkiapay_fees'           => $fees,
-                    'kkiapay_amount_paid'    => $amount + $fees,
-                    'kkiapay_performed_at'   => $performedAt,
-                    'webhook_processed_at'   => now()->toIso8601String(),
+                    'kkiapay_event' => 'transaction.success',
+                    'kkiapay_method' => $method,
+                    'kkiapay_account' => $account,
+                    'kkiapay_fees' => $fees,
+                    'kkiapay_amount_paid' => $amount + $fees,
+                    'kkiapay_performed_at' => $performedAt,
+                    'webhook_processed_at' => now()->toIso8601String(),
                 ]),
             ]);
 
@@ -741,24 +758,24 @@ class KkiapayPaymentController extends Controller
             $wallet->save();
 
             Log::channel('kkiapay')->info('✅✅✅ DÉPÔT RÉUSSI', [
-                'wallet_id'       => $wallet->id,
+                'wallet_id' => $wallet->id,
                 'amount_credited' => $creditedAmount,
-                'fee_charged'     => $fees,
-                'total_paid'      => $amount + $fees,
-                'new_balance'     => $wallet->balance,
+                'fee_charged' => $fees,
+                'total_paid' => $amount + $fees,
+                'new_balance' => $wallet->balance,
             ]);
         } else {
             Log::channel('kkiapay')->warning('❌ DÉPÔT ÉCHOUÉ', [
-                'event'          => $event,
+                'event' => $event,
             ]);
 
             $transaction->update([
-                'status'   => 'failed',
+                'status' => 'failed',
                 'reference' => $transactionId,
                 'metadata' => array_merge($transaction->metadata ?? [], [
                     'kkiapay_transaction_id' => $transactionId,
-                    'kkiapay_event'          => $event ?? 'transaction.failed',
-                    'webhook_processed_at'   => now()->toIso8601String(),
+                    'kkiapay_event' => $event ?? 'transaction.failed',
+                    'webhook_processed_at' => now()->toIso8601String(),
                 ]),
             ]);
         }
@@ -769,29 +786,29 @@ class KkiapayPaymentController extends Controller
      */
     private function processSuccessfulPayment(Transaction $transaction, FundingRequest $fundingRequest, string $transactionId, array $data): void
     {
-        Log::channel('kkiapay')->info('✅ Processing successful payment', [
+        Log::channel('kkiapay')->info(' Processing successful payment', [
             'funding_request_id' => $fundingRequest->id,
         ]);
 
         $transaction->update([
-            'status'       => 'completed',
+            'status' => 'completed',
             'completed_at' => now(),
-            'fee'          => $data['fees'] ?? 0,
-            'reference'    => $transactionId,
-            'metadata'     => array_merge($transaction->metadata ?? [], [
+            'fee' => $data['fees'] ?? 0,
+            'reference' => $transactionId,
+            'metadata' => array_merge($transaction->metadata ?? [], [
                 'kkiapay_transaction_id' => $transactionId,
-                'kkiapay_event'          => 'transaction.success',
-                'kkiapay_method'         => $data['method'] ?? null,
-                'kkiapay_account'        => $data['account'] ?? null,
-                'processed_at'           => now()->toIso8601String(),
+                'kkiapay_event' => 'transaction.success',
+                'kkiapay_method' => $data['method'] ?? null,
+                'kkiapay_account' => $data['account'] ?? null,
+                'processed_at' => now()->toIso8601String(),
             ]),
         ]);
 
         $fundingRequest->markAsPaid($transactionId, $data['amount'] ?? $transaction->amount);
 
         Log::channel('kkiapay')->info('✅ FundingRequest updated', [
-            'id'             => $fundingRequest->id,
-            'new_status'     => $fundingRequest->fresh()->status,
+            'id' => $fundingRequest->id,
+            'new_status' => $fundingRequest->fresh()->status,
             'payment_status' => $fundingRequest->fresh()->payment_status,
         ]);
     }
@@ -802,20 +819,20 @@ class KkiapayPaymentController extends Controller
     private function buildInitializeResponse(Transaction $transaction, float $amount, ?FundingRequest $fundingRequest = null): JsonResponse
     {
         $data = [
-            'funding_request_id'      => $fundingRequest?->id,
+            'funding_request_id' => $fundingRequest?->id,
             'internal_transaction_id' => $transaction->transaction_id,
-            'user_id'                 => auth()->id(),
-            'type'                    => $fundingRequest ? 'registration_payment' : 'wallet_deposit',
+            'user_id' => auth()->id(),
+            'type' => $fundingRequest ? 'registration_payment' : 'wallet_deposit',
         ];
 
         return response()->json([
-            'success'        => true,
-            'transaction'    => $transaction,
+            'success' => true,
+            'transaction' => $transaction,
             'kkiapay_config' => [
-                'amount'  => (float) $amount,
-                'key'     => $this->publicKey,
+                'amount' => (float) $amount,
+                'key' => $this->publicKey,
                 'sandbox' => $this->sandbox,
-                'data'    => json_encode($data),
+                'data' => json_encode($data),
             ],
         ]);
     }
@@ -848,19 +865,19 @@ class KkiapayPaymentController extends Controller
         // Utiliser initialize() au lieu de la logique inline
         $response = $this->initialize($fundingRequest);
 
-        if (!$response->getData()->success) {
+        if (! $response->getData()->success) {
             return back()->with('error', $response->getData()->message ?? 'Erreur');
         }
 
         $config = $response->getData()->kkiapay_config;
 
-        return redirect()->away('https://widget.kkiapay.me/payment?' . http_build_query([
-            'api_key'      => $config->key,
-            'amount'       => $config->amount,
-            'sandbox'      => $config->sandbox,
+        return redirect()->away('https://widget.kkiapay.me/payment?'.http_build_query([
+            'api_key' => $config->key,
+            'amount' => $config->amount,
+            'sandbox' => $config->sandbox,
             'callback_url' => route('client.payment.verify'),
-            'return_url'   => route('client.requests.show', $fundingRequest),
-            'metadata'     => $config->data,
+            'return_url' => route('client.requests.show', $fundingRequest),
+            'metadata' => $config->data,
         ]));
     }
 }

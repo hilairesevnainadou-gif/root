@@ -22,13 +22,8 @@
         <div class="amount-section">
             <div class="amount-input-wrapper">
                 <span class="input-prefix">FCFA</span>
-                <input type="number" 
-                       id="amountInput" 
-                       class="amount-field" 
-                       placeholder="0"
-                       min="1000"
-                       max="1000000"
-                       step="1000">
+                <input type="number" id="amountInput" class="amount-field" placeholder="0" min="1000" max="1000000"
+                    step="1000">
             </div>
             <p class="amount-hint">Minimum 1 000 FCFA • Maximum 1 000 000 FCFA</p>
 
@@ -44,7 +39,8 @@
         <div class="fee-calculation" id="feeCalc" style="display: none;">
             <div class="calc-header">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
                 <span>Détail du paiement</span>
             </div>
@@ -67,7 +63,7 @@
         <button type="button" class="btn btn-primary btn-block" id="btnContinue" disabled onclick="goToStep2()">
             Continuer
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
         </button>
     </div>
@@ -87,12 +83,13 @@
             <div class="summary-header">
                 <div class="wallet-icon-large">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="32" height="32">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
                 </div>
                 <div class="summary-title">Créditer mon portefeuille</div>
             </div>
-            
+
             <div class="summary-details">
                 <div class="summary-line">
                     <span>Montant crédité</span>
@@ -112,7 +109,8 @@
         <div class="payment-method-simple">
             <div class="method-icon">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
             </div>
             <div class="method-text">
@@ -122,9 +120,12 @@
         </div>
 
         {{-- Zone Kkiapay cachée --}}
-        <div id="kkiapayZone" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center;">
-            <div style="background: white; border-radius: 20px; padding: 20px; max-width: 90%; width: 400px; position: relative;">
-                <button onclick="closeKkiapay()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        <div id="kkiapayZone"
+            style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <div
+                style="background: white; border-radius: 20px; padding: 20px; max-width: 90%; width: 400px; position: relative;">
+                <button onclick="closeKkiapay()"
+                    style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
                 <div id="kkiapay-widget"></div>
             </div>
         </div>
@@ -133,7 +134,8 @@
             <button type="button" class="btn btn-primary btn-block btn-pay" id="btnPay" onclick="initiateKkiapay()">
                 <span class="btn-content">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z" />
                     </svg>
                     Payer <span id="btnPayAmount">0 FCFA</span>
                 </span>
@@ -164,12 +166,13 @@
         <div class="success-state">
             <div class="success-icon-large">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
             <h2>Dépôt réussi !</h2>
             <p>Votre portefeuille a été crédité</p>
-            
+
             <div class="success-details">
                 <div class="detail-line">
                     <span>Montant crédité</span>
@@ -202,7 +205,7 @@
 @section('scripts')
 <script src="https://cdn.kkiapay.me/k.js"></script>
 <script>
-let currentAmount = 0;      // Montant saisi par l'utilisateur (crédité)
+    let currentAmount = 0;      // Montant saisi par l'utilisateur (crédité)
 let currentFee = 0;         // Frais 1.9% (calculé pour info)
 let currentTotal = 0;       // Total estimé (montant + frais)
 let transactionData = null;
@@ -382,6 +385,7 @@ async function onKkiapaySuccess(response) {
         attempts++;
         
         try {
+            // CORRECTION: Utiliser la route wallet spécifique ou la route générique avec type
             const verifyRes = await fetch('{{ route('client.payment.verify') }}', {
                 method: 'POST',
                 headers: {
@@ -391,7 +395,9 @@ async function onKkiapaySuccess(response) {
                 },
                 body: JSON.stringify({
                     transactionId: kkiapayId,
-                    internal_transaction_id: transactionData.transaction_id
+                    internal_transaction_id: transactionData.transaction_id,
+                    // CORRECTION: Ne pas envoyer funding_request_id pour les dépôts wallet
+                    // Le contrôleur détectera automatiquement le type par la transaction
                 })
             });
 
@@ -408,6 +414,11 @@ async function onKkiapaySuccess(response) {
                 alert('Le paiement a échoué: ' + (result.message || 'Erreur'));
                 document.getElementById('stepProcessing').style.display = 'none';
                 document.getElementById('step2').style.display = 'block';
+                
+                // Réactiver le bouton
+                const btn = document.getElementById('btnPay');
+                btn.classList.remove('loading');
+                btn.disabled = false;
                 return;
             }
 
@@ -467,13 +478,20 @@ function onKkiapayFailed(response) {
         background: white;
         border-radius: 24px;
         padding: 28px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         animation: slideUp 0.4s ease-out;
     }
 
     @keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .deposit-header {
@@ -602,7 +620,8 @@ function onKkiapayFailed(response) {
         transition: all 0.2s;
     }
 
-    .amount-chip:hover, .amount-chip.active {
+    .amount-chip:hover,
+    .amount-chip.active {
         background: #1e40af;
         color: white;
         border-color: #1e40af;
@@ -861,7 +880,7 @@ function onKkiapayFailed(response) {
     .spinner-small {
         width: 20px;
         height: 20px;
-        border: 2px solid rgba(255,255,255,0.3);
+        border: 2px solid rgba(255, 255, 255, 0.3);
         border-top-color: white;
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
@@ -884,7 +903,9 @@ function onKkiapayFailed(response) {
     }
 
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .processing-state h3 {
@@ -915,9 +936,20 @@ function onKkiapayFailed(response) {
     }
 
     @keyframes progress {
-        0% { width: 0%; margin-left: 0; }
-        50% { width: 70%; margin-left: 15%; }
-        100% { width: 0%; margin-left: 100%; }
+        0% {
+            width: 0%;
+            margin-left: 0;
+        }
+
+        50% {
+            width: 70%;
+            margin-left: 15%;
+        }
+
+        100% {
+            width: 0%;
+            margin-left: 100%;
+        }
     }
 
     /* Success State */
@@ -946,7 +978,7 @@ function onKkiapayFailed(response) {
         margin: 0 0 8px 0;
     }
 
-    .success-state > p {
+    .success-state>p {
         color: #64748b;
         margin: 0 0 28px 0;
         font-size: 1rem;
@@ -1011,21 +1043,21 @@ function onKkiapayFailed(response) {
         .deposit-container {
             padding: 12px;
         }
-        
+
         .deposit-card {
             padding: 20px;
             border-radius: 20px;
         }
-        
+
         .amount-field {
             font-size: 2rem;
             padding: 20px 16px 20px 70px;
         }
-        
+
         .quick-amounts {
             gap: 8px;
         }
-        
+
         .amount-chip {
             padding: 8px 14px;
             font-size: 0.875rem;

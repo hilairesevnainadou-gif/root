@@ -84,7 +84,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('client.payment.initialize');
     Route::post('/payment/verify', [KkiapayPaymentController::class, 'verify'])
         ->name('client.payment.verify');
-
+    Route::post('/wallet/deposit/verify', [ClientWalletController::class, 'verifyDeposit'])
+        ->name('client.wallet.deposit.verify');
     // Documents requis (après paiement)
     Route::get('/requests/{fundingRequest}/documents', [ClientDocumentController::class, 'required'])
         ->name('client.documents.required');
@@ -113,25 +114,25 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/documents/{document}', [ClientDocumentController::class, 'destroy'])->name('client.documents.destroy');
 
     // Wallet
-// Wallet - Routes complètes
-Route::prefix('wallet')->name('client.wallet.')->middleware('auth')->group(function () {
-    // Affichage
-    Route::get('/', [ClientWalletController::class, 'show'])->name('show');
-    Route::get('/transactions', [ClientWalletController::class, 'transactions'])->name('transactions');
+    // Wallet - Routes complètes
+    Route::prefix('wallet')->name('client.wallet.')->middleware('auth')->group(function () {
+        // Affichage
+        Route::get('/', [ClientWalletController::class, 'show'])->name('show');
+        Route::get('/transactions', [ClientWalletController::class, 'transactions'])->name('transactions');
 
-    // Dépôt (Kkiapay)
-    Route::get('/deposit', [ClientWalletController::class, 'depositForm'])->name('deposit');
-    Route::post('/deposit', [ClientWalletController::class, 'deposit'])->name('deposit.store');
-    Route::post('/deposit/verify', [ClientWalletController::class, 'verifyDeposit'])->name('deposit.verify');
+        // Dépôt (Kkiapay)
+        Route::get('/deposit', [ClientWalletController::class, 'depositForm'])->name('deposit');
+        Route::post('/deposit', [ClientWalletController::class, 'deposit'])->name('deposit.store');
+        Route::post('/deposit/verify', [ClientWalletController::class, 'verifyDeposit'])->name('deposit.verify');
 
-    // Retrait
-    Route::get('/withdraw', [ClientWalletController::class, 'withdrawForm'])->name('withdraw');
-    Route::post('/withdraw', [ClientWalletController::class, 'withdraw'])->name('withdraw.store');
-    Route::post('/withdraw/{transaction}/cancel', [ClientWalletController::class, 'cancelWithdrawal'])->name('withdraw.cancel');
-});
+        // Retrait
+        Route::get('/withdraw', [ClientWalletController::class, 'withdrawForm'])->name('withdraw');
+        Route::post('/withdraw', [ClientWalletController::class, 'withdraw'])->name('withdraw.store');
+        Route::post('/withdraw/{transaction}/cancel', [ClientWalletController::class, 'cancelWithdrawal'])->name('withdraw.cancel');
+    });
 
-// Webhook Kkiapay (public)
-Route::post('/webhook/kkiapay/wallet', [ClientWalletController::class, 'webhook'])->name('wallet.webhook');
+    // Webhook Kkiapay (public)
+    Route::post('/webhook/kkiapay/wallet', [ClientWalletController::class, 'webhook'])->name('wallet.webhook');
     // Notifications
     Route::get('/notifications', [ClientNotificationController::class, 'index'])->name('client.notifications.index');
     Route::patch('/notifications/{notification}/read', [ClientNotificationController::class, 'markAsRead'])->name('client.notifications.read');
