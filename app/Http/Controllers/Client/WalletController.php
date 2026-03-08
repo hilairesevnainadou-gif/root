@@ -303,7 +303,7 @@ class WalletController extends Controller
     /**
      * Formulaire de retrait (vue withdraw)
      */
-    public function withdrawForm(): View
+    public function withdrawForm(): View|RedirectResponse
     {
         $wallet = Wallet::where('user_id', auth()->id())->firstOrFail();
 

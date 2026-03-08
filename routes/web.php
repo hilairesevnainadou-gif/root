@@ -57,8 +57,17 @@ Route::get('/track/{requestNumber}', [ClientFundingRequestController::class, 'tr
 */
 // IMPORTANT: Cette route doit être accessible sans authentification
 // mais elle garde le middleware 'web' pour la session et le CSRF
+// Webhook principal (pour les paiements d'inscription)
 Route::post('/payment/webhook', [KkiapayPaymentController::class, 'webhook'])
     ->name('client.payment.webhook');
+
+// Webhook wallet (pour les dépôts) - POST pour Kkiapay
+Route::post('/webhook/kkiapay/wallet', [KkiapayPaymentController::class, 'webhookWallet'])
+    ->name('wallet.webhook');
+
+// Callback GET pour redirection après paiement wallet
+Route::get('/webhook/kkiapay/wallet', [KkiapayPaymentController::class, 'walletCallback'])
+    ->name('wallet.callback');
 
 /*
 |--------------------------------------------------------------------------

@@ -629,7 +629,17 @@ class KkiapayPaymentController extends Controller
 
                 // ==== CAS 1 : Dépôt Wallet ====
                 if ($transaction->type === 'deposit' || empty($transaction->funding_request_id)) {
-                    $this->processWebhookWalletDeposit($transaction, $isSuccess, $event, $amount, $fees, $transactionId, $method, $account, $performedAt);
+                    $this->processWebhookWalletDeposit(
+                        $transaction, 
+                        $isSuccess, 
+                        $event, 
+                        $amount, 
+                        $fees, 
+                        $transactionId, 
+                        $method, 
+                        $account, 
+                        $performedAt
+                    );
 
                     return;
                 }
@@ -879,5 +889,178 @@ class KkiapayPaymentController extends Controller
             'return_url' => route('client.requests.show', $fundingRequest),
             'metadata' => $config->data,
         ]));
+    }
+
+    /**
+     * WEBHOOK WALLET - POST (appelé par Kkiapay)
+     */
+    public function webhookWallet(Request $request): JsonResponse
+    {
+        Log::channel('kkiapay')->info('=== WEBHOOK WALLET POST ===', $request->all());
+
+        // Même logique que webhook() mais spécifique wallet
+        return $this->processWebhook($request, 'wallet');
+    }
+
+    /**
+     * CALLBACK WALLET - GET (redirection navigateur après paiement)
+     */
+    public function walletCallback(Request $request): RedirectResponse
+    {
+        $transactionId = $request->input('transaction_id');
+        
+        Log::channel('kkiapay')->info('=== CALLBACK WALLET GET ===', ['transaction_id' => $transactionId]);
+
+        // Rediriger vers le wallet avec message
+        return redirect()->route('client.wallet.show')
+            ->with('success', 'Paiement traité. Votre solde sera mis à jour dans quelques instants.');
+    }
+
+    /**
+     * Méthode commune pour traiter les webhooks
+     */
+    private function processWebhook(Request $request, string $source): JsonResponse
+    {
+        // Vérification signature
+        if ($this->webhookSecret) {
+            $receivedSecret = $request->header('x-kkiapay-secret');
+            if ($receivedSecret !== $this->webhookSecret) {
+                return response()->json(['error' => 'Invalid signature'], 401);
+            }
+        }
+
+        $transactionId  = $request->input('transactionId');
+        $isSuccess      = $request->boolean('isPaymentSucces');
+        $event          = $request->input('event');
+        $amount         = (float) $request->input('amount', 0);
+        $fees           = (float) $request->input('fees', 0);
+        $stateData      = $request->input('stateData');
+        $method         = $request->input('method');
+        $account        = $request->input('account');
+        $performedAt    = $request->input('performedAt');
+
+        Log::channel('kkiapay')->info("Processing webhook from {$source}", [
+            'transactionId' => $transactionId,
+            'isSuccess' => $isSuccess,
+            'event' => $event,
+        ]);
+
+        try {
+            DB::transaction(function () use ($transactionId, $isSuccess, $event, $amount, $fees, $stateData, $method, $account, $performedAt) {
+                // Trouver la transaction
+                $transaction = $this->findTransactionByKkiapayId($transactionId, $stateData);
+
+                if (!$transaction) {
+                    Log::channel('kkiapay')->error('Transaction non trouvée', ['id' => $transactionId]);
+                    throw new \Exception('Transaction not found');
+                }
+
+                // Éviter double traitement
+                if ($transaction->status === 'completed') {
+                    Log::channel('kkiapay')->info('Déjà complétée');
+                    return;
+                }
+
+                // 🔥 CORRECTION : Accepter 'credit' OU 'deposit'
+                $isWalletDeposit = in_array($transaction->type, ['deposit', 'credit']) 
+                    || empty($transaction->funding_request_id);
+
+                if ($isWalletDeposit) {
+                    $this->processWebhookWalletDeposit(
+                        $transaction, 
+                        $isSuccess, 
+                        $event, 
+                        $amount, 
+                        $fees, 
+                        $transactionId,
+                        $method,
+                        $account,
+                        $performedAt
+                    );
+                } else {
+                    // Traitement paiement inscription...
+                    $this->processWebhookRegistration($transaction, $isSuccess, $event, $amount, $fees, $transactionId);
+                }
+            });
+
+        } catch (\Exception $e) {
+            Log::channel('kkiapay')->error('Erreur webhook', ['error' => $e->getMessage()]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+
+        return response()->json(['status' => 'received'], 200);
+    }
+
+    /**
+     * Trouver une transaction par ID Kkiapay
+     */
+    private function findTransactionByKkiapayId(string $transactionId, ?string $stateData): ?Transaction
+    {
+        // 1. Chercher par référence
+        $transaction = Transaction::where('reference', $transactionId)
+            ->lockForUpdate()
+            ->first();
+
+        if ($transaction) {
+            return $transaction;
+        }
+
+        // 2. Chercher dans metadata
+        $transaction = Transaction::whereJsonContains('metadata', ['kkiapay_transaction_id' => $transactionId])
+            ->lockForUpdate()
+            ->first();
+
+        if ($transaction) {
+            return $transaction;
+        }
+
+        // 3. Chercher via stateData
+        if ($stateData) {
+            $stateDataParsed = json_decode($stateData, true);
+            if (isset($stateDataParsed['internal_transaction_id'])) {
+                return Transaction::where('transaction_id', $stateDataParsed['internal_transaction_id'])
+                    ->lockForUpdate()
+                    ->first();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Traiter webhook inscription
+     */
+    private function processWebhookRegistration(
+        Transaction $transaction,
+        bool $isSuccess,
+        ?string $event,
+        float $amount,
+        float $fees,
+        string $transactionId
+    ): void {
+        $fundingRequest = FundingRequest::lockForUpdate()->find($transaction->funding_request_id);
+
+        if (!$fundingRequest) {
+            Log::channel('kkiapay')->error('FundingRequest non trouvée');
+            return;
+        }
+
+        if ($isSuccess && $event === 'transaction.success') {
+            $transaction->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+                'fee' => $fees,
+                'reference' => $transactionId,
+            ]);
+
+            $fundingRequest->markAsPaid($transactionId, $amount);
+        } else {
+            $transaction->update([
+                'status' => 'failed',
+                'reference' => $transactionId,
+            ]);
+            
+            $fundingRequest->update(['payment_status' => 'failed']);
+        }
     }
 }

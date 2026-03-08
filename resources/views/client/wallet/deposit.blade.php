@@ -306,9 +306,7 @@ async function initiateKkiapay() {
     btn.disabled = true;
     
     try {
-        // CORRECTION: Envoyer seulement le montant à créditer (sans les frais)
-        // Kkiapay ajoutera automatiquement ses frais de 1.9%
-        const response = await fetch('{{ route('client.wallet.deposit') }}', {
+        const response = await fetch('{{ route('client.wallet.deposit.store') }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -316,7 +314,7 @@ async function initiateKkiapay() {
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
-                amount: currentAmount,           // Montant à créditer (sans frais)
+                amount: currentAmount,
                 payment_method: 'kkiapay'
             })
         });
@@ -329,14 +327,13 @@ async function initiateKkiapay() {
 
         transactionData = data.transaction;
 
-        // Afficher le widget Kkiapay en modale
+        // Afficher le widget
         document.getElementById('kkiapayZone').style.display = 'flex';
         kkiapayOpen = true;
 
-        // IMPORTANT: Envoyer seulement le MONTANT à créditer à Kkiapay
-        // Kkiapay calculera et ajoutera ses propres frais de 1.9%
+        // 🔥 CALLBACK GET pour redirection après paiement
         openKkiapayWidget({
-            amount: currentAmount,  // Seulement le montant à créditer !
+            amount: currentAmount,
             key: config.publicKey,
             sandbox: config.sandbox,
             data: JSON.stringify({
@@ -346,14 +343,13 @@ async function initiateKkiapay() {
             }),
             theme: '#1e40af',
             name: 'BHDM',
-            // CORRECTION: Utiliser le bon callback URL pour le webhook
-            callback: 'https://bdhml.novatechbenin.com/webhook/kkiapay/wallet',
+            callback: '{{ route('wallet.callback') }}',  // Route GET
             position: 'center'
         });
 
     } catch (error) {
         console.error('Erreur:', error);
-        alert(error.message || 'Erreur lors de l\'initialisation du paiement');
+        alert(error.message || 'Erreur lors de l\'initialisation');
         btn.classList.remove('loading');
         btn.disabled = false;
     }
