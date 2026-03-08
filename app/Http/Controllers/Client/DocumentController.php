@@ -97,7 +97,7 @@ class DocumentController extends Controller
             'file_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
             'status' => 'pending', // Remet à pending si rejeté précédemment
-            'notes' => $request->notes,
+
         ]);
 
         return response()->json([
