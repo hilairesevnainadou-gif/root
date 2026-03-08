@@ -1,22 +1,26 @@
 <?php
 
-// app/Http/Controllers/Client/FundingRequestController.php
-
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreFundingRequestRequest;
 use App\Http\Requests\UpdateFundingRequestRequest;
 use App\Models\Company;
+use App\Models\DocumentUser;
 use App\Models\FundingRequest;
 use App\Models\TypeFinancement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class FundingRequestController extends Controller
 {
+    /**
+     * Liste des demandes de financement
+     */
     public function index(Request $request): View
     {
         $userId = auth()->id();
@@ -95,7 +99,7 @@ class FundingRequestController extends Controller
             return back()->with('error', 'Seules les demandes en brouillon peuvent être annulées.');
         }
 
-        // Supprimer la demande
+        // Supprimer la demande (les documents seront supprimés en cascade)
         $fundingRequest->delete();
 
         return redirect()
@@ -103,6 +107,9 @@ class FundingRequestController extends Controller
             ->with('success', 'Demande annulée avec succès.');
     }
 
+    /**
+     * Formulaire de création
+     */
     public function create(Request $request): View
     {
         $preselectedType = null;
@@ -124,7 +131,7 @@ class FundingRequestController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Récupérer les entreprises de l'utilisateur (vide si aucune)
+        // Récupérer les entreprises de l'utilisateur
         $userCompanies = auth()->user()->companies()
             ->select('id', 'company_name', 'company_type', 'sector', 'job_title', 'employees_count')
             ->get();
@@ -139,10 +146,12 @@ class FundingRequestController extends Controller
 
     /**
      * Store - Création AJAX pour le paiement
+     * Crée aussi les DocumentUser vides pour chaque document requis
      */
-    /**
+       /**
      * Store - Création AJAX pour le paiement
-     * Permet plusieurs demandes du même type de financement
+     * Permet plusieurs demandes du même type
+     * Réutilise les documents existants si disponibles
      */
     public function store(Request $request): JsonResponse
     {
@@ -154,7 +163,6 @@ class FundingRequestController extends Controller
             'description' => 'nullable|string|max:500',
             'financement_type' => 'required|in:particulier,entreprise',
             'company_id' => 'nullable|exists:companies,id',
-            // Champs pour nouvelle entreprise
             'new_company.name' => 'required_if:company_id,null|nullable|string|max:255',
             'new_company.company_type' => 'required_with:new_company.name|nullable|string|max:50',
             'new_company.sector' => 'required_with:new_company.name|nullable|string|max:100',
@@ -174,49 +182,27 @@ class FundingRequestController extends Controller
             ], 400);
         }
 
-        // Vérifier uniquement les demandes en brouillon (pas encore payées) du même type
-        // Permet plusieurs demandes mais évite les doublons de brouillons
-        $existingDraft = FundingRequest::where('user_id', $user->id)
-            ->where('typefinancement_id', $typeFinancement->id)
-            ->where('status', 'draft') // Seulement les brouillons non payés
-            ->when($validated['financement_type'] === 'entreprise' && ! empty($validated['company_id']),
-                fn ($q) => $q->where('company_id', $validated['company_id'])
-            )
-            ->first();
-
-        if ($existingDraft) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Vous avez déjà une demande en brouillon pour ce financement. Veuillez la finaliser ou l\'annuler.',
-                'existing_request' => [
-                    'id' => $existingDraft->id,
-                    'request_number' => $existingDraft->request_number,
-                    'title' => $existingDraft->title,
-                    'created_at' => $existingDraft->created_at,
-                ],
-            ], 400);
-        }
+        // 🔥 SUPPRIMÉ : Vérification des demandes en brouillon existantes
+        // L'utilisateur peut créer autant de demandes qu'il veut du même type
 
         // Gestion de l'entreprise
         $companyId = null;
         $isNewCompany = false;
 
         if ($validated['financement_type'] === 'entreprise') {
-            if (! empty($validated['company_id'])) {
-                // Vérifier que l'entreprise appartient bien à l'utilisateur
+            if (!empty($validated['company_id'])) {
                 $company = Company::where('id', $validated['company_id'])
                     ->where('user_id', $user->id)
                     ->first();
 
-                if (! $company) {
+                if (!$company) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Entreprise non trouvée ou non autorisée.',
                     ], 403);
                 }
                 $companyId = $company->id;
-            } elseif (! empty($validated['new_company']['name'])) {
-                // Créer nouvelle entreprise
+            } elseif (!empty($validated['new_company']['name'])) {
                 try {
                     $newCompany = Company::create([
                         'user_id' => $user->id,
@@ -232,7 +218,7 @@ class FundingRequestController extends Controller
                 } catch (\Exception $e) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Erreur lors de la création de l\'entreprise: '.$e->getMessage(),
+                        'message' => 'Erreur création entreprise: ' . $e->getMessage(),
                     ], 500);
                 }
             } else {
@@ -243,7 +229,7 @@ class FundingRequestController extends Controller
             }
         }
 
-        // Gestion explicite de description null
+        // Gestion description
         $description = isset($validated['description']) && $validated['description'] !== ''
             ? $validated['description']
             : null;
@@ -262,6 +248,9 @@ class FundingRequestController extends Controller
             'payment_status' => 'pending',
         ]);
 
+        // 🔥 CRÉER LES DOCUMENTS : réutilise existants ou crée vides
+        $this->createOrAttachDocuments($fundingRequest, $typeFinancement, $user->id, $companyId);
+
         return response()->json([
             'success' => true,
             'funding_request_id' => $fundingRequest->id,
@@ -272,6 +261,79 @@ class FundingRequestController extends Controller
         ]);
     }
 
+    /**
+     * Crée ou rattache les documents pour la demande
+     * Réutilise les documents existants de l'utilisateur si disponibles
+     */
+    private function createOrAttachDocuments(
+        FundingRequest $fundingRequest,
+        TypeFinancement $typeFinancement,
+        int $userId,
+        ?int $companyId
+    ): void {
+
+        // Récupérer les types de documents requis
+        $requiredTypeDocs = $typeFinancement->requiredTypeDocs()->get();
+
+        // Récupérer les documents existants de l'utilisateur pour ce type/entreprise
+        // Qui ne sont pas déjà rattachés à une autre demande active
+        $existingDocs = DocumentUser::where('user_id', $userId)
+            ->where('company_id', $companyId)
+            ->whereNotNull('file_path') // Documents déjà uploadés
+            ->where('status', 'verified') // Uniquement documents vérifiés
+            ->whereDoesntHave('fundingRequest', function($query) {
+                $query->whereIn('status', ['draft', 'submitted', 'under_review', 'pending_committee']);
+            })
+            ->with('fundingRequest')
+            ->get()
+            ->keyBy('typedoc_id');
+
+        foreach ($requiredTypeDocs as $typeDoc) {
+
+            // 🔥 Vérifier si un document existant peut être réutilisé
+            if (isset($existingDocs[$typeDoc->id])) {
+                $existingDoc = $existingDocs[$typeDoc->id];
+
+                // Vérifier que le fichier existe physiquement
+                if (Storage::disk('public')->exists($existingDoc->file_path)) {
+
+                    // Créer une copie/lien pour cette nouvelle demande
+                    DocumentUser::create([
+                        'user_id' => $userId,
+                        'company_id' => $companyId,
+                        'funding_request_id' => $fundingRequest->id,
+                        'typedoc_id' => $typeDoc->id,
+                        'file_path' => $existingDoc->file_path, // Même fichier
+                        'file_name' => $existingDoc->file_name,
+                        'file_type' => $existingDoc->file_type,
+                        'file_size' => $existingDoc->file_size,
+                        'status' => 'verified', // Déjà vérifié
+
+                    ]);
+
+                    continue; // Passer au suivant
+                }
+            }
+
+            // 🔥 Sinon, créer un document vide
+            DocumentUser::create([
+                'user_id' => $userId,
+                'company_id' => $companyId,
+                'funding_request_id' => $fundingRequest->id,
+                'typedoc_id' => $typeDoc->id,
+                'file_path' => null,
+                'file_name' => null,
+                'file_type' => null,
+                'file_size' => 0,
+                'status' => 'pending',
+
+            ]);
+        }
+    }
+
+    /**
+     * Affiche une demande spécifique
+     */
     public function show(FundingRequest $fundingRequest): View|RedirectResponse
     {
         // Vérifier que l'utilisateur est propriétaire
@@ -283,12 +345,8 @@ class FundingRequestController extends Controller
 
         $fundingRequest->load(['typeFinancement', 'documentUsers.typeDoc']);
 
-        $requiredDocs = $fundingRequest->typeFinancement->requiredTypeDocs()->get();
-        $providedDocs = $fundingRequest->documentUsers;
-
-        // Documents manquants = requis - fournis (vérifiés ou en attente)
-        $providedDocIds = $providedDocs->pluck('typedoc_id')->toArray();
-        $missingDocs = $requiredDocs->whereNotIn('id', $providedDocIds);
+        // Tous les documents sont déjà créés, juste les récupérer
+        $documents = $fundingRequest->documentUsers;
 
         $fees = [
             'registration' => $fundingRequest->typeFinancement->registration_fee,
@@ -301,14 +359,15 @@ class FundingRequestController extends Controller
 
         return view('client.requests.show', compact(
             'fundingRequest',
-            'requiredDocs',
-            'providedDocs',
-            'missingDocs',
+            'documents',
             'fees',
             'timeline'
         ));
     }
 
+    /**
+     * Formulaire d'édition
+     */
     public function edit(FundingRequest $fundingRequest): View
     {
         $this->authorize('update', $fundingRequest);
@@ -320,6 +379,9 @@ class FundingRequestController extends Controller
         return view('client.requests.edit', compact('fundingRequest'));
     }
 
+    /**
+     * Mise à jour d'une demande
+     */
     public function update(UpdateFundingRequestRequest $request, FundingRequest $fundingRequest): RedirectResponse
     {
         $this->authorize('update', $fundingRequest);
@@ -331,6 +393,9 @@ class FundingRequestController extends Controller
             ->with('success', 'Demande mise à jour.');
     }
 
+    /**
+     * Suivi d'une demande par numéro
+     */
     public function track(string $requestNumber): View
     {
         $request = FundingRequest::with(['typeFinancement', 'documentUsers.typeDoc'])
@@ -342,6 +407,9 @@ class FundingRequestController extends Controller
         return view('client.requests.track', compact('request', 'timeline'));
     }
 
+    /**
+     * Génère un numéro de demande unique
+     */
     private function generateRequestNumber(): string
     {
         $prefix = 'BHDM-REQ';
@@ -351,6 +419,9 @@ class FundingRequestController extends Controller
         return "{$prefix}-{$date}-{$random}";
     }
 
+    /**
+     * Construit la timeline pour une demande
+     */
     private function buildTimeline(FundingRequest $request): array
     {
         $timeline = [];
@@ -372,7 +443,7 @@ class FundingRequestController extends Controller
                 'date' => $step['date'],
                 'icon' => $step['icon'],
                 'completed' => (bool) $step['date'],
-                'active' => $lastCompleted && ! $step['date'],
+                'active' => $lastCompleted && !$step['date'],
             ];
             $lastCompleted = (bool) $step['date'];
         }

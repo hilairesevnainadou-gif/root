@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UploadDocumentRequest;
 use App\Models\DocumentUser;
 use App\Models\FundingRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
@@ -29,94 +30,106 @@ class DocumentController extends Controller
     /**
      * Documents requis pour une demande spécifique
      */
-    // public function required(FundingRequest $fundingRequest): View
-    // {
-    //     $this->authorize('view', $fundingRequest);
+    public function required(FundingRequest $fundingRequest): View
+    {
+        // Vérifier que la demande appartient à l'utilisateur
+        if ($fundingRequest->user_id !== auth()->id()) {
+            abort(403);
+        }
 
-    //     $requiredDocs = $fundingRequest->typeFinancement->requiredTypeDocs();
-    //     $providedDocs = $fundingRequest->documentUsers()->with('typeDoc')->get();
-    //     $missingDocs = $fundingRequest->missingDocuments();
+        // Charger les documents avec leur type (déjà créés lors du store FundingRequest)
+        $documents = DocumentUser::with('typeDoc')
+            ->where('funding_request_id', $fundingRequest->id)
+            ->get();
 
-    //     return view('client.documents.required', compact(
-    //         'fundingRequest',
-    //         'requiredDocs',
-    //         'providedDocs',
-    //         'missingDocs'
-    //     ));
-    // }
+        return view('client.documents.required', compact('fundingRequest', 'documents'));
+    }
 
     /**
-     * Upload un document (stockage PUBLIC)
+     * 🔥 UPLOAD - Met à jour un DocumentUser existant (pas de création)
      */
-    public function store(UploadDocumentRequest $request): RedirectResponse
+    public function store(UploadDocumentRequest $request): JsonResponse
     {
         $fundingRequest = FundingRequest::findOrFail($request->funding_request_id);
 
+        // Autorisations
         if ($fundingRequest->user_id !== auth()->id()) {
-            return back()->with('error', 'Non autorisé.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Non autorisé.'
+            ], 403);
         }
 
         if ($fundingRequest->status !== 'draft') {
-            return back()->with('error', 'Impossible d\'ajouter des documents après soumission.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Impossible d\'ajouter des documents après soumission.'
+            ], 403);
         }
 
-        // Stocker dans PUBLIC (pas private)
+        // 🔥 RÉCUPÉRER LE DocumentUser EXISTANT (créé lors de la création de la demande)
+        $documentUser = DocumentUser::where('funding_request_id', $request->funding_request_id)
+            ->where('typedoc_id', $request->typedoc_id)
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if (!$documentUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Type de document invalide pour cette demande.'
+            ], 422);
+        }
+
+        // Supprimer l'ancien fichier s'il existe
+        if ($documentUser->file_path && Storage::disk('public')->exists($documentUser->file_path)) {
+            Storage::disk('public')->delete($documentUser->file_path);
+        }
+
+        // Stocker le nouveau fichier
         $file = $request->file('document');
         $directory = 'documents/' . auth()->id() . '/' . $fundingRequest->id;
-        $path = $file->store($directory, 'public'); // DISK = public
+        $path = $file->store($directory, 'public');
 
-        DocumentUser::create([
-            'user_id' => auth()->id(),
-            'funding_request_id' => $request->funding_request_id,
-            'typedoc_id' => $request->typedoc_id,
+        // 🔥 MISE À JOUR (pas de création)
+        $documentUser->update([
             'file_path' => $path,
             'file_name' => $file->getClientOriginalName(),
             'file_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
-            'status' => 'pending',
+            'status' => 'pending', // Remet à pending si rejeté précédemment
             'notes' => $request->notes,
         ]);
 
-        return back()->with('success', 'Document uploadé avec succès.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Document uploadé avec succès.',
+            'document' => [
+                'id' => $documentUser->id,
+                'file_name' => $documentUser->file_name,
+                'status' => $documentUser->status,
+            ]
+        ]);
     }
 
-
     /**
- * Afficher les documents requis pour une demande
- */
-public function required(FundingRequest $fundingRequest): View
-{
-    // Vérifier que la demande appartient à l'utilisateur
-    if ($fundingRequest->user_id !== auth()->id()) {
-        abort(403);
-    }
-
-    // Charger les documents avec leur type
-    $documents = DocumentUser::with('typeDoc')
-        ->where('funding_request_id', $fundingRequest->id)
-        ->get();
-
-    return view('client.documents.required', compact('fundingRequest', 'documents'));
-}
-    /**
-     * Voir/Télécharger un document (retourne Response, pas RedirectResponse)
+     * Voir/Télécharger un document (inline)
      */
     public function show(DocumentUser $document): Response
     {
         $this->authorize('view', $document);
 
-        if (!Storage::disk('public')->exists($document->file_path)) {
+        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
             abort(404, 'Fichier non trouvé');
         }
 
-        // Retourne le fichier pour affichage ou téléchargement
-        $fileContent = Storage::disk('public')->get($document->file_path);
-        $mimeType = $document->file_type;
-
-        return response($fileContent, 200, [
-            'Content-Type' => $mimeType,
-            'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
-        ]);
+        return response(
+            Storage::disk('public')->get($document->file_path),
+            200,
+            [
+                'Content-Type' => $document->file_type,
+                'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
+            ]
+        );
     }
 
     /**
@@ -126,21 +139,22 @@ public function required(FundingRequest $fundingRequest): View
     {
         $this->authorize('view', $document);
 
-        if (!Storage::disk('public')->exists($document->file_path)) {
+        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
             abort(404, 'Fichier non trouvé');
         }
 
-        $fileContent = Storage::disk('public')->get($document->file_path);
-        $mimeType = $document->file_type;
-
-        return response($fileContent, 200, [
-            'Content-Type' => $mimeType,
-            'Content-Disposition' => 'attachment; filename="' . $document->file_name . '"',
-        ]);
+        return response(
+            Storage::disk('public')->get($document->file_path),
+            200,
+            [
+                'Content-Type' => $document->file_type,
+                'Content-Disposition' => 'attachment; filename="' . $document->file_name . '"',
+            ]
+        );
     }
 
     /**
-     * Supprimer un document
+     * Supprimer un document (remet à vide, ne supprime pas l'entrée)
      */
     public function destroy(DocumentUser $document): RedirectResponse
     {
@@ -150,10 +164,19 @@ public function required(FundingRequest $fundingRequest): View
             return back()->with('error', 'Impossible de supprimer un document déjà traité.');
         }
 
-        // Supprimer du stockage public
-        Storage::disk('public')->delete($document->file_path);
-        $document->delete();
+        // Supprimer le fichier
+        if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
+            Storage::disk('public')->delete($document->file_path);
+        }
 
-        return back()->with('success', 'Document supprimé.');
+        // 🔥 REMET À VIDE (ne supprime pas l'entrée)
+        $document->update([
+            'file_path' => null,
+            'file_name' => null,
+            'file_type' => null,
+            'file_size' => 0,
+        ]);
+
+        return back()->with('success', 'Document supprimé. Vous pouvez en télécharger un nouveau.');
     }
 }
