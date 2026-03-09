@@ -3,6 +3,14 @@
 @section('title', 'Mes demandes de financement')
 @section('header-title', 'Mes demandes')
 
+@section('header-action')
+<a href="{{ route('client.dashboard') }}" class="btn-back" data-transition="slide-right">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+    </svg>
+</a>
+@endsection
+
 @section('content')
 
 @php
@@ -19,29 +27,19 @@
     ];
 
     $statusColors = [
-        'draft' => ['bg' => '#f3f4f6', 'text' => '#374151', 'border' => '#d1d5db', 'icon' => 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'],
-        'submitted' => ['bg' => '#dbeafe', 'text' => '#1e40af', 'border' => '#3b82f6', 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
-        'under_review' => ['bg' => '#ede9fe', 'text' => '#5b21b6', 'border' => '#8b5cf6', 'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
-        'pending_committee' => ['bg' => '#ede9fe', 'text' => '#5b21b6', 'border' => '#8b5cf6', 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'],
-        'approved' => ['bg' => '#d1fae5', 'text' => '#065f46', 'border' => '#10b981', 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
-        'funded' => ['bg' => '#a7f3d0', 'text' => '#064e3b', 'border' => '#059669', 'icon' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
-        'rejected' => ['bg' => '#fee2e2', 'text' => '#991b1b', 'border' => '#ef4444', 'icon' => 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'],
-        'completed' => ['bg' => '#f3f4f6', 'text' => '#374151', 'border' => '#9ca3af', 'icon' => 'M5 13l4 4L19 7'],
-        'cancelled' => ['bg' => '#f3f4f6', 'text' => '#6b7280', 'border' => '#d1d5db', 'icon' => 'M6 18L18 6M6 6l12 12'],
+        'draft' => ['bg' => '#f3f4f6', 'text' => '#374151', 'border' => '#d1d5db'],
+        'submitted' => ['bg' => '#dbeafe', 'text' => '#1e40af', 'border' => '#3b82f6'],
+        'under_review' => ['bg' => '#ede9fe', 'text' => '#5b21b6', 'border' => '#8b5cf6'],
+        'pending_committee' => ['bg' => '#ede9fe', 'text' => '#5b21b6', 'border' => '#8b5cf6'],
+        'approved' => ['bg' => '#d1fae5', 'text' => '#065f46', 'border' => '#10b981'],
+        'rejected' => ['bg' => '#fee2e2', 'text' => '#991b1b', 'border' => '#ef4444'],
+        'funded' => ['bg' => '#a7f3d0', 'text' => '#064e3b', 'border' => '#059669'],
+        'completed' => ['bg' => '#f3f4f6', 'text' => '#374151', 'border' => '#9ca3af'],
+        'cancelled' => ['bg' => '#f3f4f6', 'text' => '#6b7280', 'border' => '#d1d5db'],
     ];
 @endphp
 
 <div class="requests-mobile">
-
-    {{-- Header Navigation --}}
-    <div class="requests-header-nav">
-        <a href="{{ route('client.dashboard') }}" class="back-link" data-transition="slide-right">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-            </svg>
-            <span>Retour</span>
-        </a>
-    </div>
 
     {{-- Hero Section --}}
     <div class="requests-hero">
@@ -69,32 +67,32 @@
     {{-- Filtres scrollables --}}
     <div class="filters-scroll">
         <a href="{{ route('client.requests.index') }}" class="filter-pill {{ !request('status') && !request('payment_status') ? 'active' : '' }}">
-            <span class="filter-count">{{ $stats['all'] }}</span>
+            <span class="filter-count">{{ $stats['all'] ?? 0 }}</span>
             <span class="filter-label">Toutes</span>
         </a>
 
-        <a href="{{ route('client.requests.index', ['payment_status' => 'pending']) }}" class="filter-pill filter-pill-warning {{ request('payment_status') === 'pending' ? 'active' : '' }}">
-            <span class="filter-count">{{ $stats['pending_payment'] }}</span>
+        <a href="{{ route('client.requests.index', ['payment_status' => 'pending', 'status' => 'draft']) }}" class="filter-pill filter-pill-warning {{ request('payment_status') === 'pending' ? 'active' : '' }}">
+            <span class="filter-count">{{ $stats['pending_payment'] ?? 0 }}</span>
             <span class="filter-label">À payer</span>
         </a>
 
         <a href="{{ route('client.requests.index', ['status' => 'submitted']) }}" class="filter-pill filter-pill-info {{ request('status') === 'submitted' ? 'active' : '' }}">
-            <span class="filter-count">{{ $stats['submitted'] }}</span>
+            <span class="filter-count">{{ $stats['submitted'] ?? 0 }}</span>
             <span class="filter-label">Soumises</span>
         </a>
 
         <a href="{{ route('client.requests.index', ['status' => 'under_review']) }}" class="filter-pill filter-pill-purple {{ request('status') === 'under_review' ? 'active' : '' }}">
-            <span class="filter-count">{{ $stats['under_review'] }}</span>
+            <span class="filter-count">{{ $stats['under_review'] ?? 0 }}</span>
             <span class="filter-label">En examen</span>
         </a>
 
         <a href="{{ route('client.requests.index', ['status' => 'approved']) }}" class="filter-pill filter-pill-success {{ request('status') === 'approved' ? 'active' : '' }}">
-            <span class="filter-count">{{ $stats['approved'] }}</span>
+            <span class="filter-count">{{ $stats['approved'] ?? 0 }}</span>
             <span class="filter-label">Approuvées</span>
         </a>
 
         <a href="{{ route('client.requests.index', ['status' => 'funded']) }}" class="filter-pill filter-pill-funded {{ request('status') === 'funded' ? 'active' : '' }}">
-            <span class="filter-count">{{ $stats['funded'] }}</span>
+            <span class="filter-count">{{ $stats['funded'] ?? 0 }}</span>
             <span class="filter-label">Financées</span>
         </a>
     </div>
@@ -126,9 +124,35 @@
                     <div class="request-card-header">
                         <div class="request-identity">
                             <div class="status-icon" style="background: {{ $colors['bg'] }}; color: {{ $colors['text'] }}">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $colors['icon'] }}"/>
-                                </svg>
+                                @if($request->status === 'draft')
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                @elseif($request->status === 'submitted')
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                @elseif($request->status === 'under_review' || $request->status === 'pending_committee')
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                @elseif($request->status === 'approved')
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                @elseif($request->status === 'funded')
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                @elseif($request->status === 'rejected')
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                @else
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                @endif
                             </div>
                             <div class="request-info">
                                 <span class="request-number">{{ $request->request_number }}</span>
@@ -248,27 +272,6 @@
     overflow-x: hidden;
     background-color: var(--bg-primary, #ffffff);
     min-height: 100vh;
-}
-
-/* Header Navigation */
-.requests-header-nav {
-    margin-bottom: 16px;
-}
-
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-secondary, #475569);
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    padding: 8px 0;
-    transition: color 0.2s;
-}
-
-.back-link:active {
-    color: var(--primary-600, #1e40af);
 }
 
 /* Hero Section */
