@@ -57,7 +57,7 @@ class FundingRequestController extends Controller
     {
         $fundingRequest->load([
             'user',
-            'typeFinancement',
+            'typeFinancement.requiredTypeDocs',
             'documentUsers.typeDoc',
             'documentUsers.verifiedBy',
         ]);
@@ -225,17 +225,21 @@ class FundingRequestController extends Controller
 
     private function getDocumentsStatus(FundingRequest $request): array
     {
-        $required = $request->typeFinancement->required_documents ?? [];
-        $provided = $request->documentUsers;
+        // Utilise la relation BelongsToMany (plus fiable que l'attribut JSON)
+        $requiredDocs = $request->typeFinancement->requiredTypeDocs ?? collect();
+        $provided     = $request->documentUsers;
 
-        return collect($required)->map(function($docId) use ($provided) {
-            $doc = $provided->firstWhere('typedoc_id', $docId);
+        return $requiredDocs->map(function($typeDoc) use ($provided) {
+            $doc = $provided->firstWhere('typedoc_id', $typeDoc->id);
             return [
-                'typedoc_id' => $docId,
-                'name' => \App\Models\TypeDoc::find($docId)?->name ?? 'Inconnu',
-                'provided' => !!$doc,
-                'status' => $doc?->status ?? 'missing',
-                'uploaded_at' => $doc?->created_at,
+                'typedoc_id'       => $typeDoc->id,
+                'name'             => $typeDoc->name,
+                'provided'         => (bool) $doc,
+                'status'           => $doc?->status ?? 'missing',
+                'uploaded_at'      => $doc?->created_at,
+                'document_id'      => $doc?->id,
+                'verified_by'      => $doc?->verified_by,
+                'verified_by_name' => $doc?->verifiedBy?->full_name,
             ];
         })->toArray();
     }

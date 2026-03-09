@@ -154,11 +154,12 @@
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 Imprimer
             </button>
-            @if(in_array($fundingRequest->status, ['under_review','pending_committee']))
-            <a href="{{ route('admin.requests.assign', $fundingRequest) }}" class="btn btn-ghost-primary btn-sm">
+            @if(in_array($fundingRequest->status, ['under_review','pending_committee','submitted']))
+            <button type="button" class="btn btn-ghost-primary btn-sm"
+                onclick="document.getElementById('modal-assign').classList.add('open')">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
                 Assigner
-            </a>
+            </button>
             @endif
         </div>
     </div>
@@ -653,6 +654,36 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    {{-- ── Modal Assignation ── --}}
+    <div class="modal-backdrop" id="modal-assign">
+        <div class="modal-box">
+            <div class="modal-header-row">
+                <div class="modal-title">👤 Assigner un examinateur</div>
+                <button class="modal-close" onclick="document.getElementById('modal-assign').classList.remove('open')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form method="POST" action="{{ route('admin.requests.assign', $fundingRequest) }}">
+                @csrf
+                <div style="margin-bottom:.875rem;">
+                    <label class="form-label">Examinateur <span style="color:#ef4444;">*</span></label>
+                    <select name="reviewer_id" class="form-control" required>
+                        <option value="">Choisir un admin…</option>
+                        @foreach(\App\Models\User::where('is_admin', true)->orderBy('first_name')->get() as $admin)
+                            <option value="{{ $admin->id }}" {{ $fundingRequest->reviewer_id == $admin->id ? 'selected' : '' }}>
+                                {{ $admin->full_name }} — {{ $admin->email }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary" style="flex:1; justify-content:center;">Confirmer l'assignation</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-assign').classList.remove('open')">Annuler</button>
+                </div>
+            </form>
         </div>
     </div>
 

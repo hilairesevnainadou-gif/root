@@ -174,77 +174,83 @@ Route::patch('/notifications/read-all', [ClientNotificationController::class, 'm
 | Routes Admin
 |--------------------------------------------------------------------------
 */
+/*
+|--------------------------------------------------------------------------
+| Routes Admin — bloc complet à remplacer dans web.php
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
 
-    // Dashboard
+    // ── Dashboard ─────────────────────────────────────────────────────────
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-    // Demandes
-    Route::get('/requests', [AdminFundingRequestController::class, 'index'])->name('requests.index');
-    Route::get('/requests/{fundingRequest}', [AdminFundingRequestController::class, 'show'])->name('requests.show');
-    Route::patch('/requests/{fundingRequest}/status', [AdminFundingRequestController::class, 'updateStatus'])->name('requests.status');
-    Route::post('/requests/{fundingRequest}/assign', [AdminFundingRequestController::class, 'assign'])->name('requests.assign');
-    Route::post('/requests/{fundingRequest}/committee', [AdminFundingRequestController::class, 'committeeDecision'])->name('requests.committee');
-    Route::get('/requests-export', [AdminFundingRequestController::class, 'export'])->name('requests.export');
+    // ── Demandes ──────────────────────────────────────────────────────────
+    Route::prefix('requests')->name('requests.')->group(function () {
+        Route::get('/', [AdminFundingRequestController::class, 'index'])->name('index');
+        Route::get('/export', [AdminFundingRequestController::class, 'export'])->name('export');
+        Route::get('/{fundingRequest}', [AdminFundingRequestController::class, 'show'])->name('show');
+        Route::patch('/{fundingRequest}/status', [AdminFundingRequestController::class, 'updateStatus'])->name('status');
+        Route::post('/{fundingRequest}/assign', [AdminFundingRequestController::class, 'assign'])->name('assign');
+        Route::post('/{fundingRequest}/committee', [AdminFundingRequestController::class, 'committeeDecision'])->name('committee');
+    });
 
-    // Documents
-    Route::get('/documents/pending', [DocumentVerificationController::class, 'pending'])->name('documents.pending');
-    Route::get('/documents/{document}', [DocumentVerificationController::class, 'show'])->name('documents.show');
-    Route::post('/documents/{document}/verify', [DocumentVerificationController::class, 'verify'])->name('documents.verify');
-    Route::post('/documents/bulk', [DocumentVerificationController::class, 'bulkVerify'])->name('documents.bulk');
+    // ── Documents ─────────────────────────────────────────────────────────
+    // ATTENTION : '/documents/pending' DOIT être avant '/documents/{document}'
+    Route::prefix('documents')->name('documents.')->group(function () {
+        Route::get('/pending', [DocumentVerificationController::class, 'pending'])->name('pending');
+        Route::post('/bulk', [DocumentVerificationController::class, 'bulkVerify'])->name('bulk');
+        Route::get('/{document}', [DocumentVerificationController::class, 'show'])->name('show');
+        Route::post('/{document}/verify', [DocumentVerificationController::class, 'verify'])->name('verify');
+    });
 
-    // Types Financement
-    Route::get('/typefinancements', [AdminTypeFinancementController::class, 'index'])->name('typefinancements.index');
-    Route::get('/typefinancements/create', [AdminTypeFinancementController::class, 'create'])->name('typefinancements.create');
-    Route::post('/typefinancements', [AdminTypeFinancementController::class, 'store'])->name('typefinancements.store');
-    Route::get('/typefinancements/{typeFinancement}/edit', [AdminTypeFinancementController::class, 'edit'])->name('typefinancements.edit');
-    Route::patch('/typefinancements/{typeFinancement}', [AdminTypeFinancementController::class, 'update'])->name('typefinancements.update');
-    Route::delete('/typefinancements/{typeFinancement}', [AdminTypeFinancementController::class, 'destroy'])->name('typefinancements.destroy');
-    Route::patch('/typefinancements/{typeFinancement}/toggle', [AdminTypeFinancementController::class, 'toggleActive'])->name('typefinancements.toggle');
-    Route::get('/documents',
-        [TypeFinancementDocController::class, 'index'])
-        ->name('typefinancements.documents');
+    // ── Types de Financement ──────────────────────────────────────────────
+    Route::prefix('typefinancements')->name('typefinancements.')->group(function () {
+        // CRUD
+        Route::get('/', [AdminTypeFinancementController::class, 'index'])->name('index');
+        Route::get('/create', [AdminTypeFinancementController::class, 'create'])->name('create');
+        Route::post('/', [AdminTypeFinancementController::class, 'store'])->name('store');
+        Route::get('/{typeFinancement}/edit', [AdminTypeFinancementController::class, 'edit'])->name('edit');
+        Route::patch('/{typeFinancement}', [AdminTypeFinancementController::class, 'update'])->name('update');
+        Route::delete('/{typeFinancement}', [AdminTypeFinancementController::class, 'destroy'])->name('destroy');
+        Route::patch('/{typeFinancement}/toggle', [AdminTypeFinancementController::class, 'toggleActive'])->name('toggle');
 
-    Route::get('/{typeFinancement}/documents',
-        [TypeFinancementDocController::class, 'edit'])
-        ->name('typefinancements.documents.edit');
+        // Docs requis — '/documents' AVANT '/{typeFinancement}/documents' pour éviter le conflit
+        Route::get('/documents', [TypeFinancementDocController::class, 'index'])->name('documents');
+        Route::get('/{typeFinancement}/documents', [TypeFinancementDocController::class, 'edit'])->name('documents.edit');
+        Route::post('/{typeFinancement}/documents/sync', [TypeFinancementDocController::class, 'sync'])->name('documents.sync');
+        Route::post('/{typeFinancement}/documents/attach', [TypeFinancementDocController::class, 'attach'])->name('documents.attach');
+        Route::delete('/{typeFinancement}/documents/{typeDoc}', [TypeFinancementDocController::class, 'detach'])->name('documents.detach');
+    });
 
-    Route::post('/{typeFinancement}/documents/sync',
-        [TypeFinancementDocController::class, 'sync'])
-        ->name('typefinancements.documents.sync');
+    // ── Types de Documents ────────────────────────────────────────────────
+    Route::prefix('typedocs')->name('typedocs.')->group(function () {
+        Route::get('/', [TypeDocController::class, 'index'])->name('index');
+        Route::post('/', [TypeDocController::class, 'store'])->name('store');
+        Route::patch('/{typeDoc}', [TypeDocController::class, 'update'])->name('update');
+        Route::delete('/{typeDoc}', [TypeDocController::class, 'destroy'])->name('destroy');
+    });
 
-    Route::post('/{typeFinancement}/documents/attach',
-        [TypeFinancementDocController::class, 'attach'])
-        ->name('typefinancements.documents.attach');
+    // ── Utilisateurs ──────────────────────────────────────────────────────
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/{user}', [UserController::class, 'show'])->name('show');
+        Route::patch('/{user}', [UserController::class, 'update'])->name('update');
+        Route::post('/{user}/verify', [UserController::class, 'verify'])->name('verify');
+        Route::post('/{user}/toggle', [UserController::class, 'toggleStatus'])->name('toggle');
+        Route::post('/{user}/role', [UserController::class, 'promote'])->name('role');
+    });
 
-    Route::delete('/{typeFinancement}/documents/{typeDoc}',
-        [TypeFinancementDocController::class, 'detach'])
-        ->name('typefinancements.documents.detach');
-    // Types Documents
-    Route::get('/typedocs', [TypeDocController::class, 'index'])->name('typedocs.index');
-    Route::post('/typedocs', [TypeDocController::class, 'store'])->name('typedocs.store');
-    Route::patch('/typedocs/{typeDoc}', [TypeDocController::class, 'update'])->name('typedocs.update');
-    Route::delete('/typedocs/{typeDoc}', [TypeDocController::class, 'destroy'])->name('typedocs.destroy');
-
-    // Utilisateurs
-    Route::get('/users', [UserController::class, 'index'])->name('users.index');
-    Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
-    Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
-    Route::post('/users/{user}/verify', [UserController::class, 'verify'])->name('users.verify');
-    Route::post('/users/{user}/toggle', [UserController::class, 'toggleStatus'])->name('users.toggle');
-    Route::post('/users/{user}/role', [UserController::class, 'promote'])->name('users.role');
-
-    // Wallets
+    // ── Wallets ───────────────────────────────────────────────────────────
     Route::prefix('wallets')->name('wallets.')->group(function () {
+        // ATTENTION : '/withdrawals/pending' DOIT être avant '/{wallet}'
+        Route::get('/withdrawals/pending', [AdminWalletController::class, 'withdrawals'])->name('withdrawals');
+        Route::post('/withdrawals/{transaction}/approve', [AdminWalletController::class, 'approveWithdrawal'])->name('withdrawals.approve');
+        Route::post('/withdrawals/{transaction}/reject', [AdminWalletController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
+
         Route::get('/', [AdminWalletController::class, 'index'])->name('index');
         Route::get('/{wallet}', [AdminWalletController::class, 'show'])->name('show');
         Route::patch('/{wallet}/toggle', [AdminWalletController::class, 'toggleStatus'])->name('toggle');
         Route::post('/{wallet}/adjust', [AdminWalletController::class, 'adjust'])->name('adjust');
-
-        // Retraits
-        Route::get('/withdrawals/pending', [AdminWalletController::class, 'withdrawals'])->name('withdrawals');
-        Route::post('/withdrawals/{transaction}/approve', [AdminWalletController::class, 'approveWithdrawal'])->name('withdrawals.approve');
-        Route::post('/withdrawals/{transaction}/reject', [AdminWalletController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
     });
 
 });
