@@ -6,6 +6,54 @@
 
 @section('styles')
 <style>
+    /* BUTTON STYLES - ESSENTIAL */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .btn-primary {
+        background: #3b82f6;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2563eb;
+    }
+
+    .btn-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #059669;
+    }
+
+    .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+        background: #e2e8f0;
+    }
+
     /* Filter Bar */
     .filter-bar {
         background: white;
@@ -31,40 +79,6 @@
         outline: none;
         border-color: #3b82f6;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .btn-filter {
-        padding: 0.5rem 1rem;
-        background: #3b82f6;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .btn-filter:hover {
-        background: #2563eb;
-    }
-
-    .btn-export {
-        padding: 0.5rem 1rem;
-        background: #10b981;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.875rem;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all 0.2s;
-    }
-
-    .btn-export:hover {
-        background: #059669;
     }
 
     /* Data Table */
@@ -96,6 +110,7 @@
         border-bottom: 1px solid #f1f5f9;
         font-size: 0.875rem;
         color: #334155;
+        vertical-align: middle;
     }
 
     .data-table tr:hover {
@@ -177,26 +192,6 @@
         gap: 0.5rem;
     }
 
-    .btn-action {
-        padding: 0.375rem 0.75rem;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.2s;
-        border: none;
-        cursor: pointer;
-    }
-
-    .btn-view {
-        background: #dbeafe;
-        color: #1e40af;
-    }
-
-    .btn-view:hover {
-        background: #bfdbfe;
-    }
-
     /* Pagination */
     .pagination-container {
         padding: 1rem 1.5rem;
@@ -209,41 +204,6 @@
     .pagination-info {
         font-size: 0.875rem;
         color: #64748b;
-    }
-
-    .pagination-links {
-        display: flex;
-        gap: 0.25rem;
-    }
-
-    .pagination-links a, .pagination-links span {
-        padding: 0.5rem 0.75rem;
-        border-radius: 6px;
-        font-size: 0.875rem;
-        text-decoration: none;
-        transition: all 0.2s;
-    }
-
-    .pagination-links a {
-        background: white;
-        color: #3b82f6;
-        border: 1px solid #e2e8f0;
-    }
-
-    .pagination-links a:hover {
-        background: #eff6ff;
-        border-color: #3b82f6;
-    }
-
-    .pagination-links .active {
-        background: #3b82f6;
-        color: white;
-        border: 1px solid #3b82f6;
-    }
-
-    .pagination-links .disabled {
-        color: #cbd5e1;
-        cursor: not-allowed;
     }
 
     /* Empty State */
@@ -308,18 +268,18 @@
                 @endforeach
             </select>
 
-            <button type="submit" class="btn-filter">
+            <button type="submit" class="btn btn-primary">
                 <i class="fas fa-filter"></i> Filtrer
             </button>
 
             @if(request()->hasAny(['search', 'status', 'typefinancement_id']))
-                <a href="{{ route('admin.requests.index') }}" class="btn-action" style="background: #f1f5f9; color: #64748b;">
+                <a href="{{ route('admin.requests.index') }}" class="btn btn-secondary">
                     <i class="fas fa-times"></i> Réinitialiser
                 </a>
             @endif
         </form>
 
-        <a href="{{ route('admin.requests.export') }}?{{ http_build_query(request()->only(['status', 'typefinancement_id'])) }}" class="btn-export" style="margin-left: auto;">
+        <a href="{{ route('admin.requests.export') }}?{{ http_build_query(request()->only(['status', 'typefinancement_id'])) }}" class="btn btn-success" style="margin-left: auto;">
             <i class="fas fa-download"></i> Export CSV
         </a>
     </div>
@@ -382,7 +342,7 @@
                         <td>{{ $request->created_at->format('d/m/Y H:i') }}</td>
                         <td>
                             <div class="actions">
-                                <a href="{{ route('admin.requests.show', $request) }}" class="btn-action btn-view">
+                                <a href="{{ route('admin.requests.show', $request) }}" class="btn btn-sm btn-primary">
                                     <i class="fas fa-eye"></i> Voir
                                 </a>
                             </div>

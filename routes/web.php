@@ -5,7 +5,9 @@ use App\Http\Controllers\Admin\DocumentVerificationController;
 use App\Http\Controllers\Admin\FundingRequestController as AdminFundingRequestController;
 use App\Http\Controllers\Admin\TypeDocController;
 use App\Http\Controllers\Admin\TypeFinancementController as AdminTypeFinancementController;
+use App\Http\Controllers\Admin\TypeFinancementDocController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WalletController as AdminWalletController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
 use App\Http\Controllers\Client\DocumentController as ClientDocumentController;
@@ -79,23 +81,22 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard Client
     Route::get('/dashboard', [ClientDashboardController::class, 'index'])->name('client.dashboard');
 
-   
-// Profil utilisateur
-Route::get('/profile', [ProfileController::class, 'show'])->name('client.profile');
-Route::patch('/profile', [ProfileController::class, 'update'])->name('client.profile.update');
-Route::post('/profile/acknowledge', [ProfileController::class, 'acknowledgeModal'])->name('client.profile.acknowledge');
+    // Profil utilisateur
+    Route::get('/profile', [ProfileController::class, 'show'])->name('client.profile');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('client.profile.update');
+    Route::post('/profile/acknowledge', [ProfileController::class, 'acknowledgeModal'])->name('client.profile.acknowledge');
 
-// Gestion des entreprises (séparé)
-Route::prefix('profile/companies')->name('client.profile.companies.')->group(function () {
-    Route::get('/', [ProfileController::class, 'companies'])->name('index');
-    Route::get('/create', [ProfileController::class, 'createCompany'])->name('create');
-    Route::post('/', [ProfileController::class, 'storeCompany'])->name('store');
-    Route::get('/{company}', [ProfileController::class, 'showCompany'])->name('show');
-    Route::get('/{company}/edit', [ProfileController::class, 'editCompany'])->name('edit');
-    Route::patch('/{company}', [ProfileController::class, 'updateCompany'])->name('update');
-    Route::delete('/{company}', [ProfileController::class, 'destroyCompany'])->name('destroy');
-    Route::patch('/{company}/primary', [ProfileController::class, 'setPrimaryCompany'])->name('primary');
-});
+    // Gestion des entreprises (séparé)
+    Route::prefix('profile/companies')->name('client.profile.companies.')->group(function () {
+        Route::get('/', [ProfileController::class, 'companies'])->name('index');
+        Route::get('/create', [ProfileController::class, 'createCompany'])->name('create');
+        Route::post('/', [ProfileController::class, 'storeCompany'])->name('store');
+        Route::get('/{company}', [ProfileController::class, 'showCompany'])->name('show');
+        Route::get('/{company}/edit', [ProfileController::class, 'editCompany'])->name('edit');
+        Route::patch('/{company}', [ProfileController::class, 'updateCompany'])->name('update');
+        Route::delete('/{company}', [ProfileController::class, 'destroyCompany'])->name('destroy');
+        Route::patch('/{company}/primary', [ProfileController::class, 'setPrimaryCompany'])->name('primary');
+    });
     // Types de Financement
     Route::get('/financements', [ClientTypeFinancementController::class, 'index'])->name('client.financements.index');
     Route::get('/financements/{typeFinancement}', [ClientTypeFinancementController::class, 'show'])->name('client.financements.show');
@@ -200,7 +201,25 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/typefinancements/{typeFinancement}', [AdminTypeFinancementController::class, 'update'])->name('typefinancements.update');
     Route::delete('/typefinancements/{typeFinancement}', [AdminTypeFinancementController::class, 'destroy'])->name('typefinancements.destroy');
     Route::patch('/typefinancements/{typeFinancement}/toggle', [AdminTypeFinancementController::class, 'toggleActive'])->name('typefinancements.toggle');
+    Route::get('/documents',
+        [TypeFinancementDocController::class, 'index'])
+        ->name('typefinancements.documents');
 
+    Route::get('/{typeFinancement}/documents',
+        [TypeFinancementDocController::class, 'edit'])
+        ->name('typefinancements.documents.edit');
+
+    Route::post('/{typeFinancement}/documents/sync',
+        [TypeFinancementDocController::class, 'sync'])
+        ->name('typefinancements.documents.sync');
+
+    Route::post('/{typeFinancement}/documents/attach',
+        [TypeFinancementDocController::class, 'attach'])
+        ->name('typefinancements.documents.attach');
+
+    Route::delete('/{typeFinancement}/documents/{typeDoc}',
+        [TypeFinancementDocController::class, 'detach'])
+        ->name('typefinancements.documents.detach');
     // Types Documents
     Route::get('/typedocs', [TypeDocController::class, 'index'])->name('typedocs.index');
     Route::post('/typedocs', [TypeDocController::class, 'store'])->name('typedocs.store');
@@ -214,4 +233,18 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/users/{user}/verify', [UserController::class, 'verify'])->name('users.verify');
     Route::post('/users/{user}/toggle', [UserController::class, 'toggleStatus'])->name('users.toggle');
     Route::post('/users/{user}/role', [UserController::class, 'promote'])->name('users.role');
+
+    // Wallets
+    Route::prefix('wallets')->name('wallets.')->group(function () {
+        Route::get('/', [AdminWalletController::class, 'index'])->name('index');
+        Route::get('/{wallet}', [AdminWalletController::class, 'show'])->name('show');
+        Route::patch('/{wallet}/toggle', [AdminWalletController::class, 'toggleStatus'])->name('toggle');
+        Route::post('/{wallet}/adjust', [AdminWalletController::class, 'adjust'])->name('adjust');
+
+        // Retraits
+        Route::get('/withdrawals/pending', [AdminWalletController::class, 'withdrawals'])->name('withdrawals');
+        Route::post('/withdrawals/{transaction}/approve', [AdminWalletController::class, 'approveWithdrawal'])->name('withdrawals.approve');
+        Route::post('/withdrawals/{transaction}/reject', [AdminWalletController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
+    });
+
 });
