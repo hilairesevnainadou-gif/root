@@ -187,6 +187,19 @@ class DocumentUser extends Model
     }
 
     /**
+     * Libellé du statut pour affichage
+     */
+    public function getStatusLabel(): string
+    {
+        return match($this->status) {
+            'pending' => 'En attente',
+            'verified' => 'Vérifié',
+            'rejected' => 'Rejeté',
+            default => $this->status,
+        };
+    }
+
+    /**
      * Scope: Documents en attente
      */
     public function scopePending($query)
