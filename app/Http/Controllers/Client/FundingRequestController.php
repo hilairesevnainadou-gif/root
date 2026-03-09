@@ -379,55 +379,36 @@ public function show(FundingRequest $fundingRequest): View|RedirectResponse
             ->with('error', 'Vous n\'êtes pas autorisé à voir cette demande.');
     }
 
+    // Charger les relations
     $fundingRequest->load(['typeFinancement', 'documentUsers.typeDoc']);
 
-    // 🔥 AJOUTÉ : Séparer les documents fournis et manquants
-    $providedDocs = $fundingRequest->documentUsers->filter(function ($doc) {
-        return !is_null($doc->file_path) && $doc->file_path !== '';
-    });
+    // 🔥 DÉFINIR $documents (c'est ce qui manquait)
+    $documents = $fundingRequest->documentUsers;
 
-    $missingDocs = $fundingRequest->documentUsers->filter(function ($doc) {
-        return is_null($doc->file_path) || $doc->file_path === '';
-    });
+    // Séparer les documents
+    $providedDocs = $documents->filter(fn($doc) => !empty($doc->file_path));
+    $missingDocs = $documents->filter(fn($doc) => empty($doc->file_path));
 
-    // Alternative si vous avez une relation avec les types de documents requis
-    // qui ne sont pas encore créés dans documentUsers :
-    if ($missingDocs->isEmpty() && isset($fundingRequest->typeFinancement)) {
-        $requiredTypeDocIds = $fundingRequest->typeFinancement->requiredTypeDocs()
-            ->pluck('id')
-            ->toArray();
-        
-        $existingDocTypeIds = $fundingRequest->documentUsers
-            ->pluck('typedoc_id')
-            ->toArray();
-        
-        $missingTypeDocIds = array_diff($requiredTypeDocIds, $existingDocTypeIds);
-        
-        // Créer une collection vide si vraiment rien ne manque
-        if (empty($missingTypeDocIds)) {
-            $missingDocs = collect();
-        } else {
-            // Récupérer les infos des documents manquants pour l'affichage
-            $missingDocs = $fundingRequest->typeFinancement->requiredTypeDocs()
-                ->whereIn('id', $missingTypeDocIds)
-                ->get();
-        }
+    // Si aucun document mais des docs requis existent
+    if ($documents->isEmpty() && $fundingRequest->typeFinancement) {
+        $missingDocs = $fundingRequest->typeFinancement->requiredTypeDocs;
     }
 
     $fees = [
-        'registration' => $fundingRequest->typeFinancement->registration_fee,
-        'final' => $fundingRequest->typeFinancement->registration_final_fee,
-        'total_fees' => $fundingRequest->typeFinancement->registration_fee + $fundingRequest->typeFinancement->registration_final_fee,
-        'net_amount' => $fundingRequest->amount_requested - ($fundingRequest->typeFinancement->registration_fee + $fundingRequest->typeFinancement->registration_final_fee),
+        'registration' => $fundingRequest->typeFinancement->registration_fee ?? 0,
+        'final' => $fundingRequest->typeFinancement->registration_final_fee ?? 0,
+        'total_fees' => ($fundingRequest->typeFinancement->registration_fee ?? 0) + ($fundingRequest->typeFinancement->registration_final_fee ?? 0),
+        'net_amount' => $fundingRequest->amount_requested - (($fundingRequest->typeFinancement->registration_fee ?? 0) + ($fundingRequest->typeFinancement->registration_final_fee ?? 0)),
     ];
 
     $timeline = $this->buildTimeline($fundingRequest);
 
+    // Toutes les variables sont définies
     return view('client.requests.show', compact(
         'fundingRequest',
-        'documents',           // tous les documents
-        'providedDocs',        // 🔥 AJOUTÉ : documents fournis
-        'missingDocs',         // 🔥 AJOUTÉ : documents manquants
+        'documents',        
+        'providedDocs',
+        'missingDocs',
         'fees',
         'timeline'
     ));
