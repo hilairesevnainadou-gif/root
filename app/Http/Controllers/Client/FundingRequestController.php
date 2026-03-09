@@ -337,37 +337,101 @@ class FundingRequestController extends Controller
     /**
      * Affiche une demande spécifique
      */
-    public function show(FundingRequest $fundingRequest): View|RedirectResponse
-    {
-        // Vérifier que l'utilisateur est propriétaire
-        if ($fundingRequest->user_id !== auth()->id()) {
-            return redirect()
-                ->route('client.requests.index')
-                ->with('error', 'Vous n\'êtes pas autorisé à voir cette demande.');
-        }
+    // public function show(FundingRequest $fundingRequest): View|RedirectResponse
+    // {
+    //     // Vérifier que l'utilisateur est propriétaire
+    //     if ($fundingRequest->user_id !== auth()->id()) {
+    //         return redirect()
+    //             ->route('client.requests.index')
+    //             ->with('error', 'Vous n\'êtes pas autorisé à voir cette demande.');
+    //     }
 
-        $fundingRequest->load(['typeFinancement', 'documentUsers.typeDoc']);
+    //     $fundingRequest->load(['typeFinancement', 'documentUsers.typeDoc']);
 
-        // Tous les documents sont déjà créés, juste les récupérer
-        $documents = $fundingRequest->documentUsers;
+    //     // Tous les documents sont déjà créés, juste les récupérer
+    //     $documents = $fundingRequest->documentUsers;
 
-        $fees = [
-            'registration' => $fundingRequest->typeFinancement->registration_fee,
-            'final' => $fundingRequest->typeFinancement->registration_final_fee,
-            'total_fees' => $fundingRequest->typeFinancement->registration_fee + $fundingRequest->typeFinancement->registration_final_fee,
-            'net_amount' => $fundingRequest->amount_requested - ($fundingRequest->typeFinancement->registration_fee + $fundingRequest->typeFinancement->registration_final_fee),
-        ];
+    //     $fees = [
+    //         'registration' => $fundingRequest->typeFinancement->registration_fee,
+    //         'final' => $fundingRequest->typeFinancement->registration_final_fee,
+    //         'total_fees' => $fundingRequest->typeFinancement->registration_fee + $fundingRequest->typeFinancement->registration_final_fee,
+    //         'net_amount' => $fundingRequest->amount_requested - ($fundingRequest->typeFinancement->registration_fee + $fundingRequest->typeFinancement->registration_final_fee),
+    //     ];
 
-        $timeline = $this->buildTimeline($fundingRequest);
+    //     $timeline = $this->buildTimeline($fundingRequest);
 
-        return view('client.requests.show', compact(
-            'fundingRequest',
-            'documents',
-            'fees',
-            'timeline'
-        ));
+    //     return view('client.requests.show', compact(
+    //         'fundingRequest',
+    //         'documents',
+    //         'fees',
+    //         'timeline'
+    //     ));
+    // }
+/**
+ * Affiche une demande spécifique
+ */
+public function show(FundingRequest $fundingRequest): View|RedirectResponse
+{
+    // Vérifier que l'utilisateur est propriétaire
+    if ($fundingRequest->user_id !== auth()->id()) {
+        return redirect()
+            ->route('client.requests.index')
+            ->with('error', 'Vous n\'êtes pas autorisé à voir cette demande.');
     }
 
+    $fundingRequest->load(['typeFinancement', 'documentUsers.typeDoc']);
+
+    // 🔥 AJOUTÉ : Séparer les documents fournis et manquants
+    $providedDocs = $fundingRequest->documentUsers->filter(function ($doc) {
+        return !is_null($doc->file_path) && $doc->file_path !== '';
+    });
+
+    $missingDocs = $fundingRequest->documentUsers->filter(function ($doc) {
+        return is_null($doc->file_path) || $doc->file_path === '';
+    });
+
+    // Alternative si vous avez une relation avec les types de documents requis
+    // qui ne sont pas encore créés dans documentUsers :
+    if ($missingDocs->isEmpty() && isset($fundingRequest->typeFinancement)) {
+        $requiredTypeDocIds = $fundingRequest->typeFinancement->requiredTypeDocs()
+            ->pluck('id')
+            ->toArray();
+        
+        $existingDocTypeIds = $fundingRequest->documentUsers
+            ->pluck('typedoc_id')
+            ->toArray();
+        
+        $missingTypeDocIds = array_diff($requiredTypeDocIds, $existingDocTypeIds);
+        
+        // Créer une collection vide si vraiment rien ne manque
+        if (empty($missingTypeDocIds)) {
+            $missingDocs = collect();
+        } else {
+            // Récupérer les infos des documents manquants pour l'affichage
+            $missingDocs = $fundingRequest->typeFinancement->requiredTypeDocs()
+                ->whereIn('id', $missingTypeDocIds)
+                ->get();
+        }
+    }
+
+    $fees = [
+        'registration' => $fundingRequest->typeFinancement->registration_fee,
+        'final' => $fundingRequest->typeFinancement->registration_final_fee,
+        'total_fees' => $fundingRequest->typeFinancement->registration_fee + $fundingRequest->typeFinancement->registration_final_fee,
+        'net_amount' => $fundingRequest->amount_requested - ($fundingRequest->typeFinancement->registration_fee + $fundingRequest->typeFinancement->registration_final_fee),
+    ];
+
+    $timeline = $this->buildTimeline($fundingRequest);
+
+    return view('client.requests.show', compact(
+        'fundingRequest',
+        'documents',           // tous les documents
+        'providedDocs',        // 🔥 AJOUTÉ : documents fournis
+        'missingDocs',         // 🔥 AJOUTÉ : documents manquants
+        'fees',
+        'timeline'
+    ));
+}
     /**
      * Formulaire d'édition
      */
