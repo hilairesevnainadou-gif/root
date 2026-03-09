@@ -94,6 +94,11 @@ class FundingRequest extends Model
         return $this->status === 'submitted';
     }
 
+    public function isPaid(): bool
+    {
+        return $this->payment_status === 'paid' || $this->status !== 'draft';
+    }
+
     public function isUnderReview(): bool
     {
         return $this->status === 'under_review';
@@ -130,11 +135,6 @@ class FundingRequest extends Model
     }
 
     // ========== PAIEMENT ==========
-
-    public function isPaid(): bool
-    {
-        return $this->payment_status === 'paid';
-    }
 
     public function isPaymentPending(): bool
     {
@@ -173,7 +173,7 @@ class FundingRequest extends Model
             ->toArray();
 
         foreach ($requiredDocs as $requiredDoc) {
-            if (!in_array($requiredDoc->id, $providedDocIds)) {
+            if (! in_array($requiredDoc->id, $providedDocIds)) {
                 return false;
             }
         }
@@ -197,7 +197,7 @@ class FundingRequest extends Model
             ->toArray();
 
         return $requiredDocs->filter(function ($doc) use ($providedDocIds) {
-            return !in_array($doc->id, $providedDocIds);
+            return ! in_array($doc->id, $providedDocIds);
         });
     }
 
@@ -296,6 +296,7 @@ class FundingRequest extends Model
 
                 if ($existingDoc) {
                     $documentsToCreate[] = $this->buildDocumentData($typeDoc, $existingDoc, 'verified');
+
                     continue;
                 }
             }
@@ -315,7 +316,7 @@ class FundingRequest extends Model
             }
         }
 
-        if (!empty($documentsToCreate)) {
+        if (! empty($documentsToCreate)) {
             DocumentUser::insert($documentsToCreate);
         }
     }
@@ -371,7 +372,7 @@ class FundingRequest extends Model
      */
     public function submit(): bool
     {
-        if (!$this->isDraft() || !$this->isPaid()) {
+        if (! $this->isDraft() || ! $this->isPaid()) {
             return false;
         }
 
@@ -386,7 +387,7 @@ class FundingRequest extends Model
      */
     public function startReview(): bool
     {
-        if (!$this->isSubmitted()) {
+        if (! $this->isSubmitted()) {
             return false;
         }
 
@@ -401,7 +402,7 @@ class FundingRequest extends Model
      */
     public function sendToCommittee(): bool
     {
-        if (!$this->isUnderReview()) {
+        if (! $this->isUnderReview()) {
             return false;
         }
 
@@ -416,7 +417,7 @@ class FundingRequest extends Model
      */
     public function approve(?float $approvedAmount = null): bool
     {
-        if (!$this->isUnderReview() && !$this->isPendingCommittee()) {
+        if (! $this->isUnderReview() && ! $this->isPendingCommittee()) {
             return false;
         }
 
@@ -447,7 +448,7 @@ class FundingRequest extends Model
      */
     public function fund(): bool
     {
-        if (!$this->isApproved()) {
+        if (! $this->isApproved()) {
             return false;
         }
 
@@ -462,7 +463,7 @@ class FundingRequest extends Model
      */
     public function complete(): bool
     {
-        if (!$this->isFunded()) {
+        if (! $this->isFunded()) {
             return false;
         }
 
@@ -477,7 +478,7 @@ class FundingRequest extends Model
      */
     public function cancel(): bool
     {
-        if (!$this->isDraft() && !$this->isSubmitted()) {
+        if (! $this->isDraft() && ! $this->isSubmitted()) {
             return false;
         }
 
@@ -584,7 +585,7 @@ class FundingRequest extends Model
      */
     public function getStatusLabel(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'draft' => 'Brouillon',
             'submitted' => 'Soumise',
             'under_review' => 'En examen',
@@ -603,7 +604,7 @@ class FundingRequest extends Model
      */
     public function getStatusClass(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'draft' => 'badge-secondary',
             'submitted' => 'badge-info',
             'under_review' => 'badge-warning',
@@ -622,7 +623,7 @@ class FundingRequest extends Model
      */
     public function getPaymentStatusLabel(): string
     {
-        return match($this->payment_status) {
+        return match ($this->payment_status) {
             'pending' => 'En attente',
             'paid' => 'Payé',
             'failed' => 'Échoué',
@@ -637,9 +638,12 @@ class FundingRequest extends Model
     public function documentsCompletionPercentage(): int
     {
         $total = $this->totalRequiredDocumentsCount();
-        if ($total === 0) return 100;
+        if ($total === 0) {
+            return 100;
+        }
 
         $verified = $this->verifiedDocumentsCount();
+
         return (int) round(($verified / $total) * 100);
     }
 
@@ -657,7 +661,7 @@ class FundingRequest extends Model
             return [
                 'type_doc' => $typeDoc,
                 'status' => $userDoc?->status ?? 'missing',
-                'is_provided' => !is_null($userDoc),
+                'is_provided' => ! is_null($userDoc),
                 'is_verified' => $userDoc?->status === 'verified',
                 'file_path' => $userDoc?->file_path,
                 'uploaded_at' => $userDoc?->created_at,

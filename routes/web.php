@@ -91,10 +91,13 @@ Route::middleware(['auth'])->group(function () {
     // PAIEMENT KKIAPAY - Routes spécifiques AVANT les routes avec {fundingRequest}
     Route::post('/requests/{fundingRequest}/payment/initialize', [KkiapayPaymentController::class, 'initialize'])
         ->name('client.payment.initialize');
+
+    //  ROUTES DE VÉRIFICATION CORRIGÉES
     Route::post('/payment/verify', [KkiapayPaymentController::class, 'verify'])
         ->name('client.payment.verify');
     Route::post('/wallet/deposit/verify', [ClientWalletController::class, 'verifyDeposit'])
         ->name('client.wallet.deposit.verify');
+
     // Documents requis (après paiement)
     Route::get('/requests/{fundingRequest}/documents', [ClientDocumentController::class, 'required'])
         ->name('client.documents.required');
@@ -108,13 +111,21 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/requests/{fundingRequest}/edit', [ClientFundingRequestController::class, 'edit'])->name('client.requests.edit');
     Route::patch('/requests/{fundingRequest}', [ClientFundingRequestController::class, 'update'])->name('client.requests.update');
     Route::delete('/requests/{fundingRequest}', [ClientFundingRequestController::class, 'destroy'])->name('client.requests.destroy');
-    Route::get('/requests/{fundingRequest}', [ClientFundingRequestController::class, 'show'])->name('client.requests.show');
+
+    //  ROUTES DE PAIEMENT CORRIGÉES
     Route::get('/requests/{fundingRequest}/payment', [ClientFundingRequestController::class, 'payment'])
         ->name('client.requests.payment');
+    Route::post('/requests/{fundingRequest}/payment/verify', [KkiapayPaymentController::class, 'verifyPayment'])
+        ->name('client.requests.payment.verify');
+    Route::get('/requests/{fundingRequest}/payment/success', [ClientFundingRequestController::class, 'paymentSuccess'])
+        ->name('client.requests.payment.success');
+
+    Route::get('/requests/{fundingRequest}', [ClientFundingRequestController::class, 'show'])->name('client.requests.show');
 
     // Route pour traiter le paiement (redirection vers Kkiapay)
     Route::post('/requests/{fundingRequest}/payment/process', [KkiapayPaymentController::class, 'processPayment'])
         ->name('client.payment.process');
+
     // Documents
     Route::get('/documents', [ClientDocumentController::class, 'index'])->name('client.documents.index');
     Route::post('/documents', [ClientDocumentController::class, 'store'])->name('client.documents.store');
@@ -123,8 +134,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/documents/{document}', [ClientDocumentController::class, 'destroy'])->name('client.documents.destroy');
 
     // Wallet
-    // Wallet - Routes complètes
-    Route::prefix('wallet')->name('client.wallet.')->middleware('auth')->group(function () {
+    Route::prefix('wallet')->name('client.wallet.')->group(function () {
         // Affichage
         Route::get('/', [ClientWalletController::class, 'show'])->name('show');
         Route::get('/transactions', [ClientWalletController::class, 'transactions'])->name('transactions');
@@ -132,7 +142,6 @@ Route::middleware(['auth'])->group(function () {
         // Dépôt (Kkiapay)
         Route::get('/deposit', [ClientWalletController::class, 'depositForm'])->name('deposit');
         Route::post('/deposit', [ClientWalletController::class, 'deposit'])->name('deposit.store');
-        Route::post('/deposit/verify', [ClientWalletController::class, 'verifyDeposit'])->name('deposit.verify');
 
         // Retrait
         Route::get('/withdraw', [ClientWalletController::class, 'withdrawForm'])->name('withdraw');
@@ -140,8 +149,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/withdraw/{transaction}/cancel', [ClientWalletController::class, 'cancelWithdrawal'])->name('withdraw.cancel');
     });
 
-    // Webhook Kkiapay (public)
-    Route::post('/webhook/kkiapay/wallet', [ClientWalletController::class, 'webhook'])->name('wallet.webhook');
     // Notifications
     Route::get('/notifications', [ClientNotificationController::class, 'index'])->name('client.notifications.index');
     Route::patch('/notifications/{notification}/read', [ClientNotificationController::class, 'markAsRead'])->name('client.notifications.read');

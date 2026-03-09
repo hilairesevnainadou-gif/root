@@ -791,6 +791,68 @@ class KkiapayPaymentController extends Controller
         }
     }
 
+     /**
+     * Vérifie le paiement et met à jour le statut
+     */
+    public function verifyPayment(Request $request, FundingRequest $fundingRequest): JsonResponse
+    {
+        if ($fundingRequest->user_id !== auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
+        }
+
+        $validated = $request->validate([
+            'transactionId' => 'required|string',
+            'amount_paid' => 'required|numeric',
+        ]);
+
+        try {
+            DB::transaction(function () use ($fundingRequest, $validated) {
+                // Mettre à jour la demande
+                $fundingRequest->update([
+                    'status' => 'submitted',
+                    'payment_status' => 'paid',
+                    'registration_fee_paid' => $validated['amount_paid'],
+                    'payment_reference' => $validated['transactionId'],
+                    'paid_at' => now(),
+                    'submitted_at' => now(),
+                ]);
+
+                // Créer ou mettre à jour la transaction
+                Transaction::create([
+                    'user_id' => auth()->id(),
+                    'funding_request_id' => $fundingRequest->id,
+                    'type' => 'payment',
+                    'amount' => $validated['amount_paid'],
+                    'reference' => $validated['transactionId'],
+                    'status' => 'completed',
+                    'description' => "Frais d'inscription - {$fundingRequest->request_number}",
+                    'completed_at' => now(),
+                ]);
+
+                Log::channel('payments')->info('Paiement confirmé', [
+                    'funding_request_id' => $fundingRequest->id,
+                    'transaction_id' => $validated['transactionId'],
+                    'amount' => $validated['amount_paid'],
+                ]);
+            });
+
+            return response()->json([
+                'success' => true,
+                'redirect_url' => route('client.requests.payment.success', $fundingRequest),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::channel('payments')->error('Erreur paiement', [
+                'error' => $e->getMessage(),
+                'funding_request_id' => $fundingRequest->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du traitement du paiement',
+            ], 500);
+        }
+    }
     /**
      * Traiter un paiement réussi (pour paiement inscription)
      */

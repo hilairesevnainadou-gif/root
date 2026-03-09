@@ -8,10 +8,13 @@ use App\Http\Requests\UpdateFundingRequestRequest;
 use App\Models\Company;
 use App\Models\DocumentUser;
 use App\Models\FundingRequest;
+use App\Models\Transaction;
 use App\Models\TypeFinancement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -406,7 +409,46 @@ class FundingRequestController extends Controller
 
         return view('client.requests.track', compact('request', 'timeline'));
     }
+ /**
+     * Affiche la page de paiement (votre première vue)
+     */
+    public function showPayment(FundingRequest $fundingRequest)
+    {
+        if ($fundingRequest->user_id !== auth()->id()) {
+            abort(403);
+        }
 
+        // Si déjà payé, rediriger vers la confirmation
+        if ($fundingRequest->isPaid()) {
+            return redirect()->route('client.requests.payment.success', $fundingRequest);
+        }
+
+        $fees = [
+            'current' => $fundingRequest->typeFinancement->registration_fee ?? 0,
+            'final' => $fundingRequest->typeFinancement->final_fee ?? 0,
+        ];
+
+        return view('client.requests.payment', compact('fundingRequest', 'fees'));
+    }
+
+
+/**
+ * Page de succès après paiement
+ */
+public function paymentSuccess(FundingRequest $fundingRequest)
+{
+    if ($fundingRequest->user_id !== auth()->id()) {
+        abort(403);
+    }
+
+    if (!$fundingRequest->isPaid()) {
+        return redirect()->route('client.requests.payment', $fundingRequest);
+    }
+
+    return view('client.requests.payment-success', compact('fundingRequest'));
+}
+
+   
     /**
      * Génère un numéro de demande unique
      */

@@ -64,14 +64,14 @@
             <span>Historique</span>
         </a>
         
-        <div class="action-card" onclick="copyWalletNumber()">
+        <button type="button" class="action-card" onclick="copyWalletNumber()">
             <div class="action-icon green">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>
             </div>
             <span>Copier N°</span>
-        </div>
+        </button>
     </div>
 
     {{-- Transactions Récentes --}}
@@ -177,6 +177,25 @@ function copyWalletNumber() {
         }, 2000);
     });
 }
+
+// Gestion du paramètre success dans l'URL
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('success')) {
+        const toast = document.getElementById('copyToast');
+        const message = urlParams.get('success') === 'withdrawal' 
+            ? 'Demande de retrait soumise avec succès !' 
+            : 'Opération réussie !';
+        toast.querySelector('span').textContent = message;
+        toast.style.display = 'flex';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+        
+        // Nettoyer l'URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
 </script>
 @endsection
 
@@ -185,6 +204,8 @@ function copyWalletNumber() {
     .wallet-container {
         padding: 16px;
         padding-bottom: 100px;
+        max-width: 600px;
+        margin: 0 auto;
     }
 
     /* Balance Card Main */
@@ -277,12 +298,12 @@ function copyWalletNumber() {
         font-weight: 700;
     }
 
-    .quick-stat-value.text-success {
-        color: #86efac;
+    .text-success {
+        color: #86efac !important;
     }
 
-    .quick-stat-value.text-danger {
-        color: #fca5a5;
+    .text-danger {
+        color: #fca5a5 !important;
     }
 
     .quick-stat-label {
@@ -353,6 +374,8 @@ function copyWalletNumber() {
         font-size: 0.875rem;
         font-weight: 500;
         transition: all 0.2s;
+        border: none;
+        cursor: pointer;
     }
 
     .action-card:active {
@@ -559,6 +582,11 @@ function copyWalletNumber() {
         color: #92400e;
     }
 
+    .badge-status.closed {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
     /* Empty State */
     .empty-state-sm {
         text-align: center;
@@ -568,6 +596,11 @@ function copyWalletNumber() {
 
     .empty-state-sm p {
         margin: 0 0 12px 0;
+    }
+
+    .btn-sm {
+        padding: 8px 16px;
+        font-size: 0.875rem;
     }
 
     /* Toast */
@@ -593,6 +626,20 @@ function copyWalletNumber() {
     @keyframes slideUp {
         from { opacity: 0; transform: translateX(-50%) translateY(20px); }
         to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+        .wallet-container {
+            padding: 12px;
+        }
+
+        .balance-card-main {
+            padding: 20px;
+        }
+
+        .balance-amount {
+            font-size: 2rem;
+        }
     }
 </style>
 @endsection
