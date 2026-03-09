@@ -30,7 +30,8 @@ return new class extends Migration
                 'card',
                 'bank_transfer',
                 'mobile_money',
-                'kkiapay'
+                'kkiapay',
+                'admin_adjustment'
             ]);
 
             // Statut et suivi
