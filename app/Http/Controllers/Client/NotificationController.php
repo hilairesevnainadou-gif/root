@@ -41,4 +41,16 @@ class NotificationController extends Controller
 
         return back();
     }
+
+    public function markAllAsRead(): RedirectResponse
+    {
+        Notification::where('user_id', auth()->id())
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+
+        return back()->with('success', 'Toutes les notifications ont été marquées comme lues.');
+    }
 }

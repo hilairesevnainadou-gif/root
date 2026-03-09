@@ -153,6 +153,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/notifications', [ClientNotificationController::class, 'index'])->name('client.notifications.index');
     Route::patch('/notifications/{notification}/read', [ClientNotificationController::class, 'markAsRead'])->name('client.notifications.read');
 });
+Route::patch('/notifications/read-all', [ClientNotificationController::class, 'markAllAsRead'])
+    ->name('client.notifications.read-all');
 
 /*
 |--------------------------------------------------------------------------
