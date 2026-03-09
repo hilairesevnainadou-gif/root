@@ -33,11 +33,7 @@
                 @endif
             </p>
         </div>
-        <a href="{{ route('client.requests.create') }}" class="btn-quick-action" title="Nouvelle demande">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-        </a>
+        {{-- Bouton "+" supprimé --}}
     </div>
 
     {{-- Carte Portefeuille --}}
@@ -66,6 +62,12 @@
                     <span class="wallet-stat-value">{{ $stats['success_rate']['value'] ?? 0 }}%</span>
                     <span class="wallet-stat-label">Taux de succès</span>
                 </div>
+                @if(isset($stats['companies_count']))
+                <div class="wallet-stat-item">
+                    <span class="wallet-stat-value">{{ $stats['companies_count'] }}</span>
+                    <span class="wallet-stat-label">Entreprise{{ $stats['companies_count'] > 1 ? 's' : '' }}</span>
+                </div>
+                @endif
             </div>
         </div>
     @endif
@@ -90,13 +92,14 @@
             <span>Mes demandes</span>
         </a>
 
-        <a href="{{ route('client.profile') }}" class="action-chip">
+        {{-- REMPLACÉ: Profil → Les offres --}}
+        <a href="{{ route('client.financements.index') }}" class="action-chip">
             <div class="action-icon action-purple">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
-            <span>Mon profil</span>
+            <span>Les offres</span>
         </a>
     </div>
 
@@ -272,16 +275,7 @@
         </div>
     @endif
 
-    {{-- CTA Final --}}
-    <div class="dashboard-footer-cta">
-        <p>Besoin d'un nouveau financement ?</p>
-        <a href="{{ route('client.requests.create') }}" class="btn btn-primary btn-large">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-            </svg>
-            Créer une demande
-        </a>
-    </div>
+    {{-- CTA Final SUPPRIMÉ --}}
 
 </div>
 @endsection
@@ -421,24 +415,6 @@
     @keyframes pulse {
         0%, 100% { transform: scale(1); opacity: 1; }
         50% { transform: scale(1.1); opacity: 0.8; }
-    }
-
-    .btn-quick-action {
-        width: 48px;
-        height: 48px;
-        background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
-        color: white;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        transition: transform 0.2s;
-        text-decoration: none;
-    }
-
-    .btn-quick-action:active {
-        transform: scale(0.95);
     }
 
     /* Wallet Card Compact */
@@ -958,48 +934,6 @@
     .activity-arrow {
         color: var(--text-muted);
         flex-shrink: 0;
-    }
-
-    /* Footer CTA */
-    .dashboard-footer-cta {
-        background: linear-gradient(135deg, var(--bg-secondary), var(--bg-primary));
-        border: 2px dashed var(--border-color);
-        border-radius: var(--radius);
-        padding: 24px;
-        text-align: center;
-        margin-top: 8px;
-    }
-
-    .dashboard-footer-cta p {
-        font-size: 0.9375rem;
-        color: var(--text-secondary);
-        margin: 0 0 16px 0;
-    }
-
-    .btn-large {
-        width: 100%;
-        padding: 14px 24px;
-        font-size: 1rem;
-        justify-content: center;
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
-        color: white;
-        border: none;
-        border-radius: var(--radius-sm);
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        text-decoration: none;
-        transition: all 0.2s;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-    }
-
-    .btn-primary:active {
-        transform: translateY(1px);
-        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
     }
 
     /* Responsive */

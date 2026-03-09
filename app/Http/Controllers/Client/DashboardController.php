@@ -3,9 +3,6 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
-use App\Models\DocumentUser;
-use App\Models\FundingRequest;
-use App\Models\Notification;
 use App\Models\Wallet;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -45,6 +42,9 @@ class DashboardController extends Controller
         // Performance du portefeuille
         $walletStats = $this->getWalletStats($user);
 
+        // NOUVEAU: Informations entreprise principale
+        $primaryCompany = $user->primaryCompany;
+
         return view('client.dashboard.index', compact(
             'stats',
             'activityChart',
@@ -54,7 +54,8 @@ class DashboardController extends Controller
             'priorityActions',
             'recentActivities',
             'walletStats',
-            'user'
+            'user',
+            'primaryCompany' // AJOUTÉ
         ));
     }
 
@@ -66,13 +67,13 @@ class DashboardController extends Controller
         $currentMonth = $now->copy()->startOfMonth();
         $lastMonth = $now->copy()->subMonth()->startOfMonth();
 
-        // Demandes ce mois vs mois dernier
-        $requestsThisMonth = FundingRequest::where('user_id', $user->id)
+        // Utilisation de la relation fundingRequests() au lieu du modèle direct
+        $requestsThisMonth = $user->fundingRequests()
             ->whereMonth('created_at', $currentMonth->month)
             ->whereYear('created_at', $currentMonth->year)
             ->count();
 
-        $requestsLastMonth = FundingRequest::where('user_id', $user->id)
+        $requestsLastMonth = $user->fundingRequests()
             ->whereMonth('created_at', $lastMonth->month)
             ->whereYear('created_at', $lastMonth->year)
             ->count();
@@ -82,16 +83,16 @@ class DashboardController extends Controller
             : ($requestsThisMonth > 0 ? 100 : 0);
 
         // Montant total financé
-        $totalFunded = FundingRequest::where('user_id', $user->id)
+        $totalFunded = $user->fundingRequests()
             ->where('status', 'funded')
             ->sum('amount_approved');
 
         // Taux de succès
-        $totalRequests = FundingRequest::where('user_id', $user->id)
+        $totalRequests = $user->fundingRequests()
             ->whereNotIn('status', ['draft', 'cancelled'])
             ->count();
 
-        $approvedRequests = FundingRequest::where('user_id', $user->id)
+        $approvedRequests = $user->fundingRequests()
             ->whereIn('status', ['approved', 'funded'])
             ->count();
 
@@ -99,7 +100,7 @@ class DashboardController extends Controller
 
         return [
             'total_requests' => [
-                'value' => FundingRequest::where('user_id', $user->id)->count(),
+                'value' => $user->fundingRequests()->count(),
                 'trend' => $requestsTrend,
                 'this_month' => $requestsThisMonth,
             ],
@@ -111,9 +112,12 @@ class DashboardController extends Controller
                 'value' => $successRate,
                 'label' => $successRate >= 70 ? 'Excellent' : ($successRate >= 40 ? 'Bon' : 'À améliorer'),
             ],
-            'active_requests' => FundingRequest::where('user_id', $user->id)
+            'active_requests' => $user->fundingRequests()
                 ->whereIn('status', ['submitted', 'under_review', 'pending_committee'])
                 ->count(),
+            // NOUVEAU: Statistiques entreprise
+            'companies_count' => $user->companies()->count(),
+            'has_primary_company' => $user->hasPrimaryCompany(),
         ];
     }
 
@@ -130,12 +134,13 @@ class DashboardController extends Controller
             $date = Carbon::now()->subMonths($i);
             $months[] = $date->format('M Y');
 
-            $requestsData[] = FundingRequest::where('user_id', $user->id)
+            // Utilisation de la relation fundingRequests()
+            $requestsData[] = $user->fundingRequests()
                 ->whereMonth('created_at', $date->month)
                 ->whereYear('created_at', $date->year)
                 ->count();
 
-            $fundedData[] = FundingRequest::where('user_id', $user->id)
+            $fundedData[] = $user->fundingRequests()
                 ->where('status', 'funded')
                 ->whereMonth('funded_at', $date->month)
                 ->whereYear('funded_at', $date->year)
@@ -154,8 +159,8 @@ class DashboardController extends Controller
      */
     private function getActiveRequests($user)
     {
-        return FundingRequest::with(['typeFinancement', 'documentUsers'])
-            ->where('user_id', $user->id)
+        return $user->fundingRequests()
+            ->with(['typeFinancement', 'documentUsers'])
             ->whereIn('status', ['draft', 'submitted', 'under_review', 'pending_committee', 'approved'])
             ->orderByRaw("FIELD(status, 'approved', 'pending_committee', 'under_review', 'submitted', 'draft')")
             ->limit(5)
@@ -164,65 +169,61 @@ class DashboardController extends Controller
                 $request->progress = $this->calculateProgress($request);
                 $request->progress_label = $this->getProgressLabel($request);
                 $request->next_action = $this->getNextAction($request);
+
                 return $request;
             });
     }
 
+    /**
+     * Résumé financier
+     */
+    private function getFinancialSummary($user): array
+    {
+        $wallet = $user->wallet;
 
-   /**
- * Résumé financier
- */
-private function getFinancialSummary($user): array
-{
-    $wallet = $user->wallet;
+        // CORRECTION: Préfixer les colonnes avec le nom de la table
+        $monthlyIncome = $wallet ? $user->transactions()
+            ->where('transactions.type', 'credit')
+            ->where('transactions.status', 'completed')
+            ->whereMonth('transactions.created_at', Carbon::now()->month)
+            ->whereYear('transactions.created_at', Carbon::now()->year)
+            ->sum('amount') : 0;
 
-    // Calculer les revenus du mois
-    $monthlyIncome = $wallet ? $wallet->transactions()
-        ->where('type', 'credit')
-        ->where('status', 'completed')
-        ->whereMonth('created_at', Carbon::now()->month)
-        ->whereYear('created_at', Carbon::now()->year)
-        ->sum('amount') : 0;
+        $monthlyExpenses = $wallet ? $user->transactions()
+            ->where('transactions.type', 'debit')
+            ->where('transactions.status', 'completed')
+            ->whereMonth('transactions.created_at', Carbon::now()->month)
+            ->whereYear('transactions.created_at', Carbon::now()->year)
+            ->sum('amount') : 0;
 
-    // Calculer les dépenses du mois
-    $monthlyExpenses = $wallet ? $wallet->transactions()
-        ->where('type', 'debit')
-        ->where('status', 'completed')
-        ->whereMonth('created_at', Carbon::now()->month)
-        ->whereYear('created_at', Carbon::now()->year)
-        ->sum('amount') : 0;
+        // Montant en attente via relation fundingRequests
+        $pendingAmount = $user->fundingRequests()
+            ->whereIn('status', ['approved', 'funded'])
+            ->whereNull('funded_at')
+            ->sum('amount_approved');
 
-    // Montant en attente de financement
-    $pendingAmount = FundingRequest::where('user_id', $user->id)
-        ->whereIn('status', ['approved', 'funded'])
-        ->whereNull('funded_at')
-        ->sum('amount_approved');
+        $transactionsCount = $wallet ? $user->transactions()->count() : 0;
+        $lastTransaction = $wallet ? $user->transactions()->latest()->first() : null;
 
-    // Nombre de transactions totales
-    $transactionsCount = $wallet ? $wallet->transactions()->count() : 0;
-
-    // Dernière transaction
-    $lastTransaction = $wallet ? $wallet->transactions()->latest()->first() : null;
-
-    return [
-        'has_wallet' => $wallet !== null,
-        'wallet_balance' => $wallet?->balance ?? 0,
-        'formatted_balance' => $this->formatAmount($wallet?->balance ?? 0),
-        'monthly_income' => $monthlyIncome,
-        'monthly_expenses' => $monthlyExpenses,
-        'pending_amount' => $pendingAmount,
-        'formatted_pending' => $this->formatAmount($pendingAmount),
-        'currency' => $wallet?->currency ?? 'XOF',
-        'transactions_count' => $transactionsCount,
-        'last_transaction' => $lastTransaction ? [
-            'type' => $lastTransaction->type,
-            'amount' => $lastTransaction->amount,
-            'formatted_amount' => $this->formatAmount($lastTransaction->amount),
-            'date' => $lastTransaction->created_at->diffForHumans(),
-            'status' => $lastTransaction->status,
-        ] : null,
-    ];
-}
+        return [
+            'has_wallet' => $wallet !== null,
+            'wallet_balance' => $wallet?->balance ?? 0,
+            'formatted_balance' => $this->formatAmount($wallet?->balance ?? 0),
+            'monthly_income' => $monthlyIncome,
+            'monthly_expenses' => $monthlyExpenses,
+            'pending_amount' => $pendingAmount,
+            'formatted_pending' => $this->formatAmount($pendingAmount),
+            'currency' => $wallet?->currency ?? 'XOF',
+            'transactions_count' => $transactionsCount,
+            'last_transaction' => $lastTransaction ? [
+                'type' => $lastTransaction->type,
+                'amount' => $lastTransaction->amount,
+                'formatted_amount' => $this->formatAmount($lastTransaction->amount),
+                'date' => $lastTransaction->created_at->diffForHumans(),
+                'status' => $lastTransaction->status,
+            ] : null,
+        ];
+    }
 
     /**
      * Alertes importantes
@@ -231,8 +232,8 @@ private function getFinancialSummary($user): array
     {
         $alerts = [];
 
-        // Documents rejetés
-        $rejectedDocs = DocumentUser::where('user_id', $user->id)
+        // Documents rejetés via la relation documentUsers()
+        $rejectedDocs = $user->documentUsers()
             ->where('status', 'rejected')
             ->count();
 
@@ -247,27 +248,26 @@ private function getFinancialSummary($user): array
             ];
         }
 
-        // Brouillons non finalisés
-        $drafts = FundingRequest::where('user_id', $user->id)
+        // Brouillons non finalisés via la relation
+        $drafts = $user->fundingRequests()
             ->where('status', 'draft')
             ->where('created_at', '<', Carbon::now()->subDays(7))
             ->get();
 
         if ($drafts->count() > 0) {
-            // Pour les brouillons, on redirige vers la première demande en brouillon pour paiement
             $firstDraft = $drafts->first();
             $alerts[] = [
                 'type' => 'warning',
                 'icon' => 'draft',
                 'title' => 'Brouillons en attente',
-                'message' => $drafts->count() . " demande(s) non finalisée(s) depuis plus de 7 jours",
+                'message' => $drafts->count().' demande(s) non finalisée(s) depuis plus de 7 jours',
                 'action_url' => route('client.requests.payment', $firstDraft),
                 'action_text' => 'Compléter le paiement',
             ];
         }
 
-        // Notifications non lues importantes
-        $unreadImportant = Notification::where('user_id', $user->id)
+        // Notifications non lues via la relation notifications()
+        $unreadImportant = $user->notifications()
             ->where('is_read', false)
             ->whereIn('type', ['request_approved', 'request_rejected', 'document_rejected'])
             ->count();
@@ -283,7 +283,7 @@ private function getFinancialSummary($user): array
             ];
         }
 
-        // Profil incomplet
+        // Profil incomplet - Utilisation de hasPrimaryCompany()
         $requiredFields = ['phone', 'address', 'city'];
         $missingFields = [];
 
@@ -293,19 +293,19 @@ private function getFinancialSummary($user): array
             }
         }
 
-        // Vérifier si entreprise et champs entreprise manquants
-        if ($user->isEntreprise() || $user->company) {
+        // CORRECTION: Utilisation correcte de isEntreprise() et primaryCompany()
+        if ($user->isEntreprise() || $user->hasPrimaryCompany()) {
             $companyRequired = ['company_name', 'company_type', 'sector'];
-            $company = $user->company;
+            $company = $user->primaryCompany;
 
             foreach ($companyRequired as $field) {
-                if (!$company || empty($company->$field)) {
-                    $missingFields[] = 'company_' . $field;
+                if (! $company || empty($company->$field)) {
+                    $missingFields[] = 'company_'.$field;
                 }
             }
         }
 
-        if (!empty($missingFields)) {
+        if (! empty($missingFields)) {
             $alerts[] = [
                 'type' => 'warning',
                 'icon' => 'profile',
@@ -326,13 +326,13 @@ private function getFinancialSummary($user): array
     {
         $actions = [];
 
-        // Vérifier documents manquants pour demandes soumises
-        $requestsWithMissingDocs = FundingRequest::with(['typeFinancement.requiredTypeDocs', 'documentUsers'])
-            ->where('user_id', $user->id)
+        // Vérifier documents manquants via la relation fundingRequests()
+        $requestsWithMissingDocs = $user->fundingRequests()
+            ->with(['typeFinancement.requiredTypeDocs', 'documentUsers'])
             ->where('status', 'submitted')
             ->get()
             ->filter(function ($request) {
-                return !$request->hasAllRequiredDocuments();
+                return ! $request->hasAllRequiredDocuments();
             });
 
         foreach ($requestsWithMissingDocs as $request) {
@@ -350,12 +350,23 @@ private function getFinancialSummary($user): array
         }
 
         // Suggestion de nouvelle demande
-        if (FundingRequest::where('user_id', $user->id)->count() === 0) {
+        if ($user->fundingRequests()->count() === 0) {
             $actions[] = [
                 'priority' => 'medium',
                 'title' => 'Première demande',
                 'description' => 'Découvrez les financements disponibles et faites votre première demande',
                 'url' => route('client.financements.index'),
+                'deadline' => null,
+            ];
+        }
+
+        // NOUVEAU: Action si pas d'entreprise principale
+        if (! $user->hasPrimaryCompany()) {
+            $actions[] = [
+                'priority' => 'high',
+                'title' => 'Entreprise requise',
+                'description' => 'Ajoutez votre entreprise principale pour accéder aux financements',
+                'url' => route('client.profile.companies.create'),
                 'deadline' => null,
             ];
         }
@@ -370,13 +381,13 @@ private function getFinancialSummary($user): array
     {
         $activities = collect();
 
-        // Dernières demandes
-        $requests = FundingRequest::with('typeFinancement')
-            ->where('user_id', $user->id)
+        // Dernières demandes via la relation
+        $requests = $user->fundingRequests()
+            ->with('typeFinancement')
             ->latest()
             ->limit(3)
             ->get()
-            ->map(fn($r) => [
+            ->map(fn ($r) => [
                 'type' => 'request',
                 'icon' => 'document',
                 'title' => $r->title,
@@ -386,12 +397,12 @@ private function getFinancialSummary($user): array
                 'url' => route('client.requests.show', $r),
             ]);
 
-        // Dernières notifications
-        $notifications = Notification::where('user_id', $user->id)
+        // Dernières notifications via la relation
+        $notifications = $user->notifications()
             ->latest()
             ->limit(3)
             ->get()
-            ->map(fn($n) => [
+            ->map(fn ($n) => [
                 'type' => 'notification',
                 'icon' => 'bell',
                 'title' => $n->title,
@@ -401,13 +412,13 @@ private function getFinancialSummary($user): array
                 'url' => route('client.notifications.index'),
             ]);
 
-        // Dernières transactions
-        if ($user->wallet) {
-            $transactions = $user->wallet->transactions()
+        // Dernières transactions via la relation
+        $transactions = $user->wallet
+            ? $user->transactions()
                 ->latest()
                 ->limit(3)
                 ->get()
-                ->map(fn($t) => [
+                ->map(fn ($t) => [
                     'type' => 'transaction',
                     'icon' => $t->type === 'credit' ? 'arrow-down' : ($t->type === 'debit' ? 'arrow-up' : 'credit-card'),
                     'title' => $t->type === 'credit' ? 'Dépôt' : ($t->type === 'debit' ? 'Retrait' : 'Paiement'),
@@ -417,10 +428,8 @@ private function getFinancialSummary($user): array
                     'status' => $t->status,
                     'date' => $t->created_at,
                     'url' => route('client.wallet.transactions'),
-                ]);
-        } else {
-            $transactions = collect();
-        }
+                ])
+            : collect();
 
         return $activities
             ->merge($requests)
@@ -435,9 +444,10 @@ private function getFinancialSummary($user): array
      */
     private function getWalletStats($user): array
     {
+        // Utilisation de la relation wallet()
         $wallet = $user->wallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return [
                 'has_wallet' => false,
                 'balance' => 0,
@@ -445,16 +455,15 @@ private function getFinancialSummary($user): array
             ];
         }
 
-        $lastTransaction = $wallet->transactions()
-            ->latest()
-            ->first();
+        // Utilisation de la relation transactions()
+        $lastTransaction = $user->transactions()->latest()->first();
 
         return [
             'has_wallet' => true,
             'balance' => $wallet->balance,
             'formatted_balance' => $this->formatAmount($wallet->balance),
             'currency' => $wallet->currency,
-            'transactions_count' => $wallet->transactions()->count(),
+            'transactions_count' => $user->transactions()->count(),
             'last_transaction' => $lastTransaction ? [
                 'date' => $lastTransaction->created_at->diffForHumans(),
                 'amount' => $this->formatAmount($lastTransaction->amount),
@@ -463,7 +472,7 @@ private function getFinancialSummary($user): array
         ];
     }
 
-    // Méthodes utilitaires
+    // Méthodes utilitaires (inchangées)
 
     private function calculateProgress($request): int
     {
@@ -495,7 +504,7 @@ private function getFinancialSummary($user): array
 
     private function getNextAction($request): ?array
     {
-        return match($request->status) {
+        return match ($request->status) {
             'draft' => ['text' => 'Payer', 'url' => route('client.requests.payment', $request)],
             'submitted' => ['text' => 'Compléter docs', 'url' => route('client.documents.required', $request)],
             'under_review', 'pending_committee' => ['text' => 'Suivre', 'url' => route('client.requests.show', $request)],
@@ -506,6 +515,6 @@ private function getFinancialSummary($user): array
 
     private function formatAmount($amount): string
     {
-        return number_format($amount, 0, ',', ' ') . ' FCFA';
+        return number_format($amount, 0, ',', ' ').' FCFA';
     }
 }

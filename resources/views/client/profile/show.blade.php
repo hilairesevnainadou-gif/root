@@ -1,592 +1,693 @@
 @extends('layouts.app')
 
 @section('title', 'Mon Profil - BHDM')
-
 @section('header-title', 'Mon Profil')
 
 @section('content')
-<div class="profile-wrapper">
+<div class="profile-container">
+    <!-- Carte de complétion -->
+    <div class="completion-card">
+        <div class="completion-header">
+            <div>
+                <h2>Complétion du profil</h2>
+                <p class="completion-subtitle">
+                    @if($completionRate < 100)
+                        Complétez votre profil pour accéder à toutes les fonctionnalités
+                    @else
+                        Votre profil est complet ! 🎉
+                    @endif
+                </p>
+            </div>
+            <div class="completion-circle">
+                <svg viewBox="0 0 36 36" class="circular-chart">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path class="circle" stroke-dasharray="{{ $completionRate }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                </svg>
+                <span class="percentage">{{ $completionRate }}%</span>
+            </div>
+        </div>
+        <div class="progress-bar-linear">
+            <div class="progress-fill-linear" style="width: {{ $completionRate }}%"></div>
+        </div>
+    </div>
 
-    {{-- Header Compact --}}
-    <div class="profile-header-card">
-        <div class="profile-identity-row">
-            <div class="profile-avatar-md">
-                @if($user->profile_photo)
-                    <img src="{{ asset('storage/' . $user->profile_photo) }}" alt="{{ $user->first_name }}">
-                @else
-                    <span class="avatar-letters">{{ substr($user->first_name, 0, 1) }}{{ substr($user->last_name, 0, 1) }}</span>
+    <!-- Informations personnelles -->
+    <div class="profile-section">
+        <div class="section-header">
+            <div class="header-title-group">
+                <div class="icon-wrapper user-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3>Informations personnelles</h3>
+                    <p class="section-subtitle">Vos coordonnées et identité</p>
+                </div>
+            </div>
+            <a href="{{ route('client.profile.companies.index') }}" class="btn-companies">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                <span>Mes entreprises</span>
+                <span class="badge-count">{{ auth()->user()->companies()->count() }}</span>
+            </a>
+        </div>
+
+        <form action="{{ route('client.profile.update') }}" method="POST" class="profile-form" id="profile-form">
+            @csrf
+            @method('PATCH')
+
+            <div class="form-section">
+                <h4 class="form-section-title">Identité</h4>
+                <div class="form-grid grid-2">
+                    <div class="form-group">
+                        <label for="last_name">Nom <span class="required">*</span></label>
+                        <input type="text" id="last_name" name="last_name" value="{{ old('last_name', $user->last_name) }}" required>
+                        @error('last_name')<span class="error-message">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="first_name">Prénom <span class="required">*</span></label>
+                        <input type="text" id="first_name" name="first_name" value="{{ old('first_name', $user->first_name) }}" required>
+                        @error('first_name')<span class="error-message">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h4 class="form-section-title">Contact</h4>
+                <div class="form-grid grid-2">
+                    <div class="form-group">
+                        <label for="email">Email <span class="required">*</span></label>
+                        <input type="email" id="email" value="{{ $user->email }}" readonly class="readonly-field" title="L'email ne peut pas être modifié">
+                        <span class="field-hint">Email de connexion (non modifiable)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Téléphone <span class="required">*</span></label>
+                        <input type="tel" id="phone" name="phone" value="{{ old('phone', $user->phone) }}" placeholder="+229 97 00 00 00" required>
+                        @error('phone')<span class="error-message">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h4 class="form-section-title">Informations complémentaires</h4>
+                <div class="form-grid grid-3">
+                    <div class="form-group">
+                        <label for="birth_date">Date de naissance</label>
+                        <input type="date" id="birth_date" name="birth_date" value="{{ old('birth_date', $user->birth_date?->format('Y-m-d')) }}">
+                        @error('birth_date')<span class="error-message">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gender">Genre</label>
+                        <select id="gender" name="gender">
+                            <option value="">Non spécifié</option>
+                            <option value="male" {{ old('gender', $user->gender) == 'male' ? 'selected' : '' }}>Homme</option>
+                            <option value="female" {{ old('gender', $user->gender) == 'female' ? 'selected' : '' }}>Femme</option>
+                            <option value="other" {{ old('gender', $user->gender) == 'other' ? 'selected' : '' }}>Autre</option>
+                        </select>
+                        @error('gender')<span class="error-message">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_number">Numéro d'identité</label>
+                        <input type="text" id="id_number" name="id_number" value="{{ old('id_number', $user->id_number) }}" placeholder="CNI, Passeport...">
+                        @error('id_number')<span class="error-message">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h4 class="form-section-title">Adresse</h4>
+                <div class="form-grid grid-2">
+                    <div class="form-group full-width">
+                        <label for="address">Adresse complète</label>
+                        <textarea id="address" name="address" rows="2" placeholder="Rue, quartier, immeuble...">{{ old('address', $user->address) }}</textarea>
+                        @error('address')<span class="error-message">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="city">Ville <span class="required">*</span></label>
+                        <input type="text" id="city" name="city" value="{{ old('city', $user->city) }}" placeholder="Cotonou" required>
+                        @error('city')<span class="error-message">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="postal_code">Code postal</label>
+                        <input type="text" id="postal_code" name="postal_code" value="{{ old('postal_code', $user->postal_code) }}" placeholder="01 BP 1234">
+                        @error('postal_code')<span class="error-message">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="country">Pays</label>
+                        <input type="text" id="country" name="country" value="{{ old('country', $user->country ?? 'Bénin') }}">
+                        @error('country')<span class="error-message">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h4 class="form-section-title">Présentation</h4>
+                <div class="form-group full-width">
+                    <label for="bio">Biographie / Description</label>
+                    <textarea id="bio" name="bio" rows="4" placeholder="Présentez-vous en quelques mots...">{{ old('bio', $user->bio) }}</textarea>
+                    @error('bio')<span class="error-message">{{ $message }}</span>@enderror
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-save">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Enregistrer les modifications
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Aperçu entreprise principale -->
+    @php
+        $primaryCompany = auth()->user()->companies()->where('is_primary', true)->first() 
+            ?? auth()->user()->companies()->first();
+    @endphp
+
+    @if($primaryCompany)
+    <div class="company-preview-card">
+        <div class="preview-header">
+            <h3>Entreprise principale</h3>
+            <a href="{{ route('client.profile.companies.show', $primaryCompany) }}" class="btn-view">
+                Voir détails →
+            </a>
+        </div>
+        <div class="company-preview-content">
+            <div class="company-avatar-large" style="background: {{ $primaryCompany->color }}">
+                {{ $primaryCompany->initials }}
+            </div>
+            <div class="company-preview-info">
+                <h4>{{ $primaryCompany->company_name }}</h4>
+                <div class="company-meta">
+                    <span class="badge-type">{{ $primaryCompany->company_type_label }}</span>
+                    <span class="separator">•</span>
+                    <span>{{ $primaryCompany->sector_label }}</span>
+                </div>
+                @if($primaryCompany->city)
+                    <p class="company-location">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        </svg>
+                        {{ $primaryCompany->city }}
+                    </p>
                 @endif
             </div>
-            <div class="profile-id-block">
-                <h1 class="profile-name-line">{{ $user->full_name }}</h1>
-                <span class="profile-type-badge {{ ($user->isEntreprise() || $company) ? 'type-entreprise' : 'type-particulier' }}">
-                    {{ ($user->isEntreprise() || $company) ? 'Entreprise' : 'Particulier' }}
-                </span>
-            </div>
         </div>
-
-        {{-- Barre progression - CACHÉE si 100% --}}
-        @if($completionRate < 100)
-            <div class="progress-micro">
-                <div class="progress-micro-row">
-                    <span class="progress-micro-label">Profil complété</span>
-                    <span class="progress-micro-value">{{ $completionRate }}%</span>
-                </div>
-                <div class="progress-micro-bar">
-                    <div class="progress-micro-fill" style="width: {{ $completionRate }}%"></div>
-                </div>
-            </div>
-        @endif
+        <div class="preview-actions">
+            <a href="{{ route('client.profile.companies.index') }}" class="btn btn-outline btn-sm">
+                Gérer toutes mes entreprises
+            </a>
+        </div>
     </div>
-
-    {{-- Formulaire --}}
-    <form action="{{ route('client.profile.update') }}" method="POST" class="profile-form-single">
-        @csrf
-        @method('PATCH')
-
-        {{-- Section Personnelle --}}
-        <div class="form-card">
-            <h2 class="form-card-title">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                Informations personnelles
-            </h2>
-
-            {{-- Ligne 1: Prénom + Nom --}}
-            <div class="form-row">
-                <div class="form-col">
-                    <label for="first_name">Prénom *</label>
-                    <input type="text" id="first_name" name="first_name" value="{{ old('first_name', $user->first_name) }}" required>
-                    @error('first_name')<span class="input-error">{{ $message }}</span>@enderror
-                </div>
-                <div class="form-col">
-                    <label for="last_name">Nom *</label>
-                    <input type="text" id="last_name" name="last_name" value="{{ old('last_name', $user->last_name) }}" required>
-                    @error('last_name')<span class="input-error">{{ $message }}</span>@enderror
-                </div>
-            </div>
-
-            {{-- Ligne 2: Téléphone + Email --}}
-            <div class="form-row">
-                <div class="form-col">
-                    <label for="phone">Téléphone *</label>
-                    <input type="tel" id="phone" name="phone" value="{{ old('phone', $user->phone) }}" required placeholder="77 123 45 67">
-                    @error('phone')<span class="input-error">{{ $message }}</span>@enderror
-                </div>
-                <div class="form-col">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" value="{{ $user->email }}" disabled class="input-disabled">
-                </div>
-            </div>
-
-            {{-- Ligne 3: Date naissance + Genre --}}
-            <div class="form-row">
-                <div class="form-col">
-                    <label for="birth_date">Date naissance</label>
-                    <input type="date" id="birth_date" name="birth_date" value="{{ old('birth_date', $user->birth_date?->format('Y-m-d')) }}">
-                    @error('birth_date')<span class="input-error">{{ $message }}</span>@enderror
-                </div>
-                <div class="form-col">
-                    <label for="gender">Genre</label>
-                    <select id="gender" name="gender">
-                        <option value="">--</option>
-                        <option value="male" {{ old('gender', $user->gender) == 'male' ? 'selected' : '' }}>Homme</option>
-                        <option value="female" {{ old('gender', $user->gender) == 'female' ? 'selected' : '' }}>Femme</option>
-                        <option value="other" {{ old('gender', $user->gender) == 'other' ? 'selected' : '' }}>Autre</option>
-                    </select>
-                    @error('gender')<span class="input-error">{{ $message }}</span>@enderror
-                </div>
-            </div>
-
-            {{-- Ligne 4: Adresse (pleine largeur) --}}
-            <div class="form-row">
-                <div class="form-col form-col-full">
-                    <label for="address">Adresse</label>
-                    <input type="text" id="address" name="address" value="{{ old('address', $user->address) }}" placeholder="Quartier, rue, numéro">
-                    @error('address')<span class="input-error">{{ $message }}</span>@enderror
-                </div>
-            </div>
-
-            {{-- Ligne 5: Ville (moitié) --}}
-            <div class="form-row">
-                <div class="form-col form-col-half">
-                    <label for="city">Ville *</label>
-                    <input type="text" id="city" name="city" value="{{ old('city', $user->city) }}" required placeholder="Dakar">
-                    @error('city')<span class="input-error">{{ $message }}</span>@enderror
-                </div>
-            </div>
-        </div>
-
-        {{-- Section Entreprise - CONDITIONNELLE --}}
-        @if($user->isEntreprise() || $company)
-            <div class="form-card">
-                <h2 class="form-card-title">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                    Informations entreprise
-                </h2>
-
-                {{-- Nom entreprise (pleine largeur) --}}
-                <div class="form-row">
-                    <div class="form-col form-col-full">
-                        <label for="company_name">Nom entreprise *</label>
-                        <input type="text" id="company_name" name="company_name" value="{{ old('company_name', $company->company_name ?? '') }}" required>
-                        @error('company_name')<span class="input-error">{{ $message }}</span>@enderror
-                    </div>
-                </div>
-
-                {{-- Type + Secteur --}}
-                <div class="form-row">
-                    <div class="form-col">
-                        <label for="company_type">Type *</label>
-                        <select id="company_type" name="company_type" required>
-                            <option value="">Choisir</option>
-                            @foreach(['sarl' => 'SARL', 'sa' => 'SA', 'snc' => 'SNC', 'ei' => 'EI', 'cooperative' => 'Coopérative', 'ong' => 'ONG', 'autre' => 'Autre'] as $val => $lab)
-                                <option value="{{ $val }}" {{ old('company_type', $company->company_type ?? '') == $val ? 'selected' : '' }}>{{ $lab }}</option>
-                            @endforeach
-                        </select>
-                        @error('company_type')<span class="input-error">{{ $message }}</span>@enderror
-                    </div>
-                    <div class="form-col">
-                        <label for="sector">Secteur *</label>
-                        <select id="sector" name="sector" required>
-                            <option value="">Choisir</option>
-                            @foreach(['agriculture' => 'Agriculture', 'elevage' => 'Élevage', 'peche' => 'Pêche', 'commerce' => 'Commerce', 'services' => 'Services', 'technologie' => 'Tech/IT', 'autre' => 'Autre'] as $val => $lab)
-                                <option value="{{ $val }}" {{ old('sector', $company->sector ?? '') == $val ? 'selected' : '' }}>{{ $lab }}</option>
-                            @endforeach
-                        </select>
-                        @error('sector')<span class="input-error">{{ $message }}</span>@enderror
-                    </div>
-                </div>
-
-                {{-- Fonction + Employés --}}
-                <div class="form-row">
-                    <div class="form-col">
-                        <label for="job_title">Fonction</label>
-                        <input type="text" id="job_title" name="job_title" value="{{ old('job_title', $company->job_title ?? '') }}" placeholder="Gérant">
-                        @error('job_title')<span class="input-error">{{ $message }}</span>@enderror
-                    </div>
-                    <div class="form-col">
-                        <label for="employees_count">Employés</label>
-                        <input type="number" id="employees_count" name="employees_count" value="{{ old('employees_count', $company->employees_count ?? '') }}" min="0">
-                        @error('employees_count')<span class="input-error">{{ $message }}</span>@enderror
-                    </div>
-                </div>
-
-                {{-- CA (moitié) --}}
-                <div class="form-row">
-                    <div class="form-col form-col-half">
-                        <label for="annual_turnover">CA annuel (FCFA)</label>
-                        <input type="number" id="annual_turnover" name="annual_turnover" value="{{ old('annual_turnover', $company->annual_turnover ?? '') }}" min="0" placeholder="0">
-                        @error('annual_turnover')<span class="input-error">{{ $message }}</span>@enderror
-                    </div>
-                </div>
-            </div>
-        @endif
-
-        {{-- Bouton Submit --}}
-        <div class="submit-zone">
-            <button type="submit" class="btn-submit-main">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                Enregistrer
-            </button>
-        </div>
-    </form>
-</div>
-
-{{-- Modal Profil Incomplet --}}
-@if($completionRate < 100 && !session('profile_modal_seen'))
-<div id="profile-modal" class="profile-modal" style="display: flex;">
-    <div class="modal-overlay" onclick="closeProfileModal()"></div>
-    <div class="modal-box">
-        <button class="modal-close-btn" onclick="closeProfileModal()">×</button>
-
-        <div class="modal-icon-box">
-            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+    @else
+    <div class="no-company-card">
+        <div class="no-company-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="32" height="32">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
             </svg>
         </div>
-
-        <h3 class="modal-box-title">Profil incomplet</h3>
-        <p class="modal-box-text">{{ $completionRate }}% complété</p>
-
-        <div class="missing-tags">
-            @php
-                $missingItems = [];
-                if(empty($user->phone)) $missingItems[] = 'Téléphone';
-                if(empty($user->address)) $missingItems[] = 'Adresse';
-                if(empty($user->city)) $missingItems[] = 'Ville';
-            @endphp
-            @foreach($missingItems as $item)
-                <span class="tag-missing">{{ $item }}</span>
-            @endforeach
-        </div>
-
-        <div class="modal-box-actions">
-            <button type="button" class="btn-modal-cancel" onclick="closeProfileModal()">Plus tard</button>
-            <button type="button" class="btn-modal-confirm" onclick="focusEmptyField()">Compléter</button>
-        </div>
+        <h4>Aucune entreprise</h4>
+        <p>Ajoutez votre première entreprise pour compléter votre profil professionnel.</p>
+        <a href="{{ route('client.profile.companies.create') }}" class="btn btn-primary">
+            Ajouter une entreprise
+        </a>
     </div>
+    @endif
 </div>
-@endif
 @endsection
 
 @section('styles')
 <style>
-/* ===== LAYOUT ===== */
-.profile-wrapper {
-    max-width: 600px;
+.profile-container {
+    padding: 1rem;
+    max-width: 900px;
     margin: 0 auto;
-    padding: 0.75rem;
     padding-bottom: 100px;
 }
 
-/* ===== HEADER ===== */
-.profile-header-card {
-    background: white;
-    border-radius: 16px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+/* Carte complétion */
+.completion-card {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 10px 25px rgba(30, 64, 175, 0.3);
 }
 
-.profile-identity-row {
+.completion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.completion-header h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.completion-subtitle {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.875rem;
+}
+
+.completion-circle {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
+.circular-chart {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.circle-bg {
+    fill: none;
+    stroke: rgba(255,255,255,0.3);
+    stroke-width: 3;
+}
+
+.circle {
+    fill: none;
+    stroke: white;
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.5s ease;
+}
+
+.percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.progress-bar-linear {
+    height: 6px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill-linear {
+    height: 100%;
+    background: white;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+/* Section profil */
+.profile-section {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.header-title-group {
     display: flex;
     align-items: center;
-    gap: 0.875rem;
+    gap: 0.75rem;
 }
 
-.profile-avatar-md {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+.icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 1.25rem;
-    font-weight: 700;
-    flex-shrink: 0;
-    overflow: hidden;
-}
-
-.profile-avatar-md img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.avatar-letters {
-    text-transform: uppercase;
-}
-
-.profile-id-block {
-    min-width: 0;
-}
-
-.profile-name-line {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 0.25rem 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.profile-type-badge {
-    display: inline-block;
-    padding: 0.25rem 0.625rem;
-    border-radius: 9999px;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.type-particulier {
-    background: #d1fae5;
-    color: #065f46;
-}
-
-.type-entreprise {
     background: #dbeafe;
-    color: #1e40af;
+    color: #1d4ed8;
 }
 
-/* Progress caché si 100% */
-.progress-micro {
-    margin-top: 0.875rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid #f3f4f6;
+.icon-wrapper svg {
+    width: 20px;
+    height: 20px;
 }
 
-.progress-micro-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8125rem;
-    margin-bottom: 0.375rem;
+.section-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
 }
 
-.progress-micro-label {
-    color: #6b7280;
+.section-subtitle {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.875rem;
+    color: #64748b;
 }
 
-.progress-micro-value {
-    font-weight: 700;
-    color: #f59e0b;
-}
-
-.progress-micro-bar {
-    height: 4px;
-    background: #e5e7eb;
-    border-radius: 9999px;
-    overflow: hidden;
-}
-
-.progress-micro-fill {
-    height: 100%;
-    background: #f59e0b;
-    border-radius: 9999px;
-}
-
-/* ===== FORM ===== */
-.form-card {
-    background: white;
-    border-radius: 16px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.form-card-title {
+.btn-companies {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: #374151;
-    margin: 0 0 1rem 0;
-    padding-bottom: 0.75rem;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 0.625rem 1rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-companies:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+.badge-count {
+    background: #3b82f6;
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+}
+
+/* Formulaire */
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-section {
+    padding-bottom: 1.5rem;
     border-bottom: 1px solid #f3f4f6;
 }
 
-.form-card-title svg {
-    color: #2563eb;
+.form-section:last-of-type {
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
-/* ===== GRID SYSTEM ===== */
-.form-row {
-    display: flex;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-}
-
-.form-row:last-child {
-    margin-bottom: 0;
-}
-
-.form-col {
-    flex: 1;
-    min-width: 0; /* Important pour éviter le débordement */
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.form-col-full {
-    flex: 0 0 100%;
-}
-
-.form-col-half {
-    flex: 0 0 calc(50% - 0.375rem);
-}
-
-.form-col label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #4b5563;
-    text-transform: uppercase;
-}
-
-.form-col input,
-.form-col select {
-    padding: 0.625rem 0.875rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    font-size: 0.9375rem;
-    height: 44px;
-    background: #fafafa;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.form-col input:focus,
-.form-col select:focus {
-    outline: none;
-    border-color: #2563eb;
-    background: white;
-}
-
-.input-disabled {
-    background: #f3f4f6 !important;
-    color: #6b7280;
-}
-
-.input-error {
-    font-size: 0.75rem;
-    color: #ef4444;
-}
-
-/* ===== SUBMIT ===== */
-.submit-zone {
-    margin-top: 0.5rem;
-}
-
-.btn-submit-main {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.875rem;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-submit-main:active {
-    transform: scale(0.98);
-}
-
-/* ===== MODAL ===== */
-.profile-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-}
-
-.modal-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-}
-
-.modal-box {
-    position: relative;
-    background: white;
-    border-radius: 20px;
-    padding: 1.5rem;
-    width: 100%;
-    max-width: 300px;
-    text-align: center;
-    animation: modalPop 0.3s ease;
-}
-
-.modal-close-btn {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    width: 28px;
-    height: 28px;
-    border: none;
-    background: #f3f4f6;
-    border-radius: 50%;
-    font-size: 1.125rem;
-    color: #6b7280;
-    cursor: pointer;
-}
-
-.modal-icon-box {
-    width: 56px;
-    height: 56px;
-    background: #eff6ff;
-    color: #2563eb;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 0.875rem;
-}
-
-.modal-box-title {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 0.375rem 0;
-}
-
-.modal-box-text {
+.form-section-title {
     font-size: 0.875rem;
-    color: #6b7280;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     margin: 0 0 1rem 0;
 }
 
-.missing-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    justify-content: center;
-    margin-bottom: 1.25rem;
+.form-grid {
+    display: grid;
+    gap: 1rem;
 }
 
-.tag-missing {
-    background: #fef3c7;
-    color: #92400e;
-    padding: 0.375rem 0.75rem;
-    border-radius: 9999px;
+.grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.required {
+    color: #dc2626;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 0.625rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.9375rem;
+    transition: all 0.2s;
+    background: white;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group input.readonly-field {
+    background: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+.field-hint {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.error-message {
+    color: #dc2626;
+    font-size: 0.75rem;
+}
+
+.form-actions {
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    text-decoration: none;
+    font-size: 0.9375rem;
+}
+
+.btn-primary {
+    background: #1e40af;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1e3a8a;
+}
+
+.btn-outline {
+    background: white;
+    color: #475569;
+    border: 1px solid #d1d5db;
+}
+
+.btn-outline:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.btn-save {
+    width: 100%;
+}
+
+/* Carte entreprise */
+.company-preview-card {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+    border: 2px solid #bbf7d0;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.preview-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #166534;
+}
+
+.btn-view {
+    color: #16a34a;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.company-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.company-avatar-large {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.company-preview-info h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.125rem;
+    color: #1e293b;
+}
+
+.company-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #64748b;
+    flex-wrap: wrap;
+}
+
+.badge-type {
+    background: #dcfce7;
+    color: #166534;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 500;
 }
 
-.modal-box-actions {
+.separator {
+    color: #d1d5db;
+}
+
+.company-location {
     display: flex;
-    gap: 0.625rem;
-}
-
-.btn-modal-cancel,
-.btn-modal-confirm {
-    flex: 1;
-    padding: 0.75rem;
-    border-radius: 10px;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.5rem 0 0 0;
     font-size: 0.875rem;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
+    color: #64748b;
 }
 
-.btn-modal-cancel {
-    background: #f3f4f6;
-    color: #4b5563;
+.preview-actions {
+    padding-top: 1rem;
+    border-top: 1px solid #bbf7d0;
 }
 
-.btn-modal-confirm {
-    background: #2563eb;
-    color: white;
+/* No company card */
+.no-company-card {
+    text-align: center;
+    padding: 2.5rem;
+    background: #f8fafc;
+    border: 2px dashed #e2e8f0;
+    border-radius: 1rem;
+    margin-bottom: 1.5rem;
 }
 
-@keyframes modalPop {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
+.no-company-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    background: #e2e8f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
 }
 
-/* ===== DESKTOP ===== */
-@media (min-width: 640px) {
-    .profile-wrapper {
-        padding: 1.5rem;
-        padding-bottom: 2rem;
+.no-company-card h4 {
+    margin: 0 0 0.5rem 0;
+    color: #475569;
+}
+
+.no-company-card p {
+    margin: 0 0 1.5rem 0;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .completion-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
     }
-
-    .btn-submit-main {
-        max-width: 200px;
-        margin-left: auto;
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    .company-preview-content {
+        flex-direction: column;
+        text-align: center;
     }
 }
 </style>
@@ -594,44 +695,18 @@
 
 @section('scripts')
 <script>
-function closeProfileModal() {
-    const modal = document.getElementById('profile-modal');
-    if (modal) {
-        modal.style.opacity = '0';
-        setTimeout(() => modal.remove(), 200);
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation au chargement
+    const form = document.getElementById('profile-form');
+    if (form) {
+        form.style.opacity = '0';
+        form.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            form.style.transition = 'all 0.5s ease';
+            form.style.opacity = '1';
+            form.style.transform = 'translateY(0)';
+        }, 100);
     }
-    fetch('{{ route("client.profile.acknowledge") }}', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        }
-    });
-}
-
-function focusEmptyField() {
-    closeProfileModal();
-    const fields = ['phone', 'address', 'city'];
-    for (let fieldId of fields) {
-        const field = document.getElementById(fieldId);
-        if (field && !field.value) {
-            field.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => field.focus(), 300);
-            field.style.borderColor = '#f59e0b';
-            setTimeout(() => field.style.borderColor = '#e5e7eb', 2000);
-            break;
-        }
-    }
-}
-
-// Validation visuelle
-document.querySelectorAll('input, select').forEach(field => {
-    field.addEventListener('blur', function() {
-        if (this.checkValidity() && this.value) {
-            this.style.borderColor = '#10b981';
-            setTimeout(() => this.style.borderColor = '#e5e7eb', 1500);
-        }
-    });
 });
 </script>
 @endsection

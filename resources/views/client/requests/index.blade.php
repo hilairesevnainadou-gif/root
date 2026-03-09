@@ -3,20 +3,14 @@
 @section('title', 'Mes demandes de financement')
 @section('header-title', 'Mes demandes')
 
-@section('header-action')
-<a href="{{ route('client.financements.index') }}" class="btn btn-primary">
-    + Nouvelle demande
-</a>
-@endsection
-
 @section('content')
 
 @php
     $statusLabels = [
         'draft' => 'Brouillon',
         'submitted' => 'Soumise',
-        'under_review' => 'En cours d\'examen',
-        'pending_committee' => 'En attente du comité',
+        'under_review' => 'En examen',
+        'pending_committee' => 'Comité',
         'approved' => 'Approuvée',
         'rejected' => 'Rejetée',
         'funded' => 'Financée',
@@ -25,166 +19,217 @@
     ];
 
     $statusColors = [
-        'draft' => ['bg' => '#f3f4f6', 'text' => '#374151', 'border' => '#d1d5db'],
-        'submitted' => ['bg' => '#dbeafe', 'text' => '#1e40af', 'border' => '#3b82f6'],
-        'under_review' => ['bg' => '#ede9fe', 'text' => '#5b21b6', 'border' => '#8b5cf6'],
-        'pending_committee' => ['bg' => '#ede9fe', 'text' => '#5b21b6', 'border' => '#8b5cf6'],
-        'approved' => ['bg' => '#d1fae5', 'text' => '#065f46', 'border' => '#10b981'],
-        'funded' => ['bg' => '#a7f3d0', 'text' => '#064e3b', 'border' => '#059669'],
-        'rejected' => ['bg' => '#fee2e2', 'text' => '#991b1b', 'border' => '#ef4444'],
-        'completed' => ['bg' => '#f3f4f6', 'text' => '#374151', 'border' => '#9ca3af'],
-        'cancelled' => ['bg' => '#f3f4f6', 'text' => '#6b7280', 'border' => '#d1d5db'],
+        'draft' => ['bg' => '#f3f4f6', 'text' => '#374151', 'border' => '#d1d5db', 'icon' => 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'],
+        'submitted' => ['bg' => '#dbeafe', 'text' => '#1e40af', 'border' => '#3b82f6', 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
+        'under_review' => ['bg' => '#ede9fe', 'text' => '#5b21b6', 'border' => '#8b5cf6', 'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
+        'pending_committee' => ['bg' => '#ede9fe', 'text' => '#5b21b6', 'border' => '#8b5cf6', 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'],
+        'approved' => ['bg' => '#d1fae5', 'text' => '#065f46', 'border' => '#10b981', 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
+        'funded' => ['bg' => '#a7f3d0', 'text' => '#064e3b', 'border' => '#059669', 'icon' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
+        'rejected' => ['bg' => '#fee2e2', 'text' => '#991b1b', 'border' => '#ef4444', 'icon' => 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'],
+        'completed' => ['bg' => '#f3f4f6', 'text' => '#374151', 'border' => '#9ca3af', 'icon' => 'M5 13l4 4L19 7'],
+        'cancelled' => ['bg' => '#f3f4f6', 'text' => '#6b7280', 'border' => '#d1d5db', 'icon' => 'M6 18L18 6M6 6l12 12'],
     ];
 @endphp
 
-<div class="requests-container">
+<div class="requests-mobile">
 
-    {{-- Filtres statistiques --}}
-    <div class="stats-grid">
-        <a href="{{ route('client.requests.index') }}" class="stat-link {{ !request('status') && !request('payment_status') ? 'active' : '' }}">
-            <div class="stat-card">
-                <span class="stat-value">{{ $stats['all'] }}</span>
-                <span class="stat-label">Total</span>
-            </div>
-        </a>
-
-        <a href="{{ route('client.requests.index', ['payment_status' => 'pending']) }}" class="stat-link {{ request('payment_status') === 'pending' ? 'active' : '' }}">
-            <div class="stat-card stat-warning">
-                <span class="stat-value">{{ $stats['pending_payment'] }}</span>
-                <span class="stat-label">Paiement en attente</span>
-            </div>
-        </a>
-
-        <a href="{{ route('client.requests.index', ['status' => 'submitted']) }}" class="stat-link {{ request('status') === 'submitted' ? 'active' : '' }}">
-            <div class="stat-card stat-info">
-                <span class="stat-value">{{ $stats['submitted'] }}</span>
-                <span class="stat-label">Soumises</span>
-            </div>
-        </a>
-
-        <a href="{{ route('client.requests.index', ['status' => 'under_review']) }}" class="stat-link {{ request('status') === 'under_review' ? 'active' : '' }}">
-            <div class="stat-card stat-purple">
-                <span class="stat-value">{{ $stats['under_review'] }}</span>
-                <span class="stat-label">En examen</span>
-            </div>
-        </a>
-
-        <a href="{{ route('client.requests.index', ['status' => 'approved']) }}" class="stat-link {{ request('status') === 'approved' ? 'active' : '' }}">
-            <div class="stat-card stat-success">
-                <span class="stat-value">{{ $stats['approved'] }}</span>
-                <span class="stat-label">Approuvées</span>
-            </div>
-        </a>
-
-        <a href="{{ route('client.requests.index', ['status' => 'funded']) }}" class="stat-link {{ request('status') === 'funded' ? 'active' : '' }}">
-            <div class="stat-card stat-funded">
-                <span class="stat-value">{{ $stats['funded'] }}</span>
-                <span class="stat-label">Financées</span>
-            </div>
+    {{-- Header Navigation --}}
+    <div class="requests-header-nav">
+        <a href="{{ route('client.dashboard') }}" class="back-link" data-transition="slide-right">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            <span>Retour</span>
         </a>
     </div>
 
-    {{-- Liste des demandes --}}
-    <div class="card">
-        <div class="card-header">
-            <h3>Liste des demandes</h3>
-            @if(request('status') || request('payment_status'))
-                <a href="{{ route('client.requests.index') }}" class="btn-reset">Reinitialiser les filtres</a>
-            @endif
+    {{-- Hero Section --}}
+    <div class="requests-hero">
+        <div class="hero-icon-bg">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
         </div>
+        <div class="hero-content">
+            <h1 class="hero-title">Mes demandes</h1>
+            <p class="hero-subtitle">Suivez vos demandes de financement</p>
+        </div>
+    </div>
 
-        @if($requests->count() > 0)
-            <div class="requests-list">
-                @foreach($requests as $request)
-                    @php
-                        $colors = $statusColors[$request->status] ?? $statusColors['draft'];
-                        $statusLabel = $statusLabels[$request->status] ?? $request->status;
-                    @endphp
+    {{-- CTA Principal --}}
+    <div class="requests-cta">
+        <a href="{{ route('client.financements.index') }}" class="btn btn-primary btn-block btn-lg" data-transition="slide-up">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Nouvelle demande
+        </a>
+    </div>
 
-                    <div class="request-item" style="border-left-color: {{ $colors['border'] }}">
+    {{-- Filtres scrollables --}}
+    <div class="filters-scroll">
+        <a href="{{ route('client.requests.index') }}" class="filter-pill {{ !request('status') && !request('payment_status') ? 'active' : '' }}">
+            <span class="filter-count">{{ $stats['all'] }}</span>
+            <span class="filter-label">Toutes</span>
+        </a>
 
-                        {{-- En-tete --}}
-                        <div class="request-header">
-                            <div class="request-meta">
-                                <div class="request-ids">
-                                    <span class="request-number">{{ $request->request_number }}</span>
-                                    <span class="request-date">{{ $request->created_at->format('d/m/Y') }}</span>
-                                </div>
-                                <h4 class="request-title">{{ $request->title }}</h4>
+        <a href="{{ route('client.requests.index', ['payment_status' => 'pending']) }}" class="filter-pill filter-pill-warning {{ request('payment_status') === 'pending' ? 'active' : '' }}">
+            <span class="filter-count">{{ $stats['pending_payment'] }}</span>
+            <span class="filter-label">À payer</span>
+        </a>
+
+        <a href="{{ route('client.requests.index', ['status' => 'submitted']) }}" class="filter-pill filter-pill-info {{ request('status') === 'submitted' ? 'active' : '' }}">
+            <span class="filter-count">{{ $stats['submitted'] }}</span>
+            <span class="filter-label">Soumises</span>
+        </a>
+
+        <a href="{{ route('client.requests.index', ['status' => 'under_review']) }}" class="filter-pill filter-pill-purple {{ request('status') === 'under_review' ? 'active' : '' }}">
+            <span class="filter-count">{{ $stats['under_review'] }}</span>
+            <span class="filter-label">En examen</span>
+        </a>
+
+        <a href="{{ route('client.requests.index', ['status' => 'approved']) }}" class="filter-pill filter-pill-success {{ request('status') === 'approved' ? 'active' : '' }}">
+            <span class="filter-count">{{ $stats['approved'] }}</span>
+            <span class="filter-label">Approuvées</span>
+        </a>
+
+        <a href="{{ route('client.requests.index', ['status' => 'funded']) }}" class="filter-pill filter-pill-funded {{ request('status') === 'funded' ? 'active' : '' }}">
+            <span class="filter-count">{{ $stats['funded'] }}</span>
+            <span class="filter-label">Financées</span>
+        </a>
+    </div>
+
+    {{-- Réinitialiser filtres --}}
+    @if(request('status') || request('payment_status'))
+    <div class="filter-reset">
+        <a href="{{ route('client.requests.index') }}" class="reset-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Réinitialiser les filtres
+        </a>
+    </div>
+    @endif
+
+    {{-- Liste des demandes --}}
+    @if($requests->count() > 0)
+        <div class="requests-list-mobile">
+            @foreach($requests as $request)
+                @php
+                    $colors = $statusColors[$request->status] ?? $statusColors['draft'];
+                    $statusLabel = $statusLabels[$request->status] ?? $request->status;
+                @endphp
+
+                <div class="request-card-mobile" style="border-left-color: {{ $colors['border'] }}">
+                    
+                    {{-- Card Header --}}
+                    <div class="request-card-header">
+                        <div class="request-identity">
+                            <div class="status-icon" style="background: {{ $colors['bg'] }}; color: {{ $colors['text'] }}">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $colors['icon'] }}"/>
+                                </svg>
                             </div>
-
-                            <div class="request-badges">
-                                @if($request->payment_status === 'pending' && $request->status === 'draft')
-                                    <span class="badge badge-warning">Paiement requis</span>
-                                @elseif($request->payment_status === 'paid')
-                                    <span class="badge badge-success">Paye</span>
-                                @endif
-                                <span class="badge" style="background: {{ $colors['bg'] }}; color: {{ $colors['text'] }}; border: 1px solid {{ $colors['border'] }}">
-                                    {{ $statusLabel }}
-                                </span>
+                            <div class="request-info">
+                                <span class="request-number">{{ $request->request_number }}</span>
+                                <span class="request-date">{{ $request->created_at->format('d/m/Y') }}</span>
                             </div>
                         </div>
+                        
+                        <span class="status-badge" style="background: {{ $colors['bg'] }}; color: {{ $colors['text'] }}; border: 1px solid {{ $colors['border'] }}">
+                            {{ $statusLabel }}
+                        </span>
+                    </div>
 
-                        {{-- Corps --}}
-                        <div class="request-body">
-                            <div class="request-details">
-                                <p class="request-type">{{ $request->typeFinancement->name ?? 'Non specifie' }}</p>
-                            </div>
-                            <div class="request-amount">
+                    {{-- Card Body --}}
+                    <div class="request-card-body">
+                        <h3 class="request-title">{{ $request->title }}</h3>
+                        <p class="request-type">{{ $request->typeFinancement->name ?? 'Non spécifié' }}</p>
+                        
+                        <div class="request-amount-row">
+                            <div class="amount-main">
                                 <span class="amount-value">{{ number_format($request->amount_requested, 0, ',', ' ') }} FCFA</span>
                                 <span class="amount-duration">{{ $request->duration }} mois</span>
                             </div>
-                        </div>
-
-                        {{-- Actions --}}
-                        <div class="request-actions">
-
-                            {{-- Etape 1: Paiement en attente --}}
+                            
                             @if($request->payment_status === 'pending' && $request->status === 'draft')
-                                <a href="{{ route('client.requests.payment', $request) }}" class="btn btn-warning">
-                                    Payer maintenant
-                                </a>
-                                <form action="{{ route('client.requests.destroy', $request) }}" method="POST" class="form-inline" onsubmit="return confirm('Annuler cette demande ?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger">Annuler</button>
-                                </form>
-
-                            {{-- Etape 2: Documents manquants --}}
-                            @elseif($request->isPaid() && $request->pendingDocumentsCount() > 0)
-                                <a href="{{ route('client.documents.required', $request) }}" class="btn btn-warning">
-                                    Completer les documents ({{ $request->pendingDocumentsCount() }})
-                                </a>
-
-                            {{-- Etape 3: Voir details --}}
-                            @else
-                                <a href="{{ route('client.requests.show', $request) }}" class="btn btn-secondary">
-                                    Voir les details ->
-                                </a>
+                                <span class="payment-badge badge-warning">Paiement requis</span>
+                            @elseif($request->payment_status === 'paid')
+                                <span class="payment-badge badge-success">Payée</span>
                             @endif
-
                         </div>
                     </div>
-                @endforeach
-            </div>
 
-            {{-- Pagination --}}
-            <div class="pagination-wrapper">
-                {{ $requests->links() }}
-            </div>
+                    {{-- Card Actions --}}
+                    <div class="request-card-actions">
+                        
+                        {{-- Étape 1: Paiement en attente --}}
+                        @if($request->payment_status === 'pending' && $request->status === 'draft')
+                            <a href="{{ route('client.requests.payment', $request) }}" class="action-btn action-urgent">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                                Payer maintenant
+                            </a>
+                            <form action="{{ route('client.requests.destroy', $request) }}" method="POST" class="inline-form" onsubmit="return confirm('Annuler cette demande ?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="action-btn action-cancel">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                    Annuler
+                                </button>
+                            </form>
 
-        @else
-            {{-- Etat vide --}}
-            <div class="empty-state">
-                <div class="empty-icon">[ ]</div>
-                <h3>Aucune demande trouvee</h3>
-                <p>Vous n'avez pas encore de demande de financement{{ request('status') ? ' avec ce statut' : '' }}.</p>
-                <a href="{{ route('client.financements.index') }}" class="btn btn-primary btn-lg">
-                    Decouvrir les financements
-                </a>
-            </div>
+                        {{-- Étape 2: Documents manquants --}}
+                        @elseif($request->isPaid() && $request->pendingDocumentsCount() > 0)
+                            <a href="{{ route('client.documents.required', $request) }}" class="action-btn action-warning">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                Documents ({{ $request->pendingDocumentsCount() }})
+                            </a>
+
+                        {{-- Étape 3: Voir détails --}}
+                        @else
+                            <a href="{{ route('client.requests.show', $request) }}" class="action-btn action-view" data-transition="slide-left">
+                                <span>Voir les détails</span>
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                        @endif
+
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        {{-- Pagination --}}
+        @if($requests->hasPages())
+        <div class="pagination-mobile">
+            {{ $requests->links() }}
+        </div>
         @endif
-    </div>
+
+    @else
+        {{-- État vide --}}
+        <div class="empty-state-card">
+            <div class="empty-icon-wrapper">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="56" height="56">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+            </div>
+            <h3 class="empty-title">Aucune demande</h3>
+            <p class="empty-description">
+                {{ request('status') || request('payment_status') ? 'Aucune demande ne correspond à ce filtre.' : 'Vous n\'avez pas encore de demande de financement.' }}
+            </p>
+            <a href="{{ route('client.financements.index') }}" class="btn btn-primary btn-lg" data-transition="slide-up">
+                Découvrir les financements
+            </a>
+        </div>
+    @endif
 
 </div>
 
@@ -192,245 +237,329 @@
 
 @section('styles')
 <style>
-.requests-container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding-bottom: 2rem;
+/* ============================================
+   REQUESTS INDEX - Mobile First
+   ============================================ */
+
+.requests-mobile {
+    padding: 16px;
+    padding-bottom: 100px;
+    max-width: 100%;
+    overflow-x: hidden;
+    background-color: var(--bg-primary, #ffffff);
+    min-height: 100vh;
 }
 
-/* Boutons */
-.btn {
+/* Header Navigation */
+.requests-header-nav {
+    margin-bottom: 16px;
+}
+
+.back-link {
     display: inline-flex;
     align-items: center;
+    gap: 8px;
+    color: var(--text-secondary, #475569);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 8px 0;
+    transition: color 0.2s;
+}
+
+.back-link:active {
+    color: var(--primary-600, #1e40af);
+}
+
+/* Hero Section */
+.requests-hero {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.hero-icon-bg {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
     justify-content: center;
-    padding: 0.625rem 1.25rem;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-decoration: none;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
     color: white;
+    flex-shrink: 0;
+    box-shadow: 0 8px 20px rgba(30, 64, 175, 0.25);
 }
 
-.btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-}
-
-.btn-secondary {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    color: #475569;
-}
-
-.btn-secondary:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
-}
-
-.btn-warning {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: white;
-}
-
-.btn-warning:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-}
-
-.btn-danger {
-    background: #fee2e2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
-}
-
-.btn-danger:hover {
-    background: #fecaca;
-}
-
-.btn-lg {
-    padding: 0.875rem 1.5rem;
-    font-size: 1rem;
-}
-
-.btn-reset {
-    font-size: 0.875rem;
-    color: #2563eb;
-    text-decoration: none;
-}
-
-.btn-reset:hover {
-    text-decoration: underline;
-}
-
-/* Stats Grid */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-}
-
-.stat-link {
-    text-decoration: none;
-    color: inherit;
-}
-
-.stat-card {
-    background: white;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1rem;
-    text-align: center;
-    transition: all 0.2s;
-}
-
-.stat-card:hover {
-    border-color: #cbd5e1;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-.stat-link.active .stat-card {
-    border-color: #2563eb;
-    background: #eff6ff;
-}
-
-.stat-value {
-    display: block;
+.hero-title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #2563eb;
-    line-height: 1;
+    color: var(--text-primary, #0f172a);
+    margin: 0 0 4px 0;
+    line-height: 1.2;
 }
 
-.stat-label {
-    display: block;
-    font-size: 0.75rem;
-    color: #64748b;
-    margin-top: 0.25rem;
-    font-weight: 500;
-}
-
-/* Variantes de couleurs pour les stats */
-.stat-warning .stat-value { color: #f59e0b; }
-.stat-warning.active .stat-card { border-color: #f59e0b; background: #fef3c7; }
-
-.stat-info .stat-value { color: #3b82f6; }
-.stat-info.active .stat-card { border-color: #3b82f6; background: #dbeafe; }
-
-.stat-purple .stat-value { color: #8b5cf6; }
-.stat-purple.active .stat-card { border-color: #8b5cf6; background: #ede9fe; }
-
-.stat-success .stat-value { color: #10b981; }
-.stat-success.active .stat-card { border-color: #10b981; background: #d1fae5; }
-
-.stat-funded .stat-value { color: #059669; }
-.stat-funded.active .stat-card { border-color: #059669; background: #a7f3d0; }
-
-/* Card */
-.card {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1.5rem;
-}
-
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.card-header h3 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #0f172a;
+.hero-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-tertiary, #64748b);
     margin: 0;
 }
 
-/* Liste des demandes */
-.requests-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+/* CTA */
+.requests-cta {
+    margin-bottom: 20px;
 }
 
-.request-item {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-left-width: 4px;
-    border-radius: 12px;
-    padding: 1.25rem;
+.btn-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 24px;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-lg {
+    min-height: 56px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    color: white;
+    box-shadow: 0 8px 20px rgba(30, 64, 175, 0.25);
+}
+
+.btn-primary:active {
+    transform: translateY(1px);
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+}
+
+/* Filtres scrollables */
+.filters-scroll {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.filters-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 18px;
+    background: var(--bg-elevated, #ffffff);
+    border: 2px solid var(--border-color, #e2e8f0);
+    border-radius: 16px;
+    min-width: 80px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.filter-pill.active {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.filter-count {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    line-height: 1;
+}
+
+.filter-pill-warning .filter-count { color: #f59e0b; }
+.filter-pill-warning.active { border-color: #f59e0b; background: #fef3c7; }
+
+.filter-pill-info .filter-count { color: #3b82f6; }
+.filter-pill-info.active { border-color: #3b82f6; background: #dbeafe; }
+
+.filter-pill-purple .filter-count { color: #8b5cf6; }
+.filter-pill-purple.active { border-color: #8b5cf6; background: #ede9fe; }
+
+.filter-pill-success .filter-count { color: #10b981; }
+.filter-pill-success.active { border-color: #10b981; background: #d1fae5; }
+
+.filter-pill-funded .filter-count { color: #059669; }
+.filter-pill-funded.active { border-color: #059669; background: #a7f3d0; }
+
+.filter-label {
+    font-size: 0.6875rem;
+    color: var(--text-muted, #94a3b8);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Reset link */
+.filter-reset {
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.reset-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    color: #3b82f6;
+    font-weight: 500;
+    text-decoration: none;
+    padding: 8px 16px;
+    background: #eff6ff;
+    border-radius: 20px;
     transition: all 0.2s;
 }
 
-.request-item:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    border-color: #cbd5e1;
+.reset-link:active {
+    background: #dbeafe;
 }
 
-/* Header de demande */
-.request-header {
+/* Requests List */
+.requests-list-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Request Card */
+.request-card-mobile {
+    background: var(--bg-elevated, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-left-width: 4px;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: all 0.2s;
+}
+
+.request-card-mobile:active {
+    transform: scale(0.98);
+}
+
+/* Card Header */
+.request-card-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+    margin-bottom: 16px;
 }
 
-.request-ids {
+.request-identity {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.5rem;
+    gap: 12px;
+}
+
+.status-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.request-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .request-number {
-    font-family: monospace;
-    font-size: 0.875rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.8125rem;
     font-weight: 600;
-    color: #2563eb;
-    background: #eff6ff;
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
+    color: #3b82f6;
 }
 
 .request-date {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--text-muted, #94a3b8);
+}
+
+.status-badge {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    padding: 6px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+/* Card Body */
+.request-card-body {
+    padding: 16px 0;
+    border-top: 1px solid var(--border-light, #f1f5f9);
+    border-bottom: 1px solid var(--border-light, #f1f5f9);
+    margin-bottom: 16px;
 }
 
 .request-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #0f172a;
-    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    margin: 0 0 6px 0;
+    line-height: 1.3;
 }
 
-.request-badges {
+.request-type {
+    font-size: 0.875rem;
+    color: var(--text-secondary, #475569);
+    margin: 0 0 14px 0;
+}
+
+.request-amount-row {
     display: flex;
-    gap: 0.5rem;
+    justify-content: space-between;
+    align-items: center;
     flex-wrap: wrap;
+    gap: 10px;
 }
 
-.badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.35rem 0.75rem;
-    border-radius: 9999px;
+.amount-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.amount-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1e40af;
+}
+
+.amount-duration {
     font-size: 0.75rem;
+    color: var(--text-muted, #94a3b8);
+}
+
+.payment-badge {
+    font-size: 0.6875rem;
     font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
 }
 
 .badge-warning {
@@ -443,108 +572,196 @@
     color: #166534;
 }
 
-/* Corps de demande */
-.request-body {
+/* Card Actions */
+.request-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.action-btn {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 1rem 0;
-    margin-bottom: 1rem;
-    border-top: 1px solid #f1f5f9;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.request-type {
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 12px;
     font-size: 0.875rem;
-    color: #64748b;
-    margin: 0;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.request-amount {
-    text-align: right;
+.action-urgent {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
 }
 
-.amount-value {
-    display: block;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #2563eb;
+.action-urgent:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
 }
 
-.amount-duration {
-    font-size: 0.75rem;
-    color: #94a3b8;
+.action-warning {
+    grid-column: 1 / -1;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
 }
 
-/* Actions */
-.request-actions {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+.action-view {
+    grid-column: 1 / -1;
+    background: var(--bg-secondary, #f8fafc);
+    color: var(--text-primary, #0f172a);
+    border: 1px solid var(--border-color, #e2e8f0);
+    justify-content: space-between;
 }
 
-.form-inline {
-    display: inline;
+.action-view:active {
+    background: var(--border-light, #f1f5f9);
+}
+
+.action-cancel {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.inline-form {
+    display: contents;
 }
 
 /* Pagination */
-.pagination-wrapper {
-    margin-top: 1.5rem;
+.pagination-mobile {
+    margin-top: 24px;
     display: flex;
     justify-content: center;
 }
 
-/* Empty state */
-.empty-state {
-    text-align: center;
-    padding: 3rem 1.5rem;
+.pagination-mobile nav {
+    display: flex;
+    gap: 8px;
 }
 
-.empty-icon {
-    width: 64px;
-    height: 64px;
-    background: #f1f5f9;
+.pagination-mobile a,
+.pagination-mobile span {
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    background: var(--bg-elevated, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    color: var(--text-secondary, #475569);
+}
+
+.pagination-mobile .active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+/* Empty State */
+.empty-state-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--bg-secondary, #f8fafc);
+    border: 2px dashed var(--border-color, #e2e8f0);
+    border-radius: 24px;
+    margin-top: 20px;
+}
+
+.empty-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    background: var(--bg-elevated, #ffffff);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 1rem;
-    color: #94a3b8;
-    font-size: 1.5rem;
-    font-weight: 300;
+    color: var(--text-muted, #94a3b8);
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-.empty-state h3 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #0f172a;
-    margin: 0 0 0.5rem;
+.empty-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    margin: 0 0 8px 0;
 }
 
-.empty-state p {
-    color: #64748b;
-    margin: 0 0 1.5rem;
-    font-size: 0.875rem;
+.empty-description {
+    font-size: 0.9375rem;
+    color: var(--text-secondary, #475569);
+    margin: 0 0 24px 0;
+    max-width: 280px;
+    line-height: 1.6;
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-elevated: #1e293b;
+        --text-primary: #f8fafc;
+        --text-secondary: #e2e8f0;
+        --text-tertiary: #cbd5e1;
+        --text-muted: #64748b;
+        --border-color: #334155;
+        --border-light: #1e293b;
+    }
+
+    .hero-icon-bg {
+        background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    }
+
+    .amount-value { color: #60a5fa; }
+
+    .filter-pill-warning.active { background: #451a03; border-color: #f59e0b; }
+    .filter-pill-info.active { background: #1e3a8a; border-color: #3b82f6; }
+    .filter-pill-purple.active { background: #4c1d95; border-color: #8b5cf6; }
+    .filter-pill-success.active { background: #14532d; border-color: #10b981; }
+    .filter-pill-funded.active { background: #064e3b; border-color: #059669; }
+
+    .action-urgent { background: linear-gradient(135deg, #b45309, #d97706); }
+    .action-warning { background: #451a03; color: #fbbf24; border-color: #78350f; }
+    .action-view { background: #1e293b; border-color: #334155; color: #f8fafc; }
+    .action-cancel { background: #450a0a; border-color: #7f1d1d; color: #f87171; }
+
+    .badge-warning { background: #451a03; color: #fbbf24; }
+    .badge-success { background: #14532d; color: #4ade80; }
 }
 
 /* Responsive */
-@media (max-width: 640px) {
-    .request-header {
-        flex-direction: column;
+@media (min-width: 640px) {
+    .requests-mobile {
+        padding: 24px;
+        max-width: 600px;
+        margin: 0 auto;
     }
 
-    .request-body {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
+    .filters-scroll {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
-    .request-amount {
-        text-align: left;
-    }
-
-    .stats-grid {
+    .request-card-actions {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .action-urgent,
+    .action-warning,
+    .action-view {
+        grid-column: span 2;
     }
 }
 </style>

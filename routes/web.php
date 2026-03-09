@@ -79,11 +79,23 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard Client
     Route::get('/dashboard', [ClientDashboardController::class, 'index'])->name('client.dashboard');
 
-    // Profil
-    Route::get('/profile', [ProfileController::class, 'show'])->name('client.profile');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('client.profile.update');
-    Route::post('/profile/acknowledge', [ProfileController::class, 'acknowledgeModal'])->name('client.profile.acknowledge');
+   
+// Profil utilisateur
+Route::get('/profile', [ProfileController::class, 'show'])->name('client.profile');
+Route::patch('/profile', [ProfileController::class, 'update'])->name('client.profile.update');
+Route::post('/profile/acknowledge', [ProfileController::class, 'acknowledgeModal'])->name('client.profile.acknowledge');
 
+// Gestion des entreprises (séparé)
+Route::prefix('profile/companies')->name('client.profile.companies.')->group(function () {
+    Route::get('/', [ProfileController::class, 'companies'])->name('index');
+    Route::get('/create', [ProfileController::class, 'createCompany'])->name('create');
+    Route::post('/', [ProfileController::class, 'storeCompany'])->name('store');
+    Route::get('/{company}', [ProfileController::class, 'showCompany'])->name('show');
+    Route::get('/{company}/edit', [ProfileController::class, 'editCompany'])->name('edit');
+    Route::patch('/{company}', [ProfileController::class, 'updateCompany'])->name('update');
+    Route::delete('/{company}', [ProfileController::class, 'destroyCompany'])->name('destroy');
+    Route::patch('/{company}/primary', [ProfileController::class, 'setPrimaryCompany'])->name('primary');
+});
     // Types de Financement
     Route::get('/financements', [ClientTypeFinancementController::class, 'index'])->name('client.financements.index');
     Route::get('/financements/{typeFinancement}', [ClientTypeFinancementController::class, 'show'])->name('client.financements.show');

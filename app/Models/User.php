@@ -14,6 +14,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
+        // Identité
         'first_name',
         'last_name',
         'name',
@@ -21,19 +22,49 @@ class User extends Authenticatable
         'phone',
         'email_verified_at',
         'password',
+        
+        // Photo & documents
         'profile_photo',
+        'id_number',           // AJOUTÉ
+        'id_document_path',    // AJOUTÉ
+        
+        // Informations personnelles
         'birth_date',
         'gender',
+        'bio',                 // AJOUTÉ
+        
+        // Adresse complète
         'address',
         'city',
+        'postal_code',         // AJOUTÉ
+        'country',             // AJOUTÉ
+        
+        // Informations entreprise (legacy - dans table users)
+        'company_name',
+        'company_type',
+        'sector',
+        'job_title',
+        'employees_count',
+        'annual_turnover',
+        
+        // Membre
         'member_id',
         'member_since',
         'member_status',
         'member_type',
+        
+        // Statuts
         'is_active',
         'is_verified',
         'is_admin',
         'is_moderator',
+        
+        // Préférences
+        'locale',              // AJOUTÉ
+        'timezone',            // AJOUTÉ
+        'preferences',         // AJOUTÉ
+        
+        // Connexion
         'last_login_at',
         'last_login_ip',
         'last_login_device',
@@ -54,10 +85,11 @@ class User extends Authenticatable
         'is_admin' => 'boolean',
         'is_moderator' => 'boolean',
         'last_login_at' => 'datetime',
+        'preferences' => 'json',    // AJOUTÉ
     ];
 
     /**
-     * Toutes les entreprises de l'utilisateur (peut en avoir plusieurs)
+     * Toutes les entreprises de l'utilisateur
      */
     public function companies(): HasMany
     {
@@ -65,11 +97,19 @@ class User extends Authenticatable
     }
 
     /**
-     * Première entreprise (compatibilité legacy)
+     * Entreprise principale
      */
-    public function company(): HasOne
+    public function primaryCompany(): HasOne
     {
-        return $this->hasOne(Company::class)->latest();
+        return $this->hasOne(Company::class)->where('is_primary', true);
+    }
+
+    /**
+     * Alias legacy
+     */
+    public function company(): ?Company
+    {
+        return $this->primaryCompany ?? $this->companies()->first();
     }
 
     /**
@@ -125,7 +165,7 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->is_admin;
+        return $this->is_admin === true;
     }
 
     /**
@@ -133,6 +173,14 @@ class User extends Authenticatable
      */
     public function getFullNameAttribute(): string
     {
-        return "{$this->first_name} {$this->last_name}";
+        return trim("{$this->first_name} {$this->last_name}");
+    }
+
+    /**
+     * Vérifie si l'utilisateur a une entreprise principale
+     */
+    public function hasPrimaryCompany(): bool
+    {
+        return $this->companies()->where('is_primary', true)->exists();
     }
 }
