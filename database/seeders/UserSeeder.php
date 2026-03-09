@@ -14,7 +14,25 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1️⃣ Utilisateur particulier (sans entreprise)
+        //  Administrateur système
+        $admin = User::create([
+            'first_name' => 'Admin',
+            'last_name' => 'System',
+            'name' => 'Administrateur',
+            'email' => 'admin@bhdm.com',
+            'phone' => '0100000000',
+            'password' => Hash::make('admin123456'),
+            'city' => 'Abidjan',
+            'member_type' => 'admin',
+            'member_status' => 'active',
+            'is_verified' => true,
+            'is_admin' => true,
+            'is_moderator' => true,
+            'is_active' => true,
+            'member_since' => now(),
+        ]);
+
+        // Utilisateur particulier (sans entreprise)
         $user1 = User::create([
             'first_name' => 'Jean',
             'last_name' => 'Dupont',
@@ -27,7 +45,7 @@ class UserSeeder extends Seeder
             'is_verified' => true,
         ]);
 
-        // 2️⃣ Utilisateur entreprise
+        //  Utilisateur entreprise
         $user2 = User::create([
             'first_name' => 'Marie',
             'last_name' => 'Durand',

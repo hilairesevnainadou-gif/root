@@ -60,7 +60,7 @@ class DashboardController extends Controller
         // Graphique: demandes par mois (6 derniers mois)
         $chartData = $this->getChartData();
 
-        return view('admin.dashboard', compact(
+        return view('admin.dashboard.index', compact(
             'stats',
             'recentRequests',
             'pendingDocuments',
