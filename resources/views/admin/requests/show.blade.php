@@ -559,8 +559,9 @@
                             @case('funded')
                                 @if($fundingRequest->status === 'pending_disbursement')
                                     {{-- Versement après paiement des frais de dossier --}}
+                                    @php $confirmMsg = 'Confirmer le versement de ' . number_format($amounts['net_amount'], 0, ',', ' ') . ' FCFA sur le portefeuille du client ?'; @endphp
                                     <form method="POST" action="{{ route('admin.requests.approveDisbursement', $fundingRequest) }}"
-                                        onsubmit="return confirm('Confirmer le versement de {{ number_format($amounts[\'net_amount\'], 0, \',\', \' \') }} FCFA sur le portefeuille du client ?')">
+                                        onsubmit="return confirm('{{ addslashes($confirmMsg) }}')">
                                         @csrf
                                         <button type="submit" class="action-btn a-disburse" style="width:100%;">
                                             <span class="action-icon">

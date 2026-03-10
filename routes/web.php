@@ -213,6 +213,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::patch('/{fundingRequest}/status', [AdminFundingRequestController::class, 'updateStatus'])->name('status');
         Route::post('/{fundingRequest}/assign', [AdminFundingRequestController::class, 'assign'])->name('assign');
         Route::post('/{fundingRequest}/committee', [AdminFundingRequestController::class, 'committeeDecision'])->name('committee');
+        Route::post('/{fundingRequest}/approve-disbursement', [AdminFundingRequestController::class, 'approveDisbursement'])->name('approveDisbursement');
     });
 
     // ── Documents ─────────────────────────────────────────────────────────
