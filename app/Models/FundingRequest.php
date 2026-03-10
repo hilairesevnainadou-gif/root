@@ -38,22 +38,26 @@ class FundingRequest extends Model
         'cancelled_at',
         'rejection_reason',
         'reviewer_id',
+        'final_fee_paid',
+        'final_fee_paid_at',
     ];
 
     protected $casts = [
-        'amount_requested' => 'decimal:2',
-        'amount_approved' => 'decimal:2',
-        'amount_rembursed' => 'decimal:2',
-        'registration_fee_paid' => 'decimal:2',
-        'paid_at' => 'datetime',
-        'submitted_at' => 'datetime',
-        'reviewed_at' => 'datetime',
+        'amount_requested'            => 'decimal:2',
+        'amount_approved'             => 'decimal:2',
+        'amount_rembursed'            => 'decimal:2',
+        'registration_fee_paid'       => 'decimal:2',
+        'paid_at'                     => 'datetime',
+        'submitted_at'                => 'datetime',
+        'reviewed_at'                 => 'datetime',
         'committee_review_started_at' => 'datetime',
-        'committee_decision_at' => 'datetime',
-        'approved_at' => 'datetime',
-        'funded_at' => 'datetime',
-        'completed_at' => 'datetime',
-        'cancelled_at' => 'datetime',
+        'committee_decision_at'       => 'datetime',
+        'approved_at'                 => 'datetime',
+        'funded_at'                   => 'datetime',
+        'completed_at'                => 'datetime',
+        'cancelled_at'                => 'datetime',
+        'final_fee_paid'              => 'boolean',
+        'final_fee_paid_at'           => 'datetime',
     ];
 
     // ========== RELATIONS ==========
