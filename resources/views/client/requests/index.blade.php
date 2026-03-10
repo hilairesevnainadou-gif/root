@@ -119,7 +119,7 @@
                 @endphp
 
                 <div class="request-card-mobile" style="border-left-color: {{ $colors['border'] }}">
-                    
+
                     {{-- Card Header --}}
                     <div class="request-card-header">
                         <div class="request-identity">
@@ -159,7 +159,7 @@
                                 <span class="request-date">{{ $request->created_at->format('d/m/Y') }}</span>
                             </div>
                         </div>
-                        
+
                         <span class="status-badge" style="background: {{ $colors['bg'] }}; color: {{ $colors['text'] }}; border: 1px solid {{ $colors['border'] }}">
                             {{ $statusLabel }}
                         </span>
@@ -169,13 +169,13 @@
                     <div class="request-card-body">
                         <h3 class="request-title">{{ $request->title }}</h3>
                         <p class="request-type">{{ $request->typeFinancement->name ?? 'Non spécifié' }}</p>
-                        
+
                         <div class="request-amount-row">
                             <div class="amount-main">
                                 <span class="amount-value">{{ number_format($request->amount_requested, 0, ',', ' ') }} FCFA</span>
                                 <span class="amount-duration">{{ $request->duration }} mois</span>
                             </div>
-                            
+
                             @if($request->payment_status === 'pending' && $request->status === 'draft')
                                 <span class="payment-badge badge-warning">Paiement requis</span>
                             @elseif($request->payment_status === 'paid')
@@ -186,8 +186,8 @@
 
                     {{-- Card Actions --}}
                     <div class="request-card-actions">
-                        
-                        {{-- Étape 1: Paiement en attente --}}
+
+                        {{-- Paiement frais d'inscription --}}
                         @if($request->payment_status === 'pending' && $request->status === 'draft')
                             <a href="{{ route('client.requests.payment', $request) }}" class="action-btn action-urgent">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
@@ -196,8 +196,7 @@
                                 Payer maintenant
                             </a>
                             <form action="{{ route('client.requests.destroy', $request) }}" method="POST" class="inline-form" onsubmit="return confirm('Annuler cette demande ?');">
-                                @csrf
-                                @method('DELETE')
+                                @csrf @method('DELETE')
                                 <button type="submit" class="action-btn action-cancel">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -206,8 +205,8 @@
                                 </button>
                             </form>
 
-                        {{-- Étape 2: Documents manquants --}}
-                        @elseif($request->isPaid() && $request->pendingDocumentsCount() > 0)
+                        {{-- Documents manquants --}}
+                        @elseif($request->isPaid() && $request->pendingDocumentsCount() > 0 && $request->status === 'draft')
                             <a href="{{ route('client.documents.required', $request) }}" class="action-btn action-warning">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -215,7 +214,25 @@
                                 Documents ({{ $request->pendingDocumentsCount() }})
                             </a>
 
-                        {{-- Étape 3: Voir détails --}}
+                        {{-- Approuvé + frais de dossier à payer --}}
+                        @elseif($request->status === 'approved' && ($request->typeFinancement->registration_final_fee ?? 0) > 0 && !($request->final_fee_paid ?? false))
+                            <a href="{{ route('client.requests.payment.final', $request) }}" class="action-btn" style="grid-column:1/-1; background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; box-shadow:0 4px 12px rgba(245,158,11,.3);">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z"/>
+                                </svg>
+                                Payer {{ number_format($request->typeFinancement->registration_final_fee, 0, ',', ' ') }} FCFA
+                            </a>
+
+                        {{-- Financé → lien portefeuille --}}
+                        @elseif($request->status === 'funded')
+                            <a href="{{ route('client.wallet.show') }}" class="action-btn" style="grid-column:1/-1; background:linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 4px 12px rgba(16,185,129,.3);">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                </svg>
+                                Voir mon portefeuille
+                            </a>
+
+                        {{-- Défaut : voir les détails --}}
                         @else
                             <a href="{{ route('client.requests.show', $request) }}" class="action-btn action-view" data-transition="slide-left">
                                 <span>Voir les détails</span>

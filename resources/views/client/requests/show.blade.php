@@ -10,19 +10,19 @@
     if (!isset($documents)) {
         $documents = $fundingRequest->documentUsers ?? collect();
     }
-    
+
     if (!isset($providedDocs)) {
         $providedDocs = $documents->filter(function ($doc) {
             return !empty($doc->file_path);
         });
     }
-    
+
     if (!isset($missingDocs)) {
         $missingDocs = $documents->filter(function ($doc) {
             return empty($doc->file_path);
         });
     }
-    
+
     // Si toujours vide, vérifier les documents requis
     if ($missingDocs->isEmpty() && isset($fundingRequest->typeFinancement->requiredTypeDocs)) {
         $existingIds = $documents->pluck('typedoc_id')->toArray();
@@ -131,10 +131,12 @@
         </div>
     </div>
 
-    {{-- Actions principales --}}
+    {{-- ═══════════════════════════════════════════════════════════
+         ACTIONS PRINCIPALES — logique complète du workflow
+         ═══════════════════════════════════════════════════════════ --}}
     <div class="request-actions-mobile">
-        
-        {{-- ÉTAPE 1: DRAFT + PAIEMENT EN ATTENTE --}}
+
+        {{-- ÉTAPE 1 : DRAFT + paiement frais d'inscription en attente --}}
         @if($fundingRequest->status === 'draft' && $fundingRequest->payment_status === 'pending')
             <div class="action-card action-urgent">
                 <div class="action-icon-bg">
@@ -145,15 +147,19 @@
                 <div class="action-content">
                     <h3>Frais d'inscription à payer</h3>
                     <p class="action-amount">{{ number_format($fees['registration'], 0, ',', ' ') }} FCFA</p>
+                    @if($fees['final'] > 0)
+                    <p style="font-size:.75rem; color:#92400e; margin:.3rem 0 0;">
+                        + {{ number_format($fees['final'], 0, ',', ' ') }} FCFA de frais de dossier lors de l'approbation
+                    </p>
+                    @endif
                 </div>
                 <a href="{{ route('client.requests.payment', $fundingRequest) }}" class="btn btn-primary btn-full">
                     Payer maintenant
                 </a>
             </div>
-
-            <form action="{{ route('client.requests.destroy', $fundingRequest) }}" method="POST" class="cancel-form" onsubmit="return confirm('Annuler cette demande ?')">
-                @csrf
-                @method('DELETE')
+            <form action="{{ route('client.requests.destroy', $fundingRequest) }}" method="POST" class="cancel-form"
+                  onsubmit="return confirm('Annuler cette demande ?')">
+                @csrf @method('DELETE')
                 <button type="submit" class="btn btn-text-danger">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -162,62 +168,160 @@
                 </button>
             </form>
 
-        {{-- ÉTAPE 2: PAYÉ + DOCUMENTS MANQUANTS --}}
-        @elseif($fundingRequest->payment_status === 'paid' && $missingDocs->count() > 0)
+        {{-- ÉTAPE 2 : PAYÉ + documents manquants (encore en draft) --}}
+        @elseif($fundingRequest->status === 'draft' && $fundingRequest->payment_status === 'paid' && $missingDocs->count() > 0)
             <div class="action-card action-warning">
-                <div class="action-icon-bg">
+                <div class="action-icon-bg" style="color:#d97706;">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                 </div>
                 <div class="action-content">
                     <h3>Documents manquants</h3>
-                    <p>{{ $missingDocs->count() }} document{{ $missingDocs->count() > 1 ? 's' : '' }} à fournir</p>
+                    <p>{{ $missingDocs->count() }} document{{ $missingDocs->count() > 1 ? 's' : '' }} à fournir pour soumettre votre dossier</p>
                 </div>
                 <a href="{{ route('client.documents.required', $fundingRequest) }}" class="btn btn-warning btn-full">
-                    Compléter
+                    Compléter mon dossier
                 </a>
             </div>
 
-        {{-- ÉTAPES SUIVANTES: Messages de statut --}}
+        {{-- ÉTAPE 3 : SOUMIS — en attente d'examen --}}
         @elseif($fundingRequest->status === 'submitted')
             <div class="status-card status-info">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28" style="flex-shrink:0;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <p>Votre demande est en attente d'examen par notre équipe.</p>
+                <div>
+                    <p style="font-weight:700; margin:0 0 .2rem;">Dossier soumis ✓</p>
+                    <p style="font-size:.875rem; margin:0;">Votre dossier est en attente d'examen par notre équipe.</p>
+                </div>
             </div>
 
+        {{-- ÉTAPE 4 : EN EXAMEN / COMITÉ --}}
         @elseif(in_array($fundingRequest->status, ['under_review', 'pending_committee']))
             <div class="status-card status-warning">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28" style="flex-shrink:0;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                <p>Votre demande est en cours d'analyse.</p>
+                <div>
+                    <p style="font-weight:700; margin:0 0 .2rem;">
+                        {{ $fundingRequest->status === 'pending_committee' ? 'Examiné par le comité' : 'En cours d\'examen' }}
+                    </p>
+                    <p style="font-size:.875rem; margin:0;">
+                        {{ $fundingRequest->status === 'pending_committee'
+                            ? 'Le comité de décision analyse votre dossier.'
+                            : 'Notre équipe examine votre dossier.' }}
+                    </p>
+                </div>
             </div>
 
-        @elseif($fundingRequest->status === 'approved')
+        {{-- ÉTAPE 5A : APPROUVÉ + frais de dossier finals à payer → bouton paiement --}}
+        @elseif($fundingRequest->status === 'approved' && $fees['final'] > 0 && !($fundingRequest->final_fee_paid ?? false))
+            {{-- Récap financier --}}
+            <div class="action-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:2px solid #10b981; flex-direction:column; align-items:stretch; gap:.75rem;">
+                <div style="display:flex; align-items:center; gap:.5rem;">
+                    <span style="background:#10b981; color:#fff; padding:.35rem .9rem; border-radius:9999px; font-size:.75rem; font-weight:700;">
+                        ✓ Demande approuvée
+                    </span>
+                </div>
+                <div style="background:rgba(255,255,255,.75); border-radius:12px; padding:1rem;">
+                    <div style="display:flex; justify-content:space-between; padding:.4rem 0; border-bottom:1px dashed #bbf7d0; font-size:.875rem;">
+                        <span style="color:#166534;">Montant approuvé</span>
+                        <strong style="color:#065f46;">{{ number_format($fundingRequest->amount_approved ?? 0, 0, ',', ' ') }} FCFA</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:.4rem 0; border-bottom:1px dashed #bbf7d0; font-size:.875rem;">
+                        <span style="color:#166534;">Frais de dossier à payer</span>
+                        <strong style="color:#dc2626;">− {{ number_format($fees['final'], 0, ',', ' ') }} FCFA</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:.5rem 0; font-size:.9rem;">
+                        <span style="color:#166534; font-weight:700;">Vous recevrez</span>
+                        <strong style="color:#059669; font-size:1.1rem;">{{ number_format($fees['net_amount'], 0, ',', ' ') }} FCFA</strong>
+                    </div>
+                </div>
+                <div style="background:#fef3c7; border-radius:12px; padding:.875rem; display:flex; align-items:flex-start; gap:.5rem; font-size:.8rem; color:#92400e;">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16" style="flex-shrink:0; margin-top:.1rem;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Le versement sur votre portefeuille sera effectué dès réception des frais de dossier.</span>
+                </div>
+                {{-- Bouton paiement frais finals --}}
+                <a href="{{ route('client.requests.payment.final', $fundingRequest) }}" class="btn btn-full"
+                   style="background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; border:none; padding:.875rem; font-weight:700; border-radius:12px; text-align:center; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:.5rem;">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z"/>
+                    </svg>
+                    Payer {{ number_format($fees['final'], 0, ',', ' ') }} FCFA et recevoir mon financement
+                </a>
+            </div>
+
+        {{-- ÉTAPE 5B : APPROUVÉ + pas de frais finals → virement en cours --}}
+        @elseif($fundingRequest->status === 'approved' && ($fees['final'] == 0 || ($fundingRequest->final_fee_paid ?? false)))
             <div class="status-card status-success">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28" style="flex-shrink:0;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <p>Demande approuvée ! Le financement est en préparation.</p>
+                <div>
+                    <p style="font-weight:700; margin:0 0 .2rem;">Demande approuvée !</p>
+                    <p style="font-size:.875rem; margin:0;">Le versement de <strong>{{ number_format($fees['net_amount'], 0, ',', ' ') }} FCFA</strong> est en cours sur votre portefeuille.</p>
+                </div>
             </div>
 
+        {{-- ÉTAPE 6 : FINANCÉ — virement effectué --}}
         @elseif($fundingRequest->status === 'funded')
-            <div class="status-card status-success">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <p>Financement effectué ! Les fonds ont été versés.</p>
+            <div class="action-card" style="background:linear-gradient(135deg,#ecfdf5,#a7f3d0); border:2px solid #059669; flex-direction:column; align-items:center; text-align:center; gap:1rem;">
+                <div style="width:64px; height:64px; background:linear-gradient(135deg,#10b981,#059669); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(16,185,129,.3);">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28" style="color:white;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 style="font-size:1.1rem; font-weight:800; color:#065f46; margin:0 0 .3rem;">🎉 Financement versé !</h3>
+                    @if($fundingRequest->amount_approved)
+                    <p style="font-size:1.75rem; font-weight:800; color:#059669; margin:.2rem 0;">
+                        {{ number_format($fees['net_amount'], 0, ',', ' ') }} FCFA
+                    </p>
+                    <p style="font-size:.8rem; color:#166534; margin:0;">
+                        Crédités sur votre portefeuille
+                        @if($fees['final'] > 0)
+                            ({{ number_format($fundingRequest->amount_approved, 0, ',', ' ') }} − {{ number_format($fees['final'], 0, ',', ' ') }} FCFA de frais)
+                        @endif
+                    </p>
+                    @endif
+                </div>
+                <a href="{{ route('client.wallet.show') }}" class="btn btn-full"
+                   style="background:#059669; color:#fff; border:none; padding:.875rem; font-weight:700; border-radius:12px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:.5rem;">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                    Voir mon portefeuille
+                </a>
             </div>
 
+        {{-- REJETÉ --}}
         @elseif($fundingRequest->status === 'rejected')
             <div class="status-card status-danger">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28" style="flex-shrink:0;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <p>Demande non retenue. {{ $fundingRequest->rejection_reason ? 'Motif : ' . $fundingRequest->rejection_reason : '' }}</p>
+                <div>
+                    <p style="font-weight:700; margin:0 0 .3rem;">Demande non retenue</p>
+                    @php
+                        $rejectionMsg = $fundingRequest->notifications()
+                            ->where('type', 'request_rejected')->latest()->value('message');
+                    @endphp
+                    <p style="font-size:.875rem; margin:0; opacity:.9;">
+                        {{ $rejectionMsg ?? 'Contactez-nous pour plus d\'informations.' }}
+                    </p>
+                </div>
+            </div>
+
+        {{-- ANNULÉ --}}
+        @elseif($fundingRequest->status === 'cancelled')
+            <div class="status-card" style="background:#f1f5f9; color:#475569;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24" style="flex-shrink:0;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                </svg>
+                <p style="margin:0;">Cette demande a été annulée.</p>
             </div>
         @endif
 
@@ -256,7 +360,7 @@
         </div>
     </div>
 
-    {{-- Frais à payer (CORRECTION: l'utilisateur paie, ne reçoit pas) --}}
+    {{-- Résumé financier --}}
     <div class="info-section">
         <div class="section-header">
             <div class="section-icon section-icon-fees">
@@ -264,35 +368,74 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
             </div>
-            <h2 class="section-title">Frais à payer</h2>
+            <h2 class="section-title">Résumé financier</h2>
         </div>
 
         <div class="fees-card">
+            {{-- Montant demandé ou approuvé --}}
+            <div class="fee-item">
+                <div class="fee-info">
+                    <span class="fee-name">Montant {{ $fundingRequest->amount_approved ? 'approuvé' : 'demandé' }}</span>
+                </div>
+                <span class="fee-amount" style="color:#1e40af; font-size:1.1rem;">
+                    {{ number_format($fundingRequest->amount_approved ?? $fundingRequest->amount_requested, 0, ',', ' ') }} FCFA
+                </span>
+            </div>
+
+            {{-- Frais d'inscription --}}
             <div class="fee-item">
                 <div class="fee-info">
                     <span class="fee-name">Frais d'inscription</span>
-                    <span class="fee-desc">À payer maintenant pour valider</span>
+                    <span class="fee-desc">
+                        @if($fundingRequest->registration_fee_paid > 0)
+                            ✓ Payés le {{ $fundingRequest->paid_at?->format('d/m/Y') }}
+                        @else
+                            À payer lors de la soumission
+                        @endif
+                    </span>
                 </div>
-                <span class="fee-amount">{{ number_format($fees['registration'], 0, ',', ' ') }} FCFA</span>
+                <span class="fee-amount" style="{{ $fundingRequest->registration_fee_paid > 0 ? 'color:#10b981;' : '' }}">
+                    {{ number_format($fees['registration'], 0, ',', ' ') }} FCFA
+                </span>
             </div>
-            
+
+            {{-- Frais de dossier (uniquement si > 0) --}}
+            @if($fees['final'] > 0)
             <div class="fee-item">
                 <div class="fee-info">
-                    <span class="fee-name">Frais de dossier final</span>
-                    <span class="fee-desc">À payer lors de la signature</span>
+                    <span class="fee-name">Frais de dossier</span>
+                    <span class="fee-desc">
+                        @if($fundingRequest->status === 'funded')
+                            Déduits du montant versé
+                        @elseif($fundingRequest->status === 'approved' && ($fundingRequest->final_fee_paid ?? false))
+                            ✓ Payés
+                        @elseif($fundingRequest->status === 'approved')
+                            À payer pour débloquer le versement
+                        @else
+                            À payer lors de l'approbation
+                        @endif
+                    </span>
                 </div>
                 <span class="fee-amount">{{ number_format($fees['final'], 0, ',', ' ') }} FCFA</span>
             </div>
+            @endif
 
+            {{-- Montant net — visible dès que la demande est approuvée ou financée --}}
+            @if(in_array($fundingRequest->status, ['approved', 'funded']))
             <div class="fee-divider"></div>
-
-            <div class="fee-item fee-total">
+            <div class="fee-item">
                 <div class="fee-info">
-                    <span class="fee-name">Total des frais</span>
+                    <span class="fee-name" style="font-weight:800; color:#065f46;">
+                        {{ $fundingRequest->status === 'funded' ? '✓ Versé sur votre portefeuille' : 'Vous recevrez' }}
+                    </span>
                 </div>
-                <span class="fee-amount total">{{ number_format($fees['total_fees'], 0, ',', ' ') }} FCFA</span>
+                <span class="fee-amount total" style="font-size:1.2rem; color:#059669;">
+                    {{ number_format($fees['net_amount'], 0, ',', ' ') }} FCFA
+                </span>
             </div>
+            @endif
 
+            {{-- Badge paiement effectué --}}
             @if($fundingRequest->registration_fee_paid > 0)
             <div class="fee-paid-badge">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">

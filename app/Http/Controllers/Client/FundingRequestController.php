@@ -394,11 +394,21 @@ public function show(FundingRequest $fundingRequest): View|RedirectResponse
         $missingDocs = $fundingRequest->typeFinancement->requiredTypeDocs;
     }
 
+    $regFee   = $fundingRequest->typeFinancement->registration_fee          ?? 0;
+    $finalFee = $fundingRequest->typeFinancement->registration_final_fee     ?? 0;
+    // Montant de référence : amount_approved si disponible, sinon amount_requested
+    $refAmount = $fundingRequest->amount_approved ?? $fundingRequest->amount_requested ?? 0;
+
     $fees = [
-        'registration' => $fundingRequest->typeFinancement->registration_fee ?? 0,
-        'final' => $fundingRequest->typeFinancement->registration_final_fee ?? 0,
-        'total_fees' => ($fundingRequest->typeFinancement->registration_fee ?? 0) + ($fundingRequest->typeFinancement->registration_final_fee ?? 0),
-        'net_amount' => $fundingRequest->amount_requested - (($fundingRequest->typeFinancement->registration_fee ?? 0) + ($fundingRequest->typeFinancement->registration_final_fee ?? 0)),
+        'registration'      => $regFee,
+        'final'             => $finalFee,
+        'total_fees'        => $regFee + $finalFee,
+        // Montant réel que le client recevra sur son portefeuille
+        'net_amount'        => $refAmount - $finalFee,
+        // true = demande approuvée ET frais finals > 0 ET pas encore payés → affiche bouton paiement
+        'final_fee_pending' => $fundingRequest->status === 'approved'
+                               && $finalFee > 0
+                               && ! (bool) ($fundingRequest->final_fee_paid ?? false),
     ];
 
     $timeline = $this->buildTimeline($fundingRequest);
@@ -406,7 +416,7 @@ public function show(FundingRequest $fundingRequest): View|RedirectResponse
     // Toutes les variables sont définies
     return view('client.requests.show', compact(
         'fundingRequest',
-        'documents',        
+        'documents',
         'providedDocs',
         'missingDocs',
         'fees',
@@ -493,7 +503,7 @@ public function paymentSuccess(FundingRequest $fundingRequest)
     return view('client.requests.payment-success', compact('fundingRequest'));
 }
 
-   
+
     /**
      * Génère un numéro de demande unique
      */
@@ -511,28 +521,44 @@ public function paymentSuccess(FundingRequest $fundingRequest)
      */
     private function buildTimeline(FundingRequest $request): array
     {
-        $timeline = [];
+        $finalFee = $request->typeFinancement->registration_final_fee ?? 0;
+
         $steps = [
-            ['key' => 'created', 'label' => 'Création', 'date' => $request->created_at, 'icon' => 'plus'],
-            ['key' => 'payment', 'label' => 'Paiement', 'date' => $request->paid_at, 'icon' => 'credit-card'],
-            ['key' => 'submitted', 'label' => 'Soumission', 'date' => $request->submitted_at, 'icon' => 'send'],
-            ['key' => 'under_review', 'label' => 'Examen', 'date' => $request->reviewed_at, 'icon' => 'search'],
-            ['key' => 'committee', 'label' => 'Comité', 'date' => $request->committee_review_started_at, 'icon' => 'users'],
-            ['key' => 'decision', 'label' => 'Décision', 'date' => $request->committee_decision_at, 'icon' => 'gavel'],
-            ['key' => 'funded', 'label' => 'Financement', 'date' => $request->funded_at, 'icon' => 'money-bill'],
+            ['key' => 'created',   'label' => 'Création',             'date' => $request->created_at],
+            ['key' => 'payment',   'label' => 'Frais d\'inscription',  'date' => $request->paid_at],
+            ['key' => 'submitted', 'label' => 'Dossier soumis',        'date' => $request->submitted_at],
+            ['key' => 'review',    'label' => 'Examen',                'date' => $request->reviewed_at],
+            ['key' => 'committee', 'label' => 'Comité',                'date' => $request->committee_review_started_at],
+            ['key' => 'decision',  'label' => 'Décision',              'date' => $request->committee_decision_at ?? $request->approved_at],
         ];
 
-        $lastCompleted = true;
-        foreach ($steps as $step) {
-            $timeline[] = [
-                'key' => $step['key'],
-                'label' => $step['label'],
-                'date' => $step['date'],
-                'icon' => $step['icon'],
-                'completed' => (bool) $step['date'],
-                'active' => $lastCompleted && !$step['date'],
+        // Étape "frais de dossier" uniquement si le type de financement en a
+        if ($finalFee > 0) {
+            $steps[] = [
+                'key'   => 'final_fee',
+                'label' => 'Frais de dossier (' . number_format($finalFee, 0, ',', ' ') . ' FCFA)',
+                'date'  => $request->final_fee_paid_at ?? null,
             ];
-            $lastCompleted = (bool) $step['date'];
+        }
+
+        $steps[] = ['key' => 'funded', 'label' => 'Financement versé', 'date' => $request->funded_at];
+
+        $timeline    = [];
+        $prevDone    = true; // la 1re étape devient active si non complétée
+
+        foreach ($steps as $step) {
+            $done   = (bool) $step['date'];
+            $active = $prevDone && ! $done;
+
+            $timeline[] = [
+                'key'       => $step['key'],
+                'label'     => $step['label'],
+                'date'      => $step['date'],
+                'completed' => $done,
+                'active'    => $active,
+            ];
+
+            $prevDone = $done;
         }
 
         return $timeline;
