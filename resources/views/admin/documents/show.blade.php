@@ -98,6 +98,22 @@
 <div class="verify-grid">
 
     {{-- ── Colonne gauche : viewer ── --}}
+    @php
+        /*
+         * CORRECTION CORS / localhost :
+         * On utilise TOUJOURS la route Laravel (admin.documents.show) comme URL
+         * d'affichage et admin.documents.download pour le téléchargement.
+         * Cela évite que Storage::url() génère une URL avec APP_URL=localhost
+         * qui serait bloquée par la politique CORS du navigateur en production.
+         *
+         * Si le controller passait déjà $viewUrl, on l'ignore et on recalcule.
+         */
+        $viewUrl     = route('admin.documents.show', $document);
+        $downloadUrl = route('admin.documents.download', $document);
+        $ext         = strtolower(pathinfo($document->file_name ?? '', PATHINFO_EXTENSION));
+        $isImage     = in_array($ext, ['jpg','jpeg','png','gif','webp']);
+        $isPdf       = $ext === 'pdf';
+    @endphp
     <div>
         <div class="card">
             <div class="viewer-toolbar">
@@ -109,7 +125,7 @@
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                         Ouvrir
                     </a>
-                    <a href="{{ $viewUrl }}" download class="viewer-btn">
+                    <a href="{{ $downloadUrl }}" download class="viewer-btn">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         Télécharger
                     </a>
@@ -117,12 +133,6 @@
             </div>
 
             <div class="doc-viewer" style="border-radius:0 0 10px 10px; border-top:none;">
-                @php
-                    $ext = strtolower(pathinfo($document->file_name ?? '', PATHINFO_EXTENSION));
-                    $isImage = in_array($ext, ['jpg','jpeg','png','gif','webp']);
-                    $isPdf   = $ext === 'pdf';
-                @endphp
-
                 @if($isImage)
                     <img src="{{ $viewUrl }}" alt="Document">
                 @elseif($isPdf)
