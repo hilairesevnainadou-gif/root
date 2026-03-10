@@ -184,7 +184,8 @@ class KkiapayPaymentController extends Controller
 
         $existingTx = Transaction::where('funding_request_id', $fundingRequest->id)
             ->where('status', 'pending')
-            ->where('type', 'final_fee')
+            ->where('type', 'payment')
+            ->whereJsonContains('metadata', ['type' => 'final_fee'])
             ->latest()
             ->first();
 
@@ -196,7 +197,7 @@ class KkiapayPaymentController extends Controller
             'wallet_id'          => $wallet->id,
             'funding_request_id' => $fundingRequest->id,
             'transaction_id'     => 'TXN-FINAL-' . uniqid() . '-' . time(),
-            'type'               => 'final_fee',
+            'type'               => 'payment',
             'amount'             => $finalFee,
             'fee'                => 0,
             'total_amount'       => $finalFee,
@@ -400,7 +401,7 @@ class KkiapayPaymentController extends Controller
                     'wallet_id'          => $wallet->id,
                     'funding_request_id' => $fundingRequest->id,
                     'transaction_id'     => $txId,
-                    'type'               => 'final_fee',
+                    'type'               => 'payment',
                     'amount'             => $finalFee,
                     'fee'                => 0,
                     'total_amount'       => $finalFee,
@@ -494,7 +495,7 @@ class KkiapayPaymentController extends Controller
         }
 
         // Frais finals
-        if ($transaction->type === 'final_fee') {
+        if ((($transaction->metadata['type'] ?? '') === 'final_fee')) {
             return $this->verifyFinalFeePayment($transaction, $validated);
         }
 
@@ -633,7 +634,8 @@ class KkiapayPaymentController extends Controller
 
         $transaction = Transaction::where('reference', $kkiapayId)
             ->where('funding_request_id', $fundingRequest->id)
-            ->where('type', 'final_fee')
+            ->where('type', 'payment')
+            ->whereJsonContains('metadata', ['type' => 'final_fee'])
             ->first();
 
         if ($transaction && $transaction->status === 'completed') {
@@ -684,7 +686,7 @@ class KkiapayPaymentController extends Controller
                         $wallet = $this->getOrCreateWallet();
 
                         // Chercher une transaction pending à compléter
-                        $txType = $feeType === 'final_fee' ? 'final_fee' : 'payment';
+                        $txType = 'payment'; // type DB toujours 'payment', distinction via metadata['type']
                         $tx = Transaction::where('funding_request_id', $fundingRequest->id)
                             ->where('type', $txType)
                             ->whereIn('status', ['pending', 'failed'])
@@ -704,7 +706,10 @@ class KkiapayPaymentController extends Controller
                                 'payment_method'     => 'kkiapay',
                                 'status'             => 'pending',
                                 'description'        => ($feeType === 'final_fee' ? 'Frais de dossier' : "Frais d'inscription") . " — {$fundingRequest->request_number} (recheck)",
-                                'metadata'           => ['recheck' => true],
+                                'metadata'           => [
+                                    'recheck' => true,
+                                    'type'    => $feeType, // 'final_fee' ou 'registration_fee'
+                                ],
                             ]);
                         }
 
@@ -813,7 +818,7 @@ class KkiapayPaymentController extends Controller
             ]);
         }
 
-        if ($transaction->type === 'final_fee' && $transaction->funding_request_id) {
+        if ((($transaction->metadata['type'] ?? '') === 'final_fee') && $transaction->funding_request_id) {
             $fr = FundingRequest::find($transaction->funding_request_id);
             if ($fr) {
                 return response()->json([
@@ -1234,7 +1239,7 @@ class KkiapayPaymentController extends Controller
                 }
 
                 // Frais finals
-                if ($transaction->type === 'final_fee') {
+                if ((($transaction->metadata['type'] ?? '') === 'final_fee')) {
                     $this->processWebhookFinalFee($transaction, $isSuccess, $event, $amount, $fees, $transactionId, $failureCode, $failureMessage);
                     return;
                 }
@@ -1500,7 +1505,7 @@ class KkiapayPaymentController extends Controller
             'funding_request_id'      => $fundingRequest?->id,
             'internal_transaction_id' => $transaction->transaction_id,
             'user_id'                 => auth()->id(),
-            'type'                    => $fundingRequest ? ($transaction->type === 'final_fee' ? 'final_fee' : 'registration_payment') : 'wallet_deposit',
+            'type'                    => $fundingRequest ? ((($transaction->metadata['type'] ?? '') === 'final_fee') ? 'final_fee' : 'registration_payment') : 'wallet_deposit',
         ];
 
         return response()->json([
