@@ -37,6 +37,7 @@ class FundingRequest extends Model
         'completed_at',
         'cancelled_at',
         'rejection_reason',
+        'reviewer_id',
     ];
 
     protected $casts = [
@@ -60,6 +61,11 @@ class FundingRequest extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewer_id');
     }
 
     public function company(): BelongsTo
