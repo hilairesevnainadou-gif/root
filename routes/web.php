@@ -213,7 +213,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::patch('/{fundingRequest}/status', [AdminFundingRequestController::class, 'updateStatus'])->name('status');
         Route::post('/{fundingRequest}/assign', [AdminFundingRequestController::class, 'assign'])->name('assign');
         Route::post('/{fundingRequest}/committee', [AdminFundingRequestController::class, 'committeeDecision'])->name('committee');
-        Route::post('/{fundingRequest}/approve-disbursement', [AdminFundingRequestController::class, 'approveDisbursement'])->name('approveDisbursement');
     });
 
     // ── Documents ─────────────────────────────────────────────────────────
@@ -221,7 +220,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::prefix('documents')->name('documents.')->group(function () {
         Route::get('/pending', [DocumentVerificationController::class, 'pending'])->name('pending');
         Route::post('/bulk', [DocumentVerificationController::class, 'bulkVerify'])->name('bulk');
-        Route::get('/{document}', [DocumentVerificationController::class, 'show'])->name('show');
+        Route::get('/{document}', [DocumentVerificationController::class, 'serveFile'])->name('show');
+        Route::get('/{document}/download', [DocumentVerificationController::class, 'download'])->name('download');
         Route::post('/{document}/verify', [DocumentVerificationController::class, 'verify'])->name('verify');
     });
 
