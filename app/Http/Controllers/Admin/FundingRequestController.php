@@ -355,21 +355,37 @@ class FundingRequestController extends Controller
 
         try {
             DB::transaction(function() use ($fundingRequest, $netAmount) {
-                if (! in_array($fundingRequest->status, ['funded', 'pending_disbursement'])) {
-                    $fundingRequest->update(['status' => 'funded', 'funded_at' => now()]);
-                } else {
-                    $fundingRequest->update(['status' => 'funded', 'funded_at' => now()]);
-                }
+                $fundingRequest->update(['status' => 'funded', 'funded_at' => now()]);
 
+                // CORRECTION : createForUser attend un int (user_id), pas un objet User
                 $wallet = $fundingRequest->user->wallet
-                    ?? Wallet::createForUser($fundingRequest->user);
+                    ?? Wallet::createForUser($fundingRequest->user_id);
 
-                $wallet->credit(
-                    $netAmount,
-                    'funding_disbursement',
-                    "Versement financement #{$fundingRequest->request_number}",
-                    ['funding_request_id' => $fundingRequest->id]
-                );
+                // CORRECTION : credit() n'accepte qu'un seul argument (float $amount)
+                // On enregistre la transaction séparément pour garder la traçabilité
+                $wallet->credit($netAmount);
+
+                // Traçabilité : enregistrer la transaction de versement
+                \App\Models\Transaction::create([
+                    'wallet_id'          => $wallet->id,
+                    'funding_request_id' => $fundingRequest->id,
+                    'transaction_id'     => 'TXN-DISBURSE-' . uniqid() . '-' . time(),
+                    'type'               => 'credit',
+                    'amount'             => $netAmount,
+                    'fee'                => 0,
+                    'total_amount'       => $netAmount,
+                    'payment_method'     => 'wallet',
+                    'status'             => 'completed',
+                    'completed_at'       => now(),
+                    'reference'          => 'DISBURSE-' . $fundingRequest->request_number,
+                    'description'        => "Versement financement #{$fundingRequest->request_number}",
+                    'metadata'           => [
+                        'type'               => 'funding_disbursement',
+                        'funding_request_id' => $fundingRequest->id,
+                        'disbursed_by'       => auth()->id(),
+                        'disbursed_at'       => now()->toIso8601String(),
+                    ],
+                ]);
             });
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Wallet disbursement failed', [
