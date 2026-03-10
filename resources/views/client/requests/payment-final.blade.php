@@ -1,32 +1,48 @@
 @extends('layouts.app')
 
-@section('title', 'Paiement - ' . $fundingRequest->request_number)
-@section('header-title', 'Paiement des frais')
+@section('title', 'Frais de dossier - ' . $fundingRequest->request_number)
+@section('header-title', 'Paiement des frais de dossier')
 
 @section('content')
 
 <div class="payment-container">
 
-    @if($fundingRequest->status === 'draft' && $fundingRequest->payment_status === 'pending')
+    @if($fundingRequest->status === 'approved' && !($fundingRequest->final_fee_paid ?? false))
 
         {{-- Progression --}}
         <div class="payment-header">
             <div class="step-indicator">
                 <div class="step completed">
                     <span class="step-number">✓</span>
-                    <span class="step-label">Demande</span>
+                    <span class="step-label">Soumission</span>
+                </div>
+                <div class="step-line active"></div>
+                <div class="step completed">
+                    <span class="step-number">✓</span>
+                    <span class="step-label">Approuvée</span>
                 </div>
                 <div class="step-line active"></div>
                 <div class="step active">
-                    <span class="step-number">2</span>
-                    <span class="step-label">Paiement</span>
+                    <span class="step-number">3</span>
+                    <span class="step-label">Frais dossier</span>
                 </div>
                 <div class="step-line"></div>
                 <div class="step">
-                    <span class="step-number">3</span>
-                    <span class="step-label">Documents</span>
+                    <span class="step-number">4</span>
+                    <span class="step-label">Financement</span>
                 </div>
             </div>
+        </div>
+
+        {{-- Badge approbation --}}
+        <div class="approval-badge">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Demande approuvée — Financement de
+                <strong>{{ number_format($fees['approved'], 0, ',', ' ') }} FCFA</strong>
+            </span>
         </div>
 
         {{-- Carte principale --}}
@@ -40,7 +56,7 @@
 
             {{-- Montant à payer --}}
             <div class="payment-amount-section">
-                <span class="amount-label">Frais d'inscription à régler</span>
+                <span class="amount-label">Frais de dossier à régler</span>
                 <div class="amount-display">
                     <span class="currency">FCFA</span>
                     <span class="amount" id="amountDisplay">{{ number_format($fees['current'], 0, ',', ' ') }}</span>
@@ -48,13 +64,17 @@
                 <input type="hidden" id="feeAmount" value="{{ $fees['current'] }}">
             </div>
 
-            {{-- Info frais finals --}}
-            <div class="info-frais-finals">
+            {{-- Info montant net reçu --}}
+            <div class="info-frais-finals info-net">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>Des frais de dossier de {{ number_format($fees['final'], 0, ',', ' ') }} FCFA seront demandés lors de l'approbation</span>
+                <span>
+                    Après règlement, vous recevrez
+                    <strong>{{ number_format($fees['net_amount'], 0, ',', ' ') }} FCFA</strong>
+                    sur votre compte
+                </span>
             </div>
 
             {{-- Séparateur --}}
@@ -77,13 +97,9 @@
                     </span>
                 </button>
 
-                <form action="{{ route('client.requests.destroy', $fundingRequest) }}" method="POST" class="form-cancel">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn-cancel" onclick="return confirmerAnnulation()">
-                        <span>Annuler la demande</span>
-                    </button>
-                </form>
+                <a href="{{ route('client.requests.show', $fundingRequest) }}" class="btn-cancel-link">
+                    Retour à ma demande
+                </a>
             </div>
 
             {{-- Sécurité --}}
@@ -115,13 +131,10 @@
                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
-            <h2>Paiement déjà effectué</h2>
-            <p>Votre demande est en cours de traitement.</p>
+            <h2>Frais de dossier réglés</h2>
+            <p>Votre financement va être versé très prochainement.</p>
             <div class="paid-actions">
-                <a href="{{ route('client.documents.required', $fundingRequest) }}" class="btn-primary">
-                    Ajouter les documents
-                </a>
-                <a href="{{ route('client.requests.show', $fundingRequest) }}" class="btn-secondary">
+                <a href="{{ route('client.requests.show', $fundingRequest) }}" class="btn-primary">
                     Voir ma demande
                 </a>
             </div>
@@ -137,28 +150,19 @@
 <script src="https://cdn.kkiapay.me/k.js"></script>
 <script>
     let isProcessing = false;
-    // Stocke les données retournées par initialize()
-    let kkiapayData = null;
+    let kkiapayData  = null;
 
     const FUNDING_REQUEST_ID = {{ $fundingRequest->id }};
     const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content;
 
-    // Écouter les événements Kkiapay dès le chargement
     document.addEventListener('DOMContentLoaded', function () {
-        if (typeof addSuccessListener === 'function') {
-            addSuccessListener(onKkiapaySuccess);
-        }
-        if (typeof addFailedListener === 'function') {
-            addFailedListener(onKkiapayFailed);
-        }
-        if (typeof addCloseListener === 'function') {
-            addCloseListener(onKkiapayClose);
-        }
+        if (typeof addSuccessListener === 'function') addSuccessListener(onKkiapaySuccess);
+        if (typeof addFailedListener  === 'function') addFailedListener(onKkiapayFailed);
+        if (typeof addCloseListener   === 'function') addCloseListener(onKkiapayClose);
     });
 
     /**
-     * ÉTAPE 1 — Appelle initialize() pour créer la transaction pending
-     * puis ouvre le widget Kkiapay avec la config retournée
+     * ÉTAPE 1 — Initialize la transaction pending pour frais finals
      */
     async function initierPaiement() {
         if (isProcessing) return;
@@ -177,7 +181,7 @@
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({}),
+                body: JSON.stringify({ type: 'final_fee' }),
             });
 
             const data = await resp.json();
@@ -186,18 +190,15 @@
                 throw new Error(data.message || 'Échec de l\'initialisation');
             }
 
-            // Sauvegarder pour la vérification
             kkiapayData = data;
+            const cfg   = data.kkiapay_config;
 
-            const cfg = data.kkiapay_config;
-
-            // Ouvrir le widget Kkiapay
             openKkiapayWidget({
-                amount: cfg.amount,
-                key: cfg.key,
-                sandbox: cfg.sandbox,
-                data: cfg.data,   // contient internal_transaction_id + funding_request_id
-                theme: '#2563eb',
+                amount:   cfg.amount,
+                key:      cfg.key,
+                sandbox:  cfg.sandbox,
+                data:     cfg.data,
+                theme:    '#10b981',   // vert pour distinguer du paiement initial
                 position: 'center',
             });
 
@@ -217,15 +218,13 @@
     }
 
     /**
-     * ÉTAPE 2 — SDK Kkiapay renvoie un succès → on vérifie côté serveur
+     * ÉTAPE 2 — SDK succès → vérification serveur
      */
     function onKkiapaySuccess(response) {
-        console.log('Kkiapay success:', response);
-
+        console.log('Kkiapay success (final):', response);
         document.getElementById('payment-processing').style.display = 'flex';
 
         if (!kkiapayData) {
-            // Fallback : initialize() non mémorisé, on ne peut pas vérifier
             alert('Erreur interne : données de transaction manquantes. Contactez le support.');
             document.getElementById('payment-processing').style.display = 'none';
             resetButton();
@@ -233,7 +232,6 @@
         }
 
         const internalTxId = kkiapayData.transaction?.transaction_id;
-
         verifyPayment(response.transactionId, internalTxId, FUNDING_REQUEST_ID);
     }
 
@@ -246,19 +244,15 @@
     }
 
     function onKkiapayClose() {
-        // Widget fermé sans paiement
-        if (isProcessing && !document.getElementById('payment-processing').style.display === 'flex') {
-            resetButton();
-        }
+        if (isProcessing) resetButton();
     }
 
     /**
-     * ÉTAPE 3 — Vérification côté serveur via /payment/verify
-     * Utilise l'internal_transaction_id retourné par initialize()
+     * ÉTAPE 3 — Vérification via la route dédiée aux frais finals
      */
     async function verifyPayment(kkiapayTransactionId, internalTransactionId, fundingRequestId) {
         try {
-            const resp = await fetch('{{ route('client.payment.verify') }}', {
+            const resp = await fetch('{{ route('client.requests.payment.final.verify', $fundingRequest) }}', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': CSRF_TOKEN,
@@ -266,34 +260,28 @@
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({
-                    transactionId: kkiapayTransactionId,
+                    transactionId:           kkiapayTransactionId,
                     internal_transaction_id: internalTransactionId,
-                    funding_request_id: fundingRequestId,
+                    funding_request_id:      fundingRequestId,
                 }),
             });
 
             const data = await resp.json();
 
             if (data.success) {
-                // Succès → rediriger
                 window.location.href = data.redirect_url
-                    || '{{ route('client.documents.required', $fundingRequest) }}';
+                    || '{{ route('client.requests.show', $fundingRequest) }}';
             } else if (data.status === 'pending') {
-                // Webhook pas encore arrivé → réessayer dans 2 secondes
+                // Webhook pas encore arrivé → réessayer
                 setTimeout(() => verifyPayment(kkiapayTransactionId, internalTransactionId, fundingRequestId), 2000);
             } else {
                 throw new Error(data.message || 'Erreur de vérification');
             }
 
         } catch (error) {
-            console.error('Erreur vérification:', error);
-            // Retry automatique en cas d'erreur réseau
+            console.error('Erreur vérification finale:', error);
             setTimeout(() => verifyPayment(kkiapayTransactionId, internalTransactionId, fundingRequestId), 3000);
         }
-    }
-
-    function confirmerAnnulation() {
-        return confirm('Êtes-vous sûr de vouloir annuler cette demande ?\n\nCette action est irréversible et toutes les informations seront perdues.');
     }
 </script>
 @endsection
@@ -304,8 +292,8 @@
         --primary: #2563eb;
         --primary-dark: #1d4ed8;
         --success: #10b981;
+        --success-dark: #059669;
         --danger: #ef4444;
-        --warning: #f59e0b;
         --surface: #ffffff;
         --background: #f8fafc;
         --text: #0f172a;
@@ -314,7 +302,6 @@
         --radius: 12px;
         --radius-sm: 8px;
         --shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
-        --shadow-lg: 0 20px 25px -5px rgba(0,0,0,.1), 0 10px 10px -5px rgba(0,0,0,.04);
     }
 
     .payment-container {
@@ -324,56 +311,67 @@
     }
 
     /* Step Indicator */
-    .payment-header { margin-bottom: 2rem; }
+    .payment-header { margin-bottom: 1.5rem; }
 
     .step-indicator {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
+        gap: 0.4rem;
     }
 
-    .step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-    }
+    .step { display: flex; flex-direction: column; align-items: center; gap: .4rem; }
 
     .step-number {
-        width: 36px;
-        height: 36px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: .875rem;
+        font-size: .8rem;
         font-weight: 700;
         background: var(--border);
         color: var(--text-muted);
-        transition: all .3s ease;
+        transition: all .3s;
     }
 
     .step.completed .step-number { background: var(--success); color: white; }
 
     .step.active .step-number {
-        background: var(--primary);
+        background: var(--success);
         color: white;
-        box-shadow: 0 0 0 4px rgba(37,99,235,.2);
-        animation: pulse-ring 2s infinite;
+        box-shadow: 0 0 0 4px rgba(16,185,129,.2);
+        animation: pulse-green 2s infinite;
     }
 
-    @keyframes pulse-ring {
-        0%,100% { box-shadow: 0 0 0 4px rgba(37,99,235,.2); }
-        50%      { box-shadow: 0 0 0 8px rgba(37,99,235,.1); }
+    @keyframes pulse-green {
+        0%,100% { box-shadow: 0 0 0 4px rgba(16,185,129,.2); }
+        50%      { box-shadow: 0 0 0 8px rgba(16,185,129,.1); }
     }
 
-    .step-label { font-size: .75rem; font-weight: 500; color: var(--text-muted); }
+    .step-label { font-size: .7rem; font-weight: 500; color: var(--text-muted); }
     .step.completed .step-label,
     .step.active   .step-label { color: var(--text); font-weight: 600; }
 
-    .step-line { width: 40px; height: 2px; background: var(--border); border-radius: 1px; transition: all .3s ease; }
-    .step-line.active { background: var(--primary); }
+    .step-line { width: 32px; height: 2px; background: var(--border); border-radius: 1px; transition: all .3s; }
+    .step-line.active { background: var(--success); }
+
+    /* Approval Badge */
+    .approval-badge {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        border-radius: var(--radius-sm);
+        padding: .875rem 1rem;
+        margin-bottom: 1.25rem;
+        font-size: .875rem;
+        color: #166534;
+    }
+
+    .approval-badge svg { flex-shrink: 0; color: var(--success); }
 
     /* Payment Card */
     .payment-card {
@@ -407,9 +405,7 @@
         font-weight: 700;
     }
 
-    /* Amount Section */
     .payment-amount-section { text-align: center; margin-bottom: 1rem; }
-
     .amount-label { display: block; font-size: .875rem; color: var(--text-muted); margin-bottom: .75rem; }
 
     .amount-display {
@@ -424,7 +420,7 @@
     .amount {
         font-size: 3.5rem;
         font-weight: 800;
-        color: var(--primary);
+        color: var(--success);   /* vert pour frais finals */
         line-height: 1;
         letter-spacing: -.02em;
     }
@@ -433,13 +429,13 @@
         display: flex;
         align-items: flex-start;
         gap: .75rem;
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
+        background: #f0fdf4;
+        border: 1px solid #86efac;
         border-radius: var(--radius-sm);
         padding: 1rem;
         margin-top: 1.5rem;
         font-size: .875rem;
-        color: #1e40af;
+        color: #166534;
     }
 
     .info-frais-finals svg { flex-shrink: 0; margin-top: .125rem; }
@@ -459,7 +455,7 @@
         align-items: center;
         justify-content: center;
         padding: 1rem 1.5rem;
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        background: linear-gradient(135deg, var(--success), var(--success-dark));
         color: white;
         border: none;
         border-radius: var(--radius);
@@ -467,14 +463,14 @@
         font-weight: 600;
         cursor: pointer;
         transition: all .2s;
-        box-shadow: 0 4px 14px rgba(37,99,235,.35);
+        box-shadow: 0 4px 14px rgba(16,185,129,.35);
         position: relative;
         overflow: hidden;
     }
 
     .btn-pay:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(37,99,235,.45);
+        box-shadow: 0 6px 20px rgba(16,185,129,.45);
     }
 
     .btn-pay:disabled { opacity: .7; cursor: not-allowed; }
@@ -500,22 +496,22 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .form-cancel { width: 100%; }
-
-    .btn-cancel {
+    .btn-cancel-link {
+        display: block;
         width: 100%;
         padding: .875rem;
+        text-align: center;
         background: transparent;
         color: var(--text-muted);
         border: 1.5px solid var(--border);
         border-radius: var(--radius);
         font-size: .875rem;
         font-weight: 500;
-        cursor: pointer;
+        text-decoration: none;
         transition: all .2s;
     }
 
-    .btn-cancel:hover { background: #fef2f2; color: var(--danger); border-color: var(--danger); }
+    .btn-cancel-link:hover { background: var(--background); color: var(--text); border-color: var(--text-muted); }
 
     .payment-security {
         display: flex;
@@ -552,14 +548,14 @@
         width: 56px;
         height: 56px;
         border: 4px solid var(--border);
-        border-top-color: var(--primary);
+        border-top-color: var(--success);
         border-radius: 50%;
         animation: spin 1s linear infinite;
         margin: 0 auto 1.5rem;
     }
 
-    .loading-content p { font-size: 1.125rem; font-weight: 600; color: var(--text); margin-bottom: .5rem; }
-    .loading-content small { font-size: .875rem; color: var(--text-muted); }
+    .loading-content p      { font-size: 1.125rem; font-weight: 600; color: var(--text); margin-bottom: .5rem; }
+    .loading-content small  { font-size: .875rem; color: var(--text-muted); }
 
     /* Status Paid */
     .status-paid {
@@ -594,39 +590,23 @@
         align-items: center;
         justify-content: center;
         padding: 1rem 1.5rem;
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        background: linear-gradient(135deg, var(--success), var(--success-dark));
         color: white;
         border-radius: var(--radius);
         text-decoration: none;
         font-weight: 600;
         transition: all .2s;
-        box-shadow: 0 4px 14px rgba(37,99,235,.35);
+        box-shadow: 0 4px 14px rgba(16,185,129,.35);
     }
 
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,.45); }
-
-    .btn-secondary {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem 1.5rem;
-        background: var(--background);
-        color: var(--text-muted);
-        border: 1.5px solid var(--border);
-        border-radius: var(--radius);
-        text-decoration: none;
-        font-weight: 500;
-        transition: all .2s;
-    }
-
-    .btn-secondary:hover { background: var(--surface); color: var(--text); border-color: var(--text-muted); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16,185,129,.45); }
 
     @media (max-width: 480px) {
         .payment-container { padding: 1rem; }
         .payment-card      { padding: 1.5rem; }
         .amount            { font-size: 2.5rem; }
-        .step-number       { width: 32px; height: 32px; font-size: .75rem; }
-        .step-line         { width: 24px; }
+        .step-number       { width: 28px; height: 28px; font-size: .7rem; }
+        .step-line         { width: 20px; }
     }
 </style>
 @endsection

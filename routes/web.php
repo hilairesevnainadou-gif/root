@@ -134,6 +134,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('client.requests.payment.success');
 
     // Paiement des frais de dossier finals (statut approved → funded)
+
     Route::get('/requests/{fundingRequest}/payment/final', [ClientFundingRequestController::class, 'paymentFinal'])
         ->name('client.requests.payment.final');
     Route::post('/requests/{fundingRequest}/payment/final/verify', [KkiapayPaymentController::class, 'verifyFinalPayment'])

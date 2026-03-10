@@ -487,6 +487,53 @@ public function show(FundingRequest $fundingRequest): View|RedirectResponse
     }
 
 
+    /**
+     * Page de paiement des frais de dossier finals (après approbation)
+     * Distincte de payment() qui gère les frais d'inscription initiaux
+     */
+    public function paymentFinal(FundingRequest $fundingRequest): View|RedirectResponse
+    {
+        if ($fundingRequest->user_id !== auth()->id()) {
+            abort(403, 'Accès non autorisé.');
+        }
+
+        $fundingRequest->load('typeFinancement');
+
+        // La demande doit être approuvée
+        if ($fundingRequest->status !== 'approved') {
+            return redirect()
+                ->route('client.requests.show', $fundingRequest)
+                ->with('info', 'Cette demande ne nécessite pas de paiement de frais de dossier.');
+        }
+
+        $finalFee = $fundingRequest->typeFinancement->registration_final_fee ?? 0;
+
+        // Pas de frais finals configurés
+        if ($finalFee <= 0) {
+            return redirect()
+                ->route('client.requests.show', $fundingRequest)
+                ->with('info', 'Aucun frais de dossier n\'est requis pour ce financement.');
+        }
+
+        // Frais déjà payés
+        if ($fundingRequest->final_fee_paid ?? false) {
+            return redirect()
+                ->route('client.requests.show', $fundingRequest)
+                ->with('info', 'Les frais de dossier ont déjà été réglés.');
+        }
+
+        $amountApproved = $fundingRequest->amount_approved ?? $fundingRequest->amount_requested;
+
+        $fees = [
+            'final'      => $finalFee,
+            'current'    => $finalFee,              // montant à payer maintenant
+            'net_amount' => $amountApproved - $finalFee, // ce que le client recevra
+            'approved'   => $amountApproved,
+        ];
+
+        return view('client.requests.payment-final', compact('fundingRequest', 'fees'));
+    }
+
 /**
  * Page de succès après paiement
  */
