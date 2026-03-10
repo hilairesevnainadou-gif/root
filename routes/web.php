@@ -133,6 +133,20 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/requests/{fundingRequest}/payment/success', [ClientFundingRequestController::class, 'paymentSuccess'])
         ->name('client.requests.payment.success');
 
+    // Paiement direct via wallet
+    Route::post('/requests/{fundingRequest}/payment/wallet', [KkiapayPaymentController::class, 'payWithWallet'])
+        ->name('client.payment.wallet');
+
+    Route::post('/requests/{fundingRequest}/payment/final/wallet', [KkiapayPaymentController::class, 'payFinalWithWallet'])
+        ->name('client.payment.wallet.final');
+
+    // Recheck — paiement déjà effectué non mis à jour
+    Route::post('/requests/{fundingRequest}/payment/recheck', [KkiapayPaymentController::class, 'recheckPayment'])
+        ->name('client.payment.recheck');
+
+    Route::post('/requests/{fundingRequest}/payment/final/recheck', [KkiapayPaymentController::class, 'recheckFinalPayment'])
+        ->name('client.payment.recheck.final');
+
     // Paiement des frais de dossier finals (statut approved → funded)
 
     Route::get('/requests/{fundingRequest}/payment/final', [ClientFundingRequestController::class, 'paymentFinal'])

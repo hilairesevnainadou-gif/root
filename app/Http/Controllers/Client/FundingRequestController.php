@@ -79,12 +79,16 @@ class FundingRequestController extends Controller
 
         // UNIQUEMENT les frais d'inscription initiaux à payer maintenant
         $fees = [
-            'registration' => $fundingRequest->typeFinancement->registration_fee,  // À payer maintenant
-            'final' => $fundingRequest->typeFinancement->registration_final_fee,      // À payer plus tard
-            'current' => $fundingRequest->typeFinancement->registration_fee,        // Montant du paiement actuel
+            'registration' => $fundingRequest->typeFinancement->registration_fee,
+            'final'        => $fundingRequest->typeFinancement->registration_final_fee,
+            'current'      => $fundingRequest->typeFinancement->registration_fee,
         ];
 
-        return view('client.requests.payment', compact('fundingRequest', 'fees'));
+        // Solde wallet de l'utilisateur (pour proposer le paiement direct)
+        $wallet        = \App\Models\Wallet::where('user_id', auth()->id())->where('status', 'active')->first();
+        $walletBalance = (float) ($wallet?->balance ?? 0);
+
+        return view('client.requests.payment', compact('fundingRequest', 'fees', 'walletBalance'));
     }
 
     /**
@@ -526,12 +530,16 @@ public function show(FundingRequest $fundingRequest): View|RedirectResponse
 
         $fees = [
             'final'      => $finalFee,
-            'current'    => $finalFee,              // montant à payer maintenant
-            'net_amount' => $amountApproved - $finalFee, // ce que le client recevra
+            'current'    => $finalFee,
+            'net_amount' => $amountApproved - $finalFee,
             'approved'   => $amountApproved,
         ];
 
-        return view('client.requests.payment-final', compact('fundingRequest', 'fees'));
+        // Solde wallet pour proposer le paiement direct
+        $wallet        = \App\Models\Wallet::where('user_id', auth()->id())->where('status', 'active')->first();
+        $walletBalance = (float) ($wallet?->balance ?? 0);
+
+        return view('client.requests.payment-final', compact('fundingRequest', 'fees', 'walletBalance'));
     }
 
 /**
@@ -591,8 +599,7 @@ public function paymentSuccess(FundingRequest $fundingRequest)
         $steps[] = ['key' => 'funded', 'label' => 'Financement versé', 'date' => $request->funded_at];
 
         $timeline    = [];
-        $prevDone    = true; // la 1re étape devient active si non complétée
-
+        $prevDone    = true;
         foreach ($steps as $step) {
             $done   = (bool) $step['date'];
             $active = $prevDone && ! $done;
