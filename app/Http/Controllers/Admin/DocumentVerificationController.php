@@ -9,6 +9,7 @@ use App\Models\FundingRequest;
 use App\Models\Notification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -47,26 +48,71 @@ class DocumentVerificationController extends Controller
     }
 
     /**
-     * Voir un document
+     * Page de vérification d'un document.
+     *
+     * CORRECTION CORS : on ne passe plus Storage::url() en $viewUrl
+     * car APP_URL peut valoir 'http://localhost' en prod et générer
+     * une URL bloquée par la politique CORS du navigateur.
+     * La vue utilise directement route('admin.documents.show') et
+     * route('admin.documents.download') qui portent toujours le bon domaine.
      */
     public function show(DocumentUser $document): View
     {
         $document->load(['user', 'typeDoc', 'fundingRequest.typeFinancement']);
 
-        // URL publique (pas de temporaryUrl qui nécessite S3)
-        $viewUrl = Storage::disk('public')->url($document->file_path);
-
-        // Autres documents de la même demande
         $relatedDocuments = DocumentUser::where('funding_request_id', $document->funding_request_id)
             ->where('id', '!=', $document->id)
             ->with('typeDoc')
             ->get();
 
-        return view('admin.documents.show', compact('document', 'viewUrl', 'relatedDocuments'));
+        // NE PAS passer Storage::url() ici — la vue recalcule via route()
+        return view('admin.documents.show', compact('document', 'relatedDocuments'));
     }
 
     /**
-     * Vérifier un document
+     * Servir le fichier en ligne (inline).
+     * Utilisé par la vue via route('admin.documents.show').
+     * L'URL porte toujours le bon domaine → plus d'erreur CORS/localhost.
+     */
+    public function serveFile(DocumentUser $document): Response
+    {
+        if (! $document->file_path || ! Storage::disk('public')->exists($document->file_path)) {
+            abort(404, 'Fichier non trouvé.');
+        }
+
+        return response(
+            Storage::disk('public')->get($document->file_path),
+            200,
+            [
+                'Content-Type'        => $document->file_type ?? 'application/octet-stream',
+                'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
+                'Cache-Control'       => 'private, max-age=3600',
+            ]
+        );
+    }
+
+    /**
+     * Télécharger le fichier (force download).
+     * Utilisé par la vue via route('admin.documents.download').
+     */
+    public function download(DocumentUser $document): Response
+    {
+        if (! $document->file_path || ! Storage::disk('public')->exists($document->file_path)) {
+            abort(404, 'Fichier non trouvé.');
+        }
+
+        return response(
+            Storage::disk('public')->get($document->file_path),
+            200,
+            [
+                'Content-Type'        => $document->file_type ?? 'application/octet-stream',
+                'Content-Disposition' => 'attachment; filename="' . $document->file_name . '"',
+            ]
+        );
+    }
+
+    /**
+     * Vérifier un document (approuver ou rejeter)
      */
     public function verify(VerifyDocumentRequest $request, DocumentUser $document): RedirectResponse
     {
@@ -75,7 +121,7 @@ class DocumentVerificationController extends Controller
         }
 
         $data = [
-            'status' => $request->status,
+            'status'      => $request->status,
             'verified_by' => auth()->id(),
         ];
 
@@ -93,10 +139,7 @@ class DocumentVerificationController extends Controller
 
         $document->update($data);
 
-        // Notifier l'utilisateur
         $this->notifyUser($document, $request->status, $request->rejection_reason);
-
-        // Vérifier si tous les documents sont validés
         $this->checkFundingRequestCompletion($document->fundingRequest);
 
         $next = DocumentUser::where('status', 'pending')
@@ -118,9 +161,9 @@ class DocumentVerificationController extends Controller
     public function bulkVerify(Request $request): RedirectResponse
     {
         $request->validate([
-            'document_ids' => ['required', 'array'],
-            'document_ids.*' => ['exists:document_users,id'],
-            'status' => ['required', 'in:verified,rejected'],
+            'document_ids'     => ['required', 'array'],
+            'document_ids.*'   => ['exists:document_users,id'],
+            'status'           => ['required', 'in:verified,rejected'],
             'rejection_reason' => ['required_if:status,rejected'],
         ]);
 
@@ -129,9 +172,9 @@ class DocumentVerificationController extends Controller
             $doc = DocumentUser::find($id);
             if ($doc && $doc->status === 'pending') {
                 $doc->update([
-                    'status' => $request->status,
-                    'verified_by' => auth()->id(),
-                    'verified_at' => $request->status === 'verified' ? now() : null,
+                    'status'           => $request->status,
+                    'verified_by'      => auth()->id(),
+                    'verified_at'      => $request->status === 'verified' ? now() : null,
                     'rejection_reason' => $request->rejection_reason ?? null,
                 ]);
                 $this->notifyUser($doc, $request->status, $request->rejection_reason);
@@ -142,22 +185,22 @@ class DocumentVerificationController extends Controller
         return back()->with('success', "{$count} documents traités.");
     }
 
-    // Méthodes privées
+    // ── Méthodes privées ──────────────────────────────────────────────────
 
     private function notifyUser(DocumentUser $document, string $status, ?string $reason): void
     {
-        $title = $status === 'verified' ? 'Document vérifié ✓' : 'Document rejeté ✗';
+        $title   = $status === 'verified' ? 'Document vérifié' : 'Document rejeté';
         $message = $status === 'verified'
             ? "Votre document '{$document->typeDoc->name}' a été vérifié et approuvé."
-            : "Votre document '{$document->typeDoc->name}' a été rejeté. Motif: {$reason}";
+            : "Votre document '{$document->typeDoc->name}' a été rejeté. Motif : {$reason}";
 
         Notification::create([
             'user_id' => $document->user_id,
-            'type' => $status === 'verified' ? 'document_verified' : 'document_rejected',
-            'title' => $title,
+            'type'    => $status === 'verified' ? 'document_verified' : 'document_rejected',
+            'title'   => $title,
             'message' => $message,
-            'data' => [
-                'document_id' => $document->id,
+            'data'    => [
+                'document_id'        => $document->id,
                 'funding_request_id' => $document->funding_request_id,
             ],
         ]);
@@ -166,13 +209,13 @@ class DocumentVerificationController extends Controller
     private function checkFundingRequestCompletion(FundingRequest $request): void
     {
         $totalRequired = count($request->typeFinancement->required_documents ?? []);
-        $verified = $request->documentUsers()->where('status', 'verified')->count();
+        $verified      = $request->documentUsers()->where('status', 'verified')->count();
 
         if ($verified >= $totalRequired && $request->status === 'submitted') {
             Notification::create([
                 'user_id' => $request->user_id,
-                'type' => 'documents_complete',
-                'title' => 'Documents complets',
+                'type'    => 'documents_complete',
+                'title'   => 'Documents complets',
                 'message' => 'Tous vos documents ont été vérifiés. Votre demande va passer en examen approfondi.',
             ]);
         }
