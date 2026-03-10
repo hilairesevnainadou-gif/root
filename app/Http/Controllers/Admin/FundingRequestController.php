@@ -74,7 +74,13 @@ class FundingRequestController extends Controller
             'approved'         => $fundingRequest->amount_approved,
             'registration_fee' => $regFee,
             'final_fee'        => $finalFee,
-            'net_amount'       => $approved - $finalFee,
+            /*
+             * CORRECTION : le montant net versé = montant approuvé intégral.
+             * Les frais de dossier ont déjà été réglés séparément par le client
+             * (via Kkiapay ou wallet) avant que l'admin déclenche le versement.
+             * On n'en déduit donc RIEN du montant approuvé.
+             */
+            'net_amount'       => $approved,
         ];
 
         return view('admin.requests.show', compact(
@@ -86,9 +92,9 @@ class FundingRequestController extends Controller
      * Changer le statut manuellement
      *
      * Règles automatiques :
-     *  A) under_review   + final_fee == 0 → saute pending_committee → approved (silencieux)
-     *  B) approved       + final_fee == 0 → passe directement funded + virement wallet
-     *  C) funded                          → virement wallet immédiat
+     *  A) under_review   + final_fee == 0 → saute pending_committee → approved → funded
+     *  B) approved       + final_fee == 0 → funded + virement
+     *  C) funded / pending_disbursement   → virement wallet immédiat
      */
     public function updateStatus(UpdateFundingStatusRequest $request, FundingRequest $fundingRequest): RedirectResponse
     {
@@ -98,17 +104,13 @@ class FundingRequestController extends Controller
         $newStatus = $request->status;
         $finalFee  = $fundingRequest->typeFinancement->registration_final_fee ?? 0;
 
-        // ── Règle A : under_review + frais final = 0 → skip comité → approved ──
+        // ── Règle A : under_review + frais final = 0 → skip comité → approved → funded ──
         if ($newStatus === 'under_review' && $finalFee == 0) {
-            // Étape 1 : under_review (silencieux, pas de notif)
             $fundingRequest->update(['status' => 'under_review', 'reviewed_at' => now()]);
-            // Étape 2 : pending_committee (silencieux)
             $fundingRequest->update(['status' => 'pending_committee', 'committee_review_started_at' => now()]);
-            // Étape 3 : approved + notif
             $amount = $request->amount_approved ?? $fundingRequest->amount_requested;
             $fundingRequest->update(['status' => 'approved', 'approved_at' => now(), 'amount_approved' => $amount]);
             $this->sendStatusNotification($fundingRequest, 'approved', $request->comment);
-            // Étape 4 : funded + virement
             return $this->disburseToWallet($fundingRequest, $amount);
         }
 
@@ -120,10 +122,13 @@ class FundingRequestController extends Controller
             return $this->disburseToWallet($fundingRequest, $amount);
         }
 
-        // ── Règle C : funded → virement wallet ──
-        if ($newStatus === 'funded') {
-            $fundingRequest->update(['status' => 'funded', 'funded_at' => now()]);
-            return $this->disburseToWallet($fundingRequest, $fundingRequest->amount_approved ?? $fundingRequest->amount_requested);
+        // ── Règle C : funded ou pending_disbursement → virement wallet ──
+        if (in_array($newStatus, ['funded', 'pending_disbursement'])) {
+            $fundingRequest->update(['status' => $newStatus]);
+            return $this->disburseToWallet(
+                $fundingRequest,
+                $fundingRequest->amount_approved ?? $fundingRequest->amount_requested
+            );
         }
 
         // Cas normal
@@ -206,17 +211,41 @@ class FundingRequestController extends Controller
             'message' => "Votre demande #{$fundingRequest->request_number} est approuvée. "
                        . "Veuillez régler les frais de dossier de "
                        . number_format($finalFee, 0, ',', ' ') . " FCFA pour débloquer "
-                       . "le versement de " . number_format($amount - $finalFee, 0, ',', ' ') . " FCFA.",
+                       . "le versement de " . number_format($amount, 0, ',', ' ') . " FCFA.",
             'data'    => [
                 'funding_request_id' => $fundingRequest->id,
                 'final_fee'          => $finalFee,
-                'net_amount'         => $amount - $finalFee,
+                'net_amount'         => $amount,   // montant intégral, frais déjà séparés
             ],
         ]);
 
         return redirect()
             ->route('admin.requests.show', $fundingRequest)
-            ->with('success', "Demande approuvée ({$amount} FCFA). Le client sera invité à régler les frais de dossier (".number_format($finalFee, 0, ',', ' ')." FCFA) avant le versement.");
+            ->with('success', "Demande approuvée ({$amount} FCFA). Le client sera invité à régler les frais de dossier ("
+                . number_format($finalFee, 0, ',', ' ') . " FCFA) avant le versement.");
+    }
+
+    /**
+     * Valider le versement après paiement des frais de dossier.
+     * Appelé manuellement par l'admin depuis le back-office quand la demande
+     * est en statut 'pending_disbursement'.
+     */
+    public function approveDisbursement(FundingRequest $fundingRequest): RedirectResponse
+    {
+        $fundingRequest->load('typeFinancement', 'user.wallet');
+
+        if ($fundingRequest->status !== 'pending_disbursement') {
+            return back()->with('error', 'Cette demande n\'est pas en attente de versement.');
+        }
+
+        if (! ($fundingRequest->final_fee_paid ?? false)) {
+            return back()->with('error', 'Les frais de dossier n\'ont pas encore été réglés.');
+        }
+
+        return $this->disburseToWallet(
+            $fundingRequest,
+            $fundingRequest->amount_approved ?? $fundingRequest->amount_requested
+        );
     }
 
     /**
@@ -306,22 +335,29 @@ class FundingRequestController extends Controller
     }
 
     /**
-     * Crédite le wallet du client du montant net et marque comme funded
+     * Crédite le wallet du client du montant APPROUVÉ INTÉGRAL et marque comme funded.
+     *
+     * CORRECTION IMPORTANTE :
+     *  Les frais de dossier (final_fee) ont été réglés séparément par le client
+     *  avant que l'admin déclenche ce versement. On verse donc le montant approuvé
+     *  en totalité, sans en déduire les frais.
      */
     private function disburseToWallet(FundingRequest $fundingRequest, ?float $amountApproved): RedirectResponse
     {
-        $finalFee  = $fundingRequest->typeFinancement->registration_final_fee ?? 0;
-        $netAmount = ($amountApproved ?? 0) - $finalFee;
+        // Le montant à verser = montant approuvé intégral (frais déjà payés séparément)
+        $netAmount = $amountApproved ?? 0;
 
         if ($netAmount <= 0) {
             return redirect()
                 ->route('admin.requests.show', $fundingRequest)
-                ->with('error', 'Montant net nul ou négatif — vérifiez le montant approuvé et les frais de dossier.');
+                ->with('error', 'Montant nul ou négatif — vérifiez le montant approuvé.');
         }
 
         try {
-            DB::transaction(function() use ($fundingRequest, $netAmount, $amountApproved) {
-                if ($fundingRequest->status !== 'funded') {
+            DB::transaction(function() use ($fundingRequest, $netAmount) {
+                if (! in_array($fundingRequest->status, ['funded', 'pending_disbursement'])) {
+                    $fundingRequest->update(['status' => 'funded', 'funded_at' => now()]);
+                } else {
                     $fundingRequest->update(['status' => 'funded', 'funded_at' => now()]);
                 }
 
@@ -345,6 +381,8 @@ class FundingRequestController extends Controller
                 ->with('error', 'Erreur lors du virement : ' . $e->getMessage());
         }
 
+        $finalFee = $fundingRequest->typeFinancement->registration_final_fee ?? 0;
+
         Notification::create([
             'user_id' => $fundingRequest->user_id,
             'type'    => 'funding_disbursed',
@@ -352,12 +390,12 @@ class FundingRequestController extends Controller
             'message' => "Le montant de " . number_format($netAmount, 0, ',', ' ')
                        . " FCFA a été crédité sur votre portefeuille."
                        . ($finalFee > 0
-                            ? " (Montant approuvé : " . number_format($amountApproved, 0, ',', ' ')
-                              . " FCFA − Frais de dossier : " . number_format($finalFee, 0, ',', ' ') . " FCFA)"
+                            ? " (Frais de dossier de " . number_format($finalFee, 0, ',', ' ')
+                              . " FCFA réglés séparément.)"
                             : ""),
             'data' => [
                 'funding_request_id' => $fundingRequest->id,
-                'amount_approved'    => $amountApproved,
+                'amount_approved'    => $fundingRequest->amount_approved,
                 'final_fee'          => $finalFee,
                 'net_amount'         => $netAmount,
             ],
@@ -372,8 +410,7 @@ class FundingRequestController extends Controller
     }
 
     /**
-     * Notifications propres par statut (sans messages techniques)
-     * Note : 'funded' n'est pas ici, il est géré par disburseToWallet()
+     * Notifications par statut
      */
     private function sendStatusNotification(FundingRequest $fundingRequest, string $newStatus, ?string $comment): void
     {
@@ -406,7 +443,7 @@ class FundingRequestController extends Controller
         ];
 
         if (!isset($map[$newStatus])) {
-            return; // pas de notif pour les transitions silencieuses
+            return;
         }
 
         $n = $map[$newStatus];
@@ -420,19 +457,17 @@ class FundingRequestController extends Controller
         ]);
     }
 
-    /**
-     * Message flash admin lisible
-     */
     private function successMessage(string $status): string
     {
         return match($status) {
-            'under_review'      => 'Demande prise en examen.',
-            'pending_committee' => 'Demande transmise au comité.',
-            'approved'          => 'Demande approuvée. Le client sera invité à régler les frais de dossier.',
-            'rejected'          => 'Demande rejetée. Le client a été notifié.',
-            'funded'            => 'Financement versé sur le portefeuille du client.',
-            'cancelled'         => 'Demande annulée.',
-            default             => 'Statut mis à jour.',
+            'under_review'          => 'Demande prise en examen.',
+            'pending_committee'     => 'Demande transmise au comité.',
+            'approved'              => 'Demande approuvée. Le client sera invité à régler les frais de dossier.',
+            'rejected'              => 'Demande rejetée. Le client a été notifié.',
+            'funded'                => 'Financement versé sur le portefeuille du client.',
+            'pending_disbursement'  => 'En attente de versement — frais de dossier réglés par le client.',
+            'cancelled'             => 'Demande annulée.',
+            default                 => 'Statut mis à jour.',
         };
     }
 
@@ -459,11 +494,12 @@ class FundingRequestController extends Controller
     private function getAvailableActions(FundingRequest $request): array
     {
         return match($request->status) {
-            'submitted'         => ['under_review', 'rejected'],
-            'under_review'      => ['pending_committee', 'rejected'],
-            'pending_committee' => ['approved', 'rejected'],
-            'approved'          => ['funded', 'cancelled'],
-            default             => [],
+            'submitted'            => ['under_review', 'rejected'],
+            'under_review'         => ['pending_committee', 'rejected'],
+            'pending_committee'    => ['approved', 'rejected'],
+            'approved'             => ['funded', 'cancelled'],
+            'pending_disbursement' => ['funded'],   // admin valide le versement
+            default                => [],
         };
     }
 }
